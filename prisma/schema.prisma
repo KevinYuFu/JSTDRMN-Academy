@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Meta {
+  key   String @id
+  value String
+}
+
+model User {
+  id           String        @id
+  email        String        @unique
+  name         String
+  passwordHash String
+  role         String
+  createdAt    DateTime      @default(now())
+  sessions     Session[]
+  entitlements Entitlement[]
+  progress     Progress[]
+  comments     Comment[]
+  checkouts    Checkout[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id           String        @id
+  slug         String        @unique
+  title        String
+  tagline      String
+  description  String
+  kind         String
+  access       String
+  priceCents   Int?
+  billing      String
+  statusLabel  String
+  hubspotUrl   String?
+  panel        String
+  sort         Int           @default(0)
+  lessons      Lesson[]
+  cohorts      Cohort[]
+  entitlements Entitlement[]
+}
+
+model Cohort {
+  id           String        @id
+  courseId     String
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug         String        @unique
+  name         String
+  startsLabel  String
+  sort         Int           @default(0)
+  lessons      Lesson[]
+  entitlements Entitlement[]
+}
+
+model Lesson {
+  id            String     @id
+  courseId      String
+  course        Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cohortId      String?
+  cohort        Cohort?    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  position      Int
+  title         String
+  summary       String
+  durationMin   Int
+  runtimeLabel  String
+  videoProvider String
+  videoUrl      String
+  slidesTitle   String?
+  slidesMeta    String?
+  headliner     Boolean    @default(false)
+  drip          Boolean    @default(false)
+  comments      Comment[]
+  progress      Progress[]
+}
+
+model Entitlement {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    String
+  courseId   String?
+  course     Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cohortId   String?
+  cohort     Cohort?   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  status     String
+  source     String
+  externalId String?
+  endsAt     DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+}
+
+model Progress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status    String
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  lessonId  String
+  lesson    Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?  @relation("Thread", fields: [parentId], references: [id])
+  replies   Comment[] @relation("Thread")
+  body      String
+  createdAt DateTime  @default(now())
+}
+
+model Checkout {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     String
+  courseId    String?
+  cohortId    String?
+  amountCents Int?
+  currency    String
+  status      String
+  mode        String
+  label       String
+  createdAt   DateTime @default(now())
+}
+
+model PendingGrant {
+  id         String    @id @default(cuid())
+  email      String
+  product    String
+  courseId   String?
+  cohortId   String?
+  source     String
+  createdAt  DateTime  @default(now())
+  consumedAt DateTime?
+}
+
+model HubspotLog {
+  id        String   @id @default(cuid())
+  action    String
+  payload   String
+  createdAt DateTime @default(now())
+}
