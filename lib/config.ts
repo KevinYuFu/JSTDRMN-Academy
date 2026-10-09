@@ -5,12 +5,10 @@ function intEnv(name: string, fallback: number | null): number | null {
   return Number.isFinite(value) ? Math.round(value) : fallback;
 }
 
-/** Prices are CAD cents. Headliner stays null until Yu sets HEADLINER_PRICE_CENTS. */
+/** Headliner stays null until Yu sets HEADLINER_PRICE_CENTS. Other programs store priceCents on the course row. */
 export const prices = {
   currency: "cad" as const,
   headlinerMonthlyCents: intEnv("HEADLINER_PRICE_CENTS", null),
-  courseCents: intEnv("COURSE_PRICE_CENTS", 5000) ?? 5000,
-  ashMonthlyCents: intEnv("ASH_PRICE_CENTS", 5000) ?? 5000,
 };
 
 export const appUrl = process.env.APP_URL || "http://127.0.0.1:43123";
@@ -41,8 +39,15 @@ export function stripeLive() {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
-export function applyLink(slug: string) {
-  if (slug === "production-bootcamp") return hubspotLinks.production;
-  if (slug === "mashup-bootcamp") return hubspotLinks.mashup;
-  return hubspotLinks.dj;
+export function hubspotApplyUrl(url: string | null | undefined) {
+  return url || hubspotLinks.dj;
+}
+
+/** Null hides the price. Headliner reads the env placeholder. Everything else reads the program record. */
+export function programPriceLabel(course: { access: string; priceCents: number | null; billing: string }) {
+  if (course.access === "headliner") return formatCad(prices.headlinerMonthlyCents, "month");
+  if (course.priceCents == null) return null;
+  if (course.billing === "monthly") return formatCad(course.priceCents, "month");
+  if (course.billing === "once") return formatCad(course.priceCents);
+  return null;
 }

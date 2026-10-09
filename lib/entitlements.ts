@@ -1,8 +1,8 @@
-export type Product = "headliner" | "course" | "ash" | "cohort";
+export type Product = "headliner" | "program" | "cohort";
 
-export type CourseAccess = "headliner" | "purchase" | "ash_subscription" | "cohort";
+export type CourseAccess = "headliner" | "purchase" | "subscription" | "cohort";
 
-export type Upsell = "headliner" | "course" | "ash" | "bootcamp";
+export type Upsell = "headliner" | "program" | "bootcamp";
 
 export type EntitlementRecord = {
   product: Product;
@@ -16,7 +16,7 @@ export type LessonGate = {
   id: string;
   courseId: string;
   cohortId: string | null;
-  /** Included in the Headliner subset of the tutorial library. */
+  /** Included in the Headliner subset. A lesson without this flag stays locked for members. */
   headliner: boolean;
   /** Opens only after every earlier lesson in the same list is complete. */
   drip: boolean;
@@ -42,6 +42,19 @@ export function isStaff(role: string) {
   return role === "teacher" || role === "admin";
 }
 
+/** Maps stored product strings, including the old course/ash labels, onto the current set. */
+export function normalizeProduct(value: string): Product | null {
+  if (value === "course" || value === "ash") return "program";
+  if (value === "headliner" || value === "program" || value === "cohort") return value;
+  return null;
+}
+
+export function asCourseAccess(value: string): CourseAccess {
+  if (value === "ash_subscription") return "subscription";
+  if (value === "headliner" || value === "purchase" || value === "subscription" || value === "cohort") return value;
+  return "purchase";
+}
+
 function isLive(record: EntitlementRecord, now: Date) {
   if (record.status !== "active") return false;
   if (record.endsAt && record.endsAt.getTime() <= now.getTime()) return false;
@@ -52,19 +65,15 @@ function matchesLesson(record: EntitlementRecord, lesson: LessonGate) {
   if (lesson.courseAccess === "headliner") {
     return lesson.headliner && record.product === "headliner";
   }
-  if (lesson.courseAccess === "purchase") {
-    return record.product === "course" && record.courseId === lesson.courseId;
-  }
-  if (lesson.courseAccess === "ash_subscription") {
-    return record.product === "ash" && (record.courseId === null || record.courseId === lesson.courseId);
+  if (lesson.courseAccess === "purchase" || lesson.courseAccess === "subscription") {
+    return record.product === "program" && record.courseId === lesson.courseId;
   }
   return record.product === "cohort" && record.cohortId !== null && record.cohortId === lesson.cohortId;
 }
 
 function upsellFor(access: CourseAccess): Upsell {
   if (access === "headliner") return "headliner";
-  if (access === "purchase") return "course";
-  if (access === "ash_subscription") return "ash";
+  if (access === "purchase" || access === "subscription") return "program";
   return "bootcamp";
 }
 
@@ -134,6 +143,34 @@ export function containerAccess(input: {
     now: input.now,
   });
 }
+
+/**
+ * Headliner perks that are not lessons: the feedback space and the Discord card.
+ * Staff, or a live Headliner entitlement. A program purchase or a cohort seat does not count.
+ */
+export function headlinerPerk(input: {
+  role: string;
+  entitlements: EntitlementRecord[];
+  now?: Date;
+}): AccessDecision {
+  if (isStaff(input.role)) {
+    return { allowed: true, upsell: null, reason: "role" };
+  }
+  const now = input.now ?? new Date();
+  const related = input.entitlements.filter((record) => record.product === "headliner");
+  const state = classify(related, now);
+  if (state !== "active") {
+    return {
+      allowed: false,
+      upsell: "headliner",
+      reason: state === "none" ? "missing" : state,
+    };
+  }
+  return { allowed: true, upsell: null, reason: "entitlement" };
+}
+
+export const feedbackAccess = headlinerPerk;
+export const discordCardAccess = headlinerPerk;
 
 export function earlierLessonsComplete(
   lessons: { id: string; position: number; completed: boolean }[],

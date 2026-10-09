@@ -2,14 +2,14 @@ import { notFound } from "next/navigation";
 import type { User } from "@prisma/client";
 import { prisma } from "./db";
 import {
+  asCourseAccess,
   containerAccess,
   earlierLessonsComplete,
   isStaff,
   lessonAccess,
+  normalizeProduct,
   type AccessDecision,
-  type CourseAccess,
   type EntitlementRecord,
-  type Product,
 } from "./entitlements";
 
 export type LessonView = {
@@ -29,20 +29,10 @@ export type LessonView = {
   access: AccessDecision;
 };
 
-function asProduct(value: string): Product {
-  if (value === "headliner" || value === "course" || value === "ash" || value === "cohort") return value;
-  return "course";
-}
-
-function asAccess(value: string): CourseAccess {
-  if (value === "headliner" || value === "purchase" || value === "ash_subscription" || value === "cohort") return value;
-  return "purchase";
-}
-
 export async function entitlementRecords(userId: string): Promise<EntitlementRecord[]> {
   const rows = await prisma.entitlement.findMany({ where: { userId } });
   return rows.map((row) => ({
-    product: asProduct(row.product),
+    product: normalizeProduct(row.product) ?? "program",
     courseId: row.courseId,
     cohortId: row.cohortId,
     status: row.status === "active" ? "active" : "revoked",
@@ -111,7 +101,7 @@ export async function openCourse(input: {
         cohortId: lesson.cohortId,
         headliner: lesson.headliner,
         drip: lesson.drip,
-        courseAccess: asAccess(course.access),
+        courseAccess: asCourseAccess(course.access),
       },
       entitlements: records,
       earlierComplete: earlierLessonsComplete(completion, lesson.id),
@@ -146,7 +136,7 @@ export async function openCourse(input: {
 
   const container = containerAccess({
     role,
-    access: asAccess(course.access),
+    access: asCourseAccess(course.access),
     courseId: course.id,
     cohortId: cohort?.id ?? null,
     entitlements: records,

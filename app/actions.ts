@@ -6,13 +6,16 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkPassword, createSession, destroySession, hashPassword, requireStaff, requireUser } from "@/lib/auth";
 import { fulfillCheckout, grantEntitlement, revokeEntitlement } from "@/lib/billing";
-import { appUrl, prices, stripeLive } from "@/lib/config";
+import { resolveOffer } from "@/lib/catalog";
+import { appUrl, stripeLive } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { containerAccess, isStaff, lessonAccess, earlierLessonsComplete, type Product } from "@/lib/entitlements";
+import { asCourseAccess, containerAccess, feedbackAccess, isStaff, lessonAccess, earlierLessonsComplete, normalizeProduct, type Product } from "@/lib/entitlements";
+import { isSubmissionKind } from "@/lib/feedback";
 import { applyPendingGrants, syncContact } from "@/lib/hubspot";
 import { entitlementRecords } from "@/lib/learn";
 import { stripeClient } from "@/lib/stripe";
 import { safeNext } from "@/lib/utils";
+import { videoProviders } from "@/lib/video";
 
 const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -87,13 +90,7 @@ async function lessonGate(lessonId: string, userId: string, role: string) {
       cohortId: lesson.cohortId,
       headliner: lesson.headliner,
       drip: lesson.drip,
-      courseAccess:
-        lesson.course.access === "headliner" ||
-        lesson.course.access === "purchase" ||
-        lesson.course.access === "ash_subscription" ||
-        lesson.course.access === "cohort"
-          ? lesson.course.access
-          : "purchase",
+      courseAccess: asCourseAccess(lesson.course.access),
     },
     entitlements: await entitlementRecords(userId),
     earlierComplete: earlierLessonsComplete(
@@ -152,7 +149,8 @@ export async function addLesson(formData: FormData) {
   const slidesTitle = String(formData.get("slidesTitle") ?? "").trim();
   const slidesMeta = String(formData.get("slidesMeta") ?? "").trim();
   const cohortIdRaw = String(formData.get("cohortId") ?? "");
-  const providers = new Set(["mock", "youtube", "vimeo", "file"]);
+  const trackIdRaw = String(formData.get("trackId") ?? "");
+  const providers = new Set<string>(videoProviders.map((item) => item.id));
   if (!title || !videoUrl || !providers.has(provider) || !Number.isFinite(durationMin) || durationMin < 1 || durationMin > 300) {
     redirect(`/teacher/courses/${course.slug}?error=lesson`);
   }
@@ -161,6 +159,11 @@ export async function addLesson(formData: FormData) {
   if (cohortId) {
     const cohort = await prisma.cohort.findFirst({ where: { id: cohortId, courseId: course.id } });
     if (!cohort) redirect(`/teacher/courses/${course.slug}?error=cohort`);
+  }
+  const trackId = trackIdRaw || null;
+  if (trackId) {
+    const track = await prisma.track.findFirst({ where: { id: trackId, courseId: course.id } });
+    if (!track) redirect(`/teacher/courses/${course.slug}?error=lesson`);
   }
   const last = await prisma.lesson.findFirst({
     where: { courseId: course.id, cohortId },
@@ -171,6 +174,7 @@ export async function addLesson(formData: FormData) {
       id: `les_${randomBytes(4).toString("hex")}`,
       courseId: course.id,
       cohortId,
+      trackId,
       position: (last?.position ?? 0) + 1,
       title,
       summary: summary || title,
@@ -217,8 +221,10 @@ export async function addCohort(formData: FormData) {
 function parseTarget(target: string): { product: Product; courseId: string | null; cohortId: string | null } | null {
   const [kind, id, extra] = target.split(":");
   if (kind === "headliner") return { product: "headliner", courseId: null, cohortId: null };
-  if (kind === "course" && id) return { product: "course", courseId: id, cohortId: null };
-  if (kind === "ash" && id) return { product: "ash", courseId: id, cohortId: null };
+  const product = normalizeProduct(kind);
+  if ((kind === "program" || kind === "course" || kind === "ash") && id && product === "program") {
+    return { product: "program", courseId: id, cohortId: null };
+  }
   if (kind === "cohort" && id && extra) return { product: "cohort", cohortId: id, courseId: extra };
   return null;
 }
@@ -246,47 +252,17 @@ export async function revokeAccess(formData: FormData) {
   redirect("/teacher/access?revoked=1");
 }
 
-async function resolvePurchase(product: string, slug: string) {
-  if (product === "headliner") {
-    const course = await prisma.course.findUnique({ where: { slug: "tutorials" } });
-    if (!course) return null;
-    return {
-      product: "headliner" as const,
-      courseId: course.id,
-      label: "Headliner",
-      amountCents: prices.headlinerMonthlyCents,
-      cadence: "month" as const,
-      href: "/courses/tutorials",
-    };
-  }
-  if (product !== "course" && product !== "ash") return null;
-  const course = await prisma.course.findUnique({ where: { slug } });
-  if (!course) return null;
-  if (product === "course" && course.access !== "purchase") return null;
-  if (product === "ash" && course.access !== "ash_subscription") return null;
-  return {
-    product: product === "ash" ? ("ash" as const) : ("course" as const),
-    courseId: course.id,
-    label: course.title,
-    amountCents: product === "ash" ? prices.ashMonthlyCents : prices.courseCents,
-    cadence: product === "ash" ? ("month" as const) : ("once" as const),
-    href: `/courses/${course.slug}`,
-  };
-}
-
 export async function startCheckout(formData: FormData) {
   const user = await requireUser();
   const product = String(formData.get("product") ?? "");
   const slug = String(formData.get("slug") ?? "");
-  const purchase = await resolvePurchase(product, slug);
-  if (!purchase) redirect("/#pricing");
+  const purchase = await resolveOffer(product, slug);
+  if (!purchase) redirect("/");
   if (isStaff(user.role)) redirect(purchase.href);
   const records = await entitlementRecords(user.id);
-  const access =
-    purchase.product === "headliner" ? "headliner" : purchase.product === "ash" ? "ash_subscription" : "purchase";
   const decision = containerAccess({
     role: user.role,
-    access,
+    access: purchase.access,
     courseId: purchase.courseId,
     cohortId: null,
     entitlements: records,
@@ -350,5 +326,56 @@ export async function confirmMockPayment(formData: FormData) {
     extra: { academy_last_purchase: checkout.product },
   });
   const course = checkout.courseId ? await prisma.course.findUnique({ where: { id: checkout.courseId } }) : null;
-  redirect(course ? `/courses/${course.slug}?unlocked=1` : "/dashboard");
+  if (!course) redirect("/dashboard");
+  if (course.access === "headliner") redirect("/headliner?unlocked=1");
+  const lessons = await prisma.lesson.count({ where: { courseId: course.id } });
+  redirect(lessons > 0 ? `/courses/${course.slug}?unlocked=1` : `/programs/${course.slug}?unlocked=1`);
+}
+
+export async function submitFeedback(formData: FormData) {
+  const user = await requireUser();
+  const perk = feedbackAccess({ role: user.role, entitlements: await entitlementRecords(user.id) });
+  if (!perk.allowed) redirect("/headliner/feedback");
+  const title = String(formData.get("title") ?? "").trim();
+  const url = String(formData.get("url") ?? "").trim();
+  const kind = String(formData.get("kind") ?? "");
+  const notes = String(formData.get("notes") ?? "").trim();
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(url);
+  } catch {
+    parsed = null;
+  }
+  if (title.length < 2 || title.length > 120 || !isSubmissionKind(kind) || !parsed || !["http:", "https:"].includes(parsed.protocol) || notes.length > 2000) {
+    redirect("/headliner/feedback?error=1");
+  }
+  await prisma.submission.create({
+    data: {
+      id: `sub_${randomBytes(4).toString("hex")}`,
+      userId: user.id,
+      title,
+      url: parsed.toString(),
+      kind,
+      notes,
+    },
+  });
+  revalidatePath("/headliner/feedback");
+  revalidatePath("/teacher");
+  redirect("/headliner/feedback?sent=1");
+}
+
+export async function commentOnSubmission(formData: FormData) {
+  const user = await requireUser();
+  const perk = feedbackAccess({ role: user.role, entitlements: await entitlementRecords(user.id) });
+  if (!perk.allowed) redirect("/headliner/feedback");
+  const submissionId = String(formData.get("submissionId") ?? "");
+  const body = String(formData.get("body") ?? "").trim();
+  const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
+  if (!submission || body.length < 2 || body.length > 2000) redirect("/headliner/feedback?error=1");
+  await prisma.submissionComment.create({
+    data: { submissionId, userId: user.id, body },
+  });
+  revalidatePath("/headliner/feedback");
+  revalidatePath("/teacher");
+  redirect(`/headliner/feedback#sub-${submissionId}`);
 }

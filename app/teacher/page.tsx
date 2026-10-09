@@ -12,7 +12,7 @@ function when(date: Date) {
 
 export default async function TeacherPage() {
   const teacher = await requireStaff();
-  const [courses, comments, students, logs, cohorts] = await Promise.all([
+  const [courses, comments, students, logs, cohorts, submissions] = await Promise.all([
     prisma.course.findMany({
       orderBy: { sort: "asc" },
       include: { lessons: true, cohorts: { orderBy: { sort: "asc" } } },
@@ -26,6 +26,11 @@ export default async function TeacherPage() {
     prisma.user.count({ where: { role: "student" } }),
     prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
+    prisma.submission.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      include: { user: true, comments: true },
+    }),
   ]);
   const waiting = comments.filter((comment) => !comment.replies.some((reply) => isStaff(reply.user.role))).length;
 
@@ -91,6 +96,18 @@ export default async function TeacherPage() {
                 </article>
               );
             })}
+            <h2 className="section-label" style={{ marginTop: 18 }}>Headliner submissions</h2>
+            {submissions.length === 0 ? <p className="note">No mixes or tracks in the feedback space yet.</p> : null}
+            {submissions.map((submission) => (
+              <article key={submission.id} className="thread">
+                <div className="who">
+                  <b>{submission.title}</b>
+                  <span> · {submission.user.name} · {when(submission.createdAt)}</span>
+                </div>
+                <p className="note">{submission.kind} · {submission.comments.length} comment{submission.comments.length === 1 ? "" : "s"}</p>
+                <Link href="/headliner/feedback" className="pill pill-black" style={{ marginTop: 8 }}>Open</Link>
+              </article>
+            ))}
             <h2 className="section-label" style={{ marginTop: 18 }}>HubSpot log</h2>
             {logs.length === 0 ? (
               <p className="note">No syncs yet. Signups and purchases record a contact when HUBSPOT_PRIVATE_APP_TOKEN is set. Without it, the integration stays quiet.</p>

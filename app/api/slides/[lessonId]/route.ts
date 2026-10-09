@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { earlierLessonsComplete, isStaff, lessonAccess } from "@/lib/entitlements";
+import { asCourseAccess, earlierLessonsComplete, isStaff, lessonAccess } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 import { buildHandout } from "@/lib/pdf";
 
@@ -33,13 +33,7 @@ export async function GET(request: Request, context: { params: Promise<{ lessonI
       cohortId: lesson.cohortId,
       headliner: lesson.headliner,
       drip: lesson.drip,
-      courseAccess:
-        lesson.course.access === "headliner" ||
-        lesson.course.access === "purchase" ||
-        lesson.course.access === "ash_subscription" ||
-        lesson.course.access === "cohort"
-          ? lesson.course.access
-          : "purchase",
+      courseAccess: asCourseAccess(lesson.course.access),
     },
   });
   if (!access.allowed && !isStaff(user.role)) {

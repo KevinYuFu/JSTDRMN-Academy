@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   containerAccess,
+  discordCardAccess,
   earlierLessonsComplete,
+  feedbackAccess,
   lessonAccess,
   type EntitlementRecord,
   type LessonGate,
@@ -81,14 +83,14 @@ describe("lessonAccess", () => {
     assert.deepEqual(decision, { allowed: false, upsell: null, reason: "not_in_headliner" });
   });
 
-  it("does not let Headliner open a paid course, Ash F, or a bootcamp", () => {
+  it("does not let Headliner open a paid program, FB2B, or a bootcamp", () => {
     const headliner = grant({ product: "headliner", courseId: null, cohortId: null });
     const cases: LessonGate[] = [
       lesson({ courseId: "crs_mixing", cohortId: null, courseAccess: "purchase" }),
-      lesson({ courseId: "crs_ash", cohortId: null, courseAccess: "ash_subscription" }),
+      lesson({ courseId: "crs_fb2b", cohortId: null, courseAccess: "subscription" }),
       lesson(),
     ];
-    const upsells = ["course", "ash", "bootcamp"];
+    const upsells = ["program", "program", "bootcamp"];
     cases.forEach((item, index) => {
       const decision = lessonAccess({
         role: "student",
@@ -105,21 +107,21 @@ describe("lessonAccess", () => {
   it("unlocks one purchased course and leaves the others locked", () => {
     const owned = lesson({ id: "les_signal", courseId: "crs_mixing", cohortId: null, courseAccess: "purchase" });
     const other = lesson({ id: "les_other", courseId: "crs_other", cohortId: null, courseAccess: "purchase" });
-    const purchase = grant({ product: "course", courseId: "crs_mixing", cohortId: null });
+    const purchase = grant({ product: "program", courseId: "crs_mixing", cohortId: null });
     assert.equal(
       lessonAccess({ role: "student", lesson: owned, entitlements: [purchase], earlierComplete: true, now }).allowed,
       true,
     );
     const denied = lessonAccess({ role: "student", lesson: other, entitlements: [purchase], earlierComplete: true, now });
     assert.equal(denied.allowed, false);
-    assert.equal(denied.upsell, "course");
+    assert.equal(denied.upsell, "program");
   });
 
-  it("treats Ash F as its own subscription", () => {
-    const ashLesson = lesson({ courseId: "crs_ash", cohortId: null, courseAccess: "ash_subscription" });
-    const ash = grant({ product: "ash", courseId: "crs_ash", cohortId: null });
+  it("treats FB2B as its own program subscription", () => {
+    const fb2bLesson = lesson({ courseId: "crs_fb2b", cohortId: null, courseAccess: "subscription" });
+    const ash = grant({ product: "program", courseId: "crs_fb2b", cohortId: null });
     assert.equal(
-      lessonAccess({ role: "student", lesson: ashLesson, entitlements: [ash], earlierComplete: true, now }).allowed,
+      lessonAccess({ role: "student", lesson: fb2bLesson, entitlements: [ash], earlierComplete: true, now }).allowed,
       true,
     );
     const mixing = lesson({ courseId: "crs_mixing", cohortId: null, courseAccess: "purchase" });
@@ -156,11 +158,11 @@ describe("lessonAccess", () => {
 
     const expired = lessonAccess({
       role: "student",
-      lesson: lesson({ courseId: "crs_ash", cohortId: null, courseAccess: "ash_subscription" }),
+      lesson: lesson({ courseId: "crs_fb2b", cohortId: null, courseAccess: "subscription" }),
       entitlements: [
         grant({
-          product: "ash",
-          courseId: "crs_ash",
+          product: "program",
+          courseId: "crs_fb2b",
           cohortId: null,
           endsAt: new Date("2026-10-01T00:00:00Z"),
         }),
@@ -239,6 +241,55 @@ describe("containerAccess", () => {
     });
     assert.equal(cohort.allowed, false);
     assert.equal(cohort.upsell, "bootcamp");
+  });
+});
+
+describe("Headliner-only perks", () => {
+  const member = grant({ product: "headliner", courseId: null, cohortId: null });
+
+  it("opens the feedback space only for an active Headliner", () => {
+    assert.equal(feedbackAccess({ role: "student", entitlements: [member], now }).allowed, true);
+    const missing = feedbackAccess({ role: "student", entitlements: [], now });
+    assert.deepEqual(missing, { allowed: false, upsell: "headliner", reason: "missing" });
+    const otherProgram = feedbackAccess({
+      role: "student",
+      entitlements: [grant({ product: "program", courseId: "crs_fb2b", cohortId: null })],
+      now,
+    });
+    assert.equal(otherProgram.allowed, false);
+    assert.equal(otherProgram.upsell, "headliner");
+    assert.equal(feedbackAccess({ role: "teacher", entitlements: [], now }).reason, "role");
+    const revoked = feedbackAccess({
+      role: "student",
+      entitlements: [grant({ product: "headliner", courseId: null, cohortId: null, status: "revoked" })],
+      now,
+    });
+    assert.equal(revoked.allowed, false);
+    assert.equal(revoked.reason, "revoked");
+    assert.equal(revoked.upsell, "headliner");
+  });
+
+  it("opens the Discord card only for an active Headliner", () => {
+    assert.equal(discordCardAccess({ role: "student", entitlements: [member], now }).allowed, true);
+    assert.equal(discordCardAccess({ role: "admin", entitlements: [], now }).allowed, true);
+    const expired = discordCardAccess({
+      role: "student",
+      entitlements: [
+        grant({
+          product: "headliner",
+          courseId: null,
+          cohortId: null,
+          endsAt: new Date("2026-01-01T00:00:00Z"),
+        }),
+      ],
+      now,
+    });
+    assert.equal(expired.allowed, false);
+    assert.equal(expired.reason, "expired");
+    assert.equal(expired.upsell, "headliner");
+    const cohortOnly = discordCardAccess({ role: "student", entitlements: [grant()], now });
+    assert.equal(cohortOnly.allowed, false);
+    assert.equal(cohortOnly.upsell, "headliner");
   });
 });
 

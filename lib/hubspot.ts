@@ -142,12 +142,16 @@ export async function applyPendingGrants(user: { id: string; email: string }) {
     where: { email: user.email.toLowerCase(), consumedAt: null },
   });
   for (const grant of pending) {
-    if (grant.product !== "headliner" && grant.product !== "course" && grant.product !== "ash" && grant.product !== "cohort") {
-      continue;
-    }
+    const product =
+      grant.product === "course" || grant.product === "ash"
+        ? "program"
+        : grant.product === "headliner" || grant.product === "program" || grant.product === "cohort"
+          ? grant.product
+          : null;
+    if (!product) continue;
     await grantEntitlement({
       userId: user.id,
-      product: grant.product,
+      product,
       courseId: grant.courseId,
       cohortId: grant.cohortId,
       source: grant.source,

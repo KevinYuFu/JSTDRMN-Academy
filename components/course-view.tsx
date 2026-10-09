@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { completeLesson, postComment } from "@/app/actions";
-import { applyLink, formatCad, prices } from "@/lib/config";
+import { formatCad, hubspotApplyUrl, prices, programPriceLabel } from "@/lib/config";
 import type { openCourse } from "@/lib/learn";
 import { isStaff } from "@/lib/entitlements";
 import { Button } from "./ui/button";
@@ -31,39 +31,32 @@ function upsellCopy(data: CourseData) {
     return {
       kicker: "Outside Headliner",
       title: "Not in the Headliner set",
-      body: "Headliner unlocks a subset of the tutorial library. This tape stays locked, and buying a single course does not open it.",
-      cta: "See pricing",
-      href: "/#pricing",
+      body: "This lesson sits outside the Headliner set. Another program does not open it.",
+      cta: "See programs",
+      href: "/",
       external: false,
     };
   }
   if (data.course.access === "headliner") {
     return {
       kicker: reason === "expired" || reason === "revoked" ? "Membership inactive" : "Headliner",
-      title: reason === "missing" ? "This tutorial is in Headliner" : "Your Headliner membership isn’t active",
-      body: "Headliner is the monthly membership for a subset of the booth videos. It does not include full courses, Ash F, or a bootcamp seat.",
+      title: reason === "missing" ? "This lesson is in Headliner" : "Your Headliner membership isn’t active",
+      body: "Headliner is one subscription. Access stays while you keep paying. It does not include other programs or a bootcamp seat.",
       cta: `Subscribe · ${formatCad(prices.headlinerMonthlyCents, "month")}`,
       href: "/checkout?product=headliner",
       external: false,
     };
   }
-  if (data.course.access === "purchase") {
+  if (data.course.access === "purchase" || data.course.access === "subscription") {
+    const price = programPriceLabel(data.course);
+    const monthly = data.course.billing === "monthly";
+    const who = data.course.presenter ? `${data.course.presenter} presents ${data.course.title}` : data.course.title;
     return {
-      kicker: "Single course",
-      title: `Unlock ${data.course.title}`,
-      body: `${data.course.description} One payment, ${formatCad(prices.courseCents)} CAD, and it stays on your account.`,
-      cta: `Buy · ${formatCad(prices.courseCents)}`,
-      href: `/checkout?product=course&slug=${data.course.slug}`,
-      external: false,
-    };
-  }
-  if (data.course.access === "ash_subscription") {
-    return {
-      kicker: "Ash F add-on",
-      title: data.course.title,
-      body: `A separate ${formatCad(prices.ashMonthlyCents, "month")} subscription hosted by Ash F. Headliner does not include it.`,
-      cta: `Subscribe · ${formatCad(prices.ashMonthlyCents, "month")}`,
-      href: `/checkout?product=ash&slug=${data.course.slug}`,
+      kicker: data.course.statusLabel,
+      title: data.course.special ? who : `Unlock ${data.course.title}`,
+      body: data.course.description,
+      cta: price ? `${monthly ? "Subscribe" : "Buy"} · ${price}` : monthly ? "Subscribe" : "Buy",
+      href: `/checkout?product=program&slug=${data.course.slug}`,
       external: false,
     };
   }
@@ -71,8 +64,8 @@ function upsellCopy(data: CourseData) {
     kicker: data.course.statusLabel,
     title,
     body: `${data.course.description} Seats are granted after you apply and are accepted. Another cohort’s login will not open this portal.`,
-    cta: "Get Info",
-    href: applyLink(data.course.slug),
+    cta: "Apply",
+    href: hubspotApplyUrl(data.course.hubspotUrl),
     external: true,
   };
 }

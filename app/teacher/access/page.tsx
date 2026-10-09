@@ -26,8 +26,9 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   ]);
   const targets = [
     ...courses.filter((course) => course.access === "headliner").map((course) => ({ value: "headliner", label: `${course.title} membership` })),
-    ...courses.filter((course) => course.access === "purchase").map((course) => ({ value: `course:${course.id}`, label: course.title })),
-    ...courses.filter((course) => course.access === "ash_subscription").map((course) => ({ value: `ash:${course.id}`, label: course.title })),
+    ...courses
+      .filter((course) => course.access === "purchase" || course.access === "subscription")
+      .map((course) => ({ value: `program:${course.id}`, label: course.title })),
     ...cohorts.map((cohort) => ({ value: `cohort:${cohort.id}:${cohort.courseId}`, label: `${cohort.course.title} · ${cohort.name}` })),
   ];
   const banner = query.granted ? "Access granted." : query.pending ? "No account yet. The seat waits until they sign up with that email." : query.revoked ? "Access revoked." : null;

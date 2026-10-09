@@ -1,7 +1,19 @@
+import { createHash } from "crypto";
+
 export type ResolvedVideo =
   | { type: "mock"; src: string }
   | { type: "iframe"; src: string }
   | { type: "file"; src: string };
+
+/** Providers the lesson form and the player both read. Adding one is a row here plus a branch in resolveVideo. */
+export const videoProviders = [
+  { id: "mock", label: "Mock player" },
+  { id: "youtube", label: "YouTube URL" },
+  { id: "vimeo", label: "Vimeo URL" },
+  { id: "vimeo_private", label: "Vimeo (private, domain-restricted)" },
+  { id: "bunny", label: "Bunny Stream" },
+  { id: "file", label: "File URL" },
+] as const;
 
 export function youtubeId(url: string): string | null {
   const trimmed = url.trim();
@@ -39,19 +51,59 @@ export function vimeoId(url: string): string | null {
   } catch {
     return null;
   }
+  return null;
 }
 
-/** Video storage stays behind this switch so a DRM host can replace it later. */
-export function resolveVideo(provider: string, url: string): ResolvedVideo {
+export function bunnyVideoId(url: string): string | null {
+  const trimmed = url.trim();
+  if (/^[A-Za-z0-9-]{8,}$/.test(trimmed)) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    const last = parsed.pathname.split("/").filter(Boolean).pop();
+    return last && /^[A-Za-z0-9-]{8,}$/.test(last) ? last : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Bunny Stream token auth: SHA256 hex of securityKey + videoId + expiration (unix seconds). */
+export function bunnyToken(securityKey: string, videoId: string, expires: number) {
+  return createHash("sha256").update(`${securityKey}${videoId}${expires}`).digest("hex");
+}
+
+function bunnyEmbed(url: string, nowMs: number): ResolvedVideo {
+  const videoId = bunnyVideoId(url);
+  if (!videoId) return { type: "mock", src: url };
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID?.trim();
+  const key = process.env.BUNNY_STREAM_TOKEN_KEY?.trim();
+  const library = libraryId || "library";
+  if (!libraryId || !key) {
+    return { type: "iframe", src: `https://iframe.mediadelivery.net/embed/${library}/${encodeURIComponent(videoId)}` };
+  }
+  const expires = Math.floor(nowMs / 1000) + 60 * 60;
+  const token = bunnyToken(key, videoId, expires);
+  return {
+    type: "iframe",
+    src: `https://iframe.mediadelivery.net/embed/${libraryId}/${encodeURIComponent(videoId)}?token=${token}&expires=${expires}`,
+  };
+}
+
+/**
+ * Video storage stays behind this switch.
+ * vimeo_private uses the same player URL as vimeo. Privacy is a Vimeo domain restriction, not a secret in the URL.
+ * bunny signs the embed only when BUNNY_STREAM_LIBRARY_ID and BUNNY_STREAM_TOKEN_KEY are set.
+ */
+export function resolveVideo(provider: string, url: string, nowMs = Date.now()): ResolvedVideo {
   if (provider === "file") return { type: "file", src: url };
   if (provider === "youtube") {
     const id = youtubeId(url);
     return id ? { type: "iframe", src: `https://www.youtube.com/embed/${id}` } : { type: "mock", src: url };
   }
-  if (provider === "vimeo") {
+  if (provider === "vimeo" || provider === "vimeo_private") {
     const id = vimeoId(url);
     return id ? { type: "iframe", src: `https://player.vimeo.com/video/${id}` } : { type: "mock", src: url };
   }
+  if (provider === "bunny") return bunnyEmbed(url, nowMs);
   return { type: "mock", src: url };
 }
 

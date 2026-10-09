@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { videoProviders } from "@/lib/video";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,8 @@ export default async function EditorPage({
     where: { slug },
     include: {
       cohorts: { orderBy: { sort: "asc" } },
-      lessons: { orderBy: { position: "asc" }, include: { cohort: true } },
+      tracks: { orderBy: { position: "asc" } },
+      lessons: { orderBy: { position: "asc" }, include: { cohort: true, track: true } },
     },
   });
   if (!course) notFound();
@@ -51,6 +53,7 @@ export default async function EditorPage({
                   </b>
                   <div className="note">
                     {lesson.cohort ? `${lesson.cohort.name} · ` : ""}
+                    {lesson.track ? `${lesson.track.title} · ` : ""}
                     {lesson.videoProvider} · {lesson.runtimeLabel}
                     {lesson.headliner ? " · Headliner" : ""}
                     {lesson.drip ? " · dripped" : ""}
@@ -76,6 +79,17 @@ export default async function EditorPage({
                 </select>
               </>
             ) : null}
+            {course.tracks.length > 0 ? (
+              <>
+                <Label htmlFor="trackId">Track</Label>
+                <select id="trackId" name="trackId" className="h-11 rounded-[25px] border border-white/15 bg-[#121212] px-4" defaultValue="">
+                  <option value="">No track</option>
+                  {course.tracks.map((track) => (
+                    <option key={track.id} value={track.id}>{track.title}</option>
+                  ))}
+                </select>
+              </>
+            ) : null}
             <Label htmlFor="title">Title</Label>
             <Input id="title" name="title" required />
             <Label htmlFor="summary">Handout notes</Label>
@@ -84,10 +98,9 @@ export default async function EditorPage({
             <Input id="durationMin" name="durationMin" type="number" min={1} max={300} required />
             <Label htmlFor="videoProvider">Video source</Label>
             <select id="videoProvider" name="videoProvider" className="h-11 rounded-[25px] border border-white/15 bg-[#121212] px-4" defaultValue="mock">
-              <option value="mock">Mock player</option>
-              <option value="youtube">YouTube URL</option>
-              <option value="vimeo">Vimeo URL</option>
-              <option value="file">File URL</option>
+              {videoProviders.map((provider) => (
+                <option key={provider.id} value={provider.id}>{provider.label}</option>
+              ))}
             </select>
             <Label htmlFor="videoUrl">Video URL</Label>
             <Input id="videoUrl" name="videoUrl" placeholder="https://youtu.be/… or mock://lesson" required />

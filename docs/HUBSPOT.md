@@ -14,7 +14,7 @@ The useful signal is later: a deal moves to a won/accepted stage, or a contact p
 
 ### (a) Links back and forth
 
-The Academy page on jstdrmn.com links to this app’s signup. “Get Info” on a bootcamp links back to the existing HubSpot page or form. After Yu accepts someone, Yu types their email on **Grant or revoke** and picks the cohort.
+The Academy page on jstdrmn.com links to this app’s signup. Learn More on a bootcamp opens its program page, and Apply goes to the HubSpot URL stored on that program. After Yu accepts someone, Yu types their email on **Grant or revoke** and picks the cohort.
 
 Nothing to break, no token, no extra HubSpot subscription. The miss is human: a student pays, and the portal stays locked until someone remembers.
 

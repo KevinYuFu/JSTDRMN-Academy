@@ -14,7 +14,8 @@ export default async function MockCheckoutPage({ params }: { params: Promise<{ i
   const checkout = await prisma.checkout.findUnique({ where: { id } });
   if (!checkout || checkout.userId !== user.id) notFound();
   if (checkout.status === "paid") redirect("/dashboard");
-  const cadence = checkout.product === "course" ? "once" : "month";
+  const course = checkout.courseId ? await prisma.course.findUnique({ where: { id: checkout.courseId } }) : null;
+  const cadence = course?.billing === "once" ? "once" : "month";
   return (
     <>
       <AppHeader active="courses" />

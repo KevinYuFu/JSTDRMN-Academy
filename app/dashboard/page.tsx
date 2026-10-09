@@ -1,17 +1,12 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { requireUser } from "@/lib/auth";
-import { formatCad, prices } from "@/lib/config";
+import { programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { containerAccess, isStaff, type CourseAccess } from "@/lib/entitlements";
+import { asCourseAccess, containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
 export const dynamic = "force-dynamic";
-
-function asAccess(value: string): CourseAccess {
-  if (value === "headliner" || value === "purchase" || value === "ash_subscription" || value === "cohort") return value;
-  return "purchase";
-}
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -41,28 +36,24 @@ export default async function DashboardPage() {
     if (course.access !== "cohort") {
       const decision = containerAccess({
         role: user.role,
-        access: asAccess(course.access),
+        access: asCourseAccess(course.access),
         courseId: course.id,
         cohortId: null,
         entitlements: records,
       });
       const relevant = course.lessons.filter((lesson) => course.access !== "headliner" || lesson.headliner || isStaff(user.role));
       const completed = relevant.filter((lesson) => done.has(lesson.id)).length;
-      const price =
-        course.access === "headliner"
-          ? formatCad(prices.headlinerMonthlyCents, "month")
-          : course.access === "ash_subscription"
-            ? formatCad(prices.ashMonthlyCents, "month")
-            : formatCad(prices.courseCents);
+      const price = programPriceLabel(course);
+      const player = course.access === "headliner" ? "/headliner" : relevant.length > 0 ? `/courses/${course.slug}` : `/programs/${course.slug}`;
       cards.push({
         key: course.id,
         title: course.title,
         kicker: course.statusLabel,
         body: course.tagline,
-        href: decision.allowed ? `/courses/${course.slug}` : `/courses/${course.slug}`,
+        href: decision.allowed ? player : course.access === "headliner" ? "/headliner" : `/programs/${course.slug}`,
         allowed: decision.allowed,
         panel: course.panel,
-        meta: decision.allowed ? `${completed} of ${relevant.length} lessons` : price,
+        meta: decision.allowed ? `${completed} of ${relevant.length} lessons` : price ?? course.statusLabel,
       });
       continue;
     }
@@ -94,7 +85,7 @@ export default async function DashboardPage() {
         title: course.title,
         kicker: `${cohort.name} · ${cohort.startsLabel}`,
         body: course.tagline,
-        href: decision.allowed ? `/bootcamps/${course.slug}/${cohort.slug}` : `/bootcamps/${course.slug}`,
+        href: decision.allowed ? `/bootcamps/${course.slug}/${cohort.slug}` : `/programs/${course.slug}`,
         allowed: decision.allowed,
         panel: course.panel,
         meta: decision.allowed ? `${completed} of ${lessons.length} lessons` : "Cohort seat",

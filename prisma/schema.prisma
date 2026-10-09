@@ -13,17 +13,20 @@ model Meta {
 }
 
 model User {
-  id           String        @id
-  email        String        @unique
-  name         String
-  passwordHash String
-  role         String
-  createdAt    DateTime      @default(now())
-  sessions     Session[]
-  entitlements Entitlement[]
-  progress     Progress[]
-  comments     Comment[]
-  checkouts    Checkout[]
+  id                 String              @id
+  email              String              @unique
+  name               String
+  passwordHash       String
+  role               String
+  discordId          String?
+  createdAt          DateTime            @default(now())
+  sessions           Session[]
+  entitlements       Entitlement[]
+  progress           Progress[]
+  comments           Comment[]
+  checkouts          Checkout[]
+  submissions        Submission[]
+  submissionComments SubmissionComment[]
 }
 
 model Session {
@@ -49,9 +52,30 @@ model Course {
   hubspotUrl   String?
   panel        String
   sort         Int           @default(0)
+  /// banner = the Headliner strip. grid = a card. Anything else stays off the public page.
+  placement    String        @default("grid")
+  special      Boolean       @default(false)
+  presenter    String?
   lessons      Lesson[]
   cohorts      Cohort[]
+  tracks       Track[]
   entitlements Entitlement[]
+}
+
+model Track {
+  id       String   @id
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parentId String?
+  parent   Track?   @relation("TrackTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Track[]  @relation("TrackTree")
+  slug     String
+  title    String
+  blurb    String
+  position Int      @default(0)
+  lessons  Lesson[]
+
+  @@unique([courseId, slug])
 }
 
 model Cohort {
@@ -72,6 +96,8 @@ model Lesson {
   course        Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   cohortId      String?
   cohort        Cohort?    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  trackId       String?
+  track         Track?     @relation(fields: [trackId], references: [id], onDelete: SetNull)
   position      Int
   title         String
   summary       String
@@ -127,6 +153,28 @@ model Comment {
   replies   Comment[] @relation("Thread")
   body      String
   createdAt DateTime  @default(now())
+}
+
+model Submission {
+  id        String              @id
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  url       String
+  kind      String
+  notes     String              @default("")
+  createdAt DateTime            @default(now())
+  comments  SubmissionComment[]
+}
+
+model SubmissionComment {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body         String
+  createdAt    DateTime   @default(now())
 }
 
 model Checkout {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getUser } from "@/lib/auth";
-import { applyLink } from "@/lib/config";
+import { hubspotApplyUrl } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { containerAccess } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
@@ -30,6 +30,7 @@ export default async function BootcampPage({
   const user = await getUser();
   const records = user ? await entitlementRecords(user.id) : [];
   const role = user?.role ?? "student";
+  const applyHref = hubspotApplyUrl(course.hubspotUrl);
   const open = course.cohorts.filter(
     (cohort) =>
       containerAccess({
@@ -59,7 +60,7 @@ export default async function BootcampPage({
           {course.cohorts.map((cohort) => {
             const allowed = open.some((item) => item.id === cohort.id);
             return (
-              <Link key={cohort.id} href={allowed ? `/bootcamps/${course.slug}/${cohort.slug}` : applyLink(course.slug)} className={`shelf-card panel-${course.panel}`}>
+              <Link key={cohort.id} href={allowed ? `/bootcamps/${course.slug}/${cohort.slug}` : applyHref} className={`shelf-card panel-${course.panel}`}>
                 <div className="kicker">{allowed ? "Your portal" : course.statusLabel}</div>
                 <h3>{cohort.name}</h3>
                 <p>{cohort.startsLabel}</p>
@@ -68,7 +69,7 @@ export default async function BootcampPage({
             );
           })}
           {course.cohorts.length === 0 ? (
-            <a className={`shelf-card panel-${course.panel}`} href={applyLink(course.slug)} target="_blank" rel="noreferrer">
+            <a className={`shelf-card panel-${course.panel}`} href={applyHref} target="_blank" rel="noreferrer">
               <div className="kicker">{course.statusLabel}</div>
               <h3>{course.title}</h3>
               <p>No cohort portal is open yet. Applications stay on the JSTDRMN site.</p>
@@ -77,7 +78,7 @@ export default async function BootcampPage({
         </div>
         {!open.length ? (
           <p style={{ marginTop: 18 }}>
-            <a className="pill pill-purple" href={applyLink(course.slug)} target="_blank" rel="noreferrer">Get Info</a>
+            <a className="pill pill-purple" href={applyHref} target="_blank" rel="noreferrer">Apply</a>
           </p>
         ) : null}
         {user && (user.role === "teacher" || user.role === "admin") ? (

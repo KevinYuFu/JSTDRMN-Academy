@@ -2,7 +2,7 @@ import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const SEED_VERSION = "1";
+const SEED_VERSION = "2";
 
 async function main() {
   const existing = await prisma.meta.findUnique({ where: { key: "seed" } });
@@ -12,6 +12,8 @@ async function main() {
   }
 
   await prisma.$transaction([
+    prisma.submissionComment.deleteMany(),
+    prisma.submission.deleteMany(),
     prisma.comment.deleteMany(),
     prisma.progress.deleteMany(),
     prisma.checkout.deleteMany(),
@@ -19,6 +21,8 @@ async function main() {
     prisma.pendingGrant.deleteMany(),
     prisma.hubspotLog.deleteMany(),
     prisma.lesson.deleteMany(),
+    prisma.track.updateMany({ data: { parentId: null } }),
+    prisma.track.deleteMany(),
     prisma.cohort.deleteMany(),
     prisma.course.deleteMany(),
     prisma.session.deleteMany(),
@@ -43,53 +47,63 @@ async function main() {
   await prisma.course.createMany({
     data: [
       {
-        id: "crs_tutorials",
-        slug: "tutorials",
-        title: "Headliner Tutorials",
-        tagline: "Booth videos on rotation",
-        description: "A subset of the existing tutorial library. Headliner unlocks the marked lessons. The rest stay outside the membership.",
-        kind: "tutorial_library",
+        id: "crs_headliner",
+        slug: "headliner",
+        title: "Headliner",
+        tagline: "One subscription. You keep access for as long as you keep paying.",
+        description:
+          "The academy path: a welcome, an introduction to EDM, and the progression tree into branding, DJing, producing, and mashups.",
+        kind: "membership",
         access: "headliner",
         priceCents: null,
         billing: "monthly",
         statusLabel: "Membership",
         panel: "purple",
         sort: 0,
+        placement: "banner",
+        special: false,
       },
       {
         id: "crs_mixing",
         slug: "club-mixing",
         title: "Foundations of Club Mixing",
-        tagline: "One course, yours to keep",
-        description: "Signal flow, EQ, phrasing, and a 45-minute open. A one-time purchase. It does not include Headliner or a bootcamp seat.",
+        tagline: "Signal flow, EQ, phrasing, and a 45-minute open.",
+        description:
+          "Signal flow, EQ, phrasing, and a 45-minute open. A one-time purchase. It does not include Headliner or a bootcamp seat.",
         kind: "course",
         access: "purchase",
         priceCents: 5000,
         billing: "once",
-        statusLabel: "One-time",
+        statusLabel: "Open",
         panel: "studio",
         sort: 1,
+        placement: "grid",
+        special: false,
       },
       {
-        id: "crs_ash",
-        slug: "ash-f-b2b",
-        title: "Ash F: The Business of the Dancefloor",
-        tagline: "Guest series with Ash F",
-        description: "Bookings, rates, and playing back-to-back. A separate $50/month add-on hosted by Ash F. Headliner does not include it.",
-        kind: "subscription_course",
-        access: "ash_subscription",
+        id: "crs_fb2b",
+        slug: "fb2b",
+        title: "FB2B",
+        tagline: "From Bedroom to Banger.",
+        description: "Lessons for this program will be added here.",
+        kind: "program",
+        access: "subscription",
         priceCents: 5000,
         billing: "monthly",
-        statusLabel: "Add-on",
+        statusLabel: "Special offering",
         panel: "ash",
         sort: 2,
+        placement: "grid",
+        special: true,
+        presenter: "Ash F",
       },
       {
         id: "crs_dj",
         slug: "dj-bootcamp",
         title: "DJ Bootcamp",
-        tagline: "Waitlist Open",
-        description: "Master the decks and take your mixing skills to the next level! Learn, practice, and unleash your sound with guidance from industry pros.",
+        tagline: "Master the decks and take your mixing skills to the next level.",
+        description:
+          "Master the decks and take your mixing skills to the next level! Learn, practice, and unleash your sound with guidance from industry pros.",
         kind: "bootcamp",
         access: "cohort",
         priceCents: null,
@@ -98,12 +112,14 @@ async function main() {
         hubspotUrl: "https://www.jstdrmn.com/bootcamp",
         panel: "decks",
         sort: 3,
+        placement: "grid",
+        special: false,
       },
       {
         id: "crs_prod",
         slug: "production-bootcamp",
         title: "Production Bootcamp",
-        tagline: "Waitlist Open",
+        tagline: "Turn your ideas into tracks that hit.",
         description: "Turn your ideas into tracks that hit! Get hands-on with production tools and techniques to bring your music to life.",
         kind: "bootcamp",
         access: "cohort",
@@ -113,12 +129,14 @@ async function main() {
         hubspotUrl: "https://www.jstdrmn.com/bootcamp",
         panel: "studio",
         sort: 4,
+        placement: "grid",
+        special: false,
       },
       {
         id: "crs_mash",
         slug: "mashup-bootcamp",
         title: "Mashup Bootcamp",
-        tagline: "Applications Open",
+        tagline: "Produce professional mashups in Ableton Live.",
         description: "Ready to take your DJ career to the next level? Learn to produce professional mashups in Ableton Live.",
         kind: "bootcamp",
         access: "cohort",
@@ -128,7 +146,23 @@ async function main() {
         hubspotUrl: "https://www.jstdrmn.com/bootcamp",
         panel: "stripes",
         sort: 5,
+        placement: "grid",
+        special: false,
       },
+    ],
+  });
+
+  await prisma.track.createMany({
+    data: [
+      { id: "trk_welcome", courseId: "crs_headliner", parentId: null, slug: "welcome", title: "Welcome to JSTDRMN Academy", blurb: "How the academy works and where to start.", position: 1 },
+      { id: "trk_intro", courseId: "crs_headliner", parentId: "trk_welcome", slug: "introduction-to-edm", title: "Introduction to EDM", blurb: "The sounds, rooms, and roles this academy is built around.", position: 1 },
+      { id: "trk_tree", courseId: "crs_headliner", parentId: "trk_intro", slug: "progression-tree", title: "The Progression Tree", blurb: "How you grow here, and the path we recommend through the tiers.", position: 1 },
+      { id: "trk_brand", courseId: "crs_headliner", parentId: "trk_tree", slug: "branding", title: "Branding", blurb: "The name, look, and story people recognize before the first track.", position: 1 },
+      { id: "trk_dj", courseId: "crs_headliner", parentId: "trk_tree", slug: "djing", title: "DJing", blurb: "Booth craft for playing the room.", position: 2 },
+      { id: "trk_prod", courseId: "crs_headliner", parentId: "trk_tree", slug: "producing", title: "Producing", blurb: "Writing tracks, split into beginner and advanced.", position: 3 },
+      { id: "trk_begin", courseId: "crs_headliner", parentId: "trk_prod", slug: "beginner-production", title: "Beginner Production", blurb: "A first sketch: arrangement and drums.", position: 1 },
+      { id: "trk_adv", courseId: "crs_headliner", parentId: "trk_prod", slug: "advanced-production", title: "Advanced Production", blurb: "Sound design and arrangements that hold up in a club.", position: 2 },
+      { id: "trk_mash", courseId: "crs_headliner", parentId: "trk_tree", slug: "mashups-remixes", title: "Mashups & Remixes", blurb: "Reworking records without losing what made people move.", position: 4 },
     ],
   });
 
@@ -143,6 +177,7 @@ async function main() {
     id: string,
     courseId: string,
     cohortId: string | null,
+    trackId: string | null,
     position: number,
     title: string,
     summary: string,
@@ -153,6 +188,7 @@ async function main() {
     id,
     courseId,
     cohortId,
+    trackId,
     position,
     title,
     summary,
@@ -160,53 +196,53 @@ async function main() {
     runtimeLabel,
     videoProvider: "mock",
     videoUrl: `mock://${id}`,
-    slidesTitle: extra.slidesTitle ?? `Slides: ${title}`,
-    slidesMeta: extra.slidesMeta ?? "PDF · lesson handout",
+    slidesTitle: extra.slidesTitle ?? null,
+    slidesMeta: extra.slidesMeta ?? null,
     headliner: extra.headliner ?? false,
     drip: extra.drip ?? false,
   });
 
   await prisma.lesson.createMany({
     data: [
-      lesson("les_gain", "crs_tutorials", null, 1, "Gain Staging for the Club", "Set the channel fader at unity before you touch the trim.\nIf the booth is already hot, pull the master, not the track.", 14, "14:10", { headliner: true, slidesMeta: "PDF · 10 slides · 1.4 MB" }),
-      lesson("les_headphones", "crs_tutorials", null, 2, "Mixing in Headphones", "Cue at a level you can still hear the room under.\nMatch kicks in the phones, then confirm on the floor for one phrase.", 15, "15:00", { headliner: true }),
-      lesson("les_crowd", "crs_tutorials", null, 3, "Reading a Friday Crowd", "Watch the bar line and the edges of the dancefloor, not your screen.\nIf the hands drop on the breakdown, you went too deep too early.", 18, "18:05", { headliner: true }),
-      lesson("les_harmonic", "crs_tutorials", null, 4, "Harmonic Mixing Without a Key Detector", "This tape sits outside Headliner.\nUse your ear on the bass notes, then check the vocal clash in headphones.", 22, "22:18"),
-      lesson("les_record", "crs_tutorials", null, 5, "Recording a Set for SoundCloud", "This tape sits outside Headliner.\nRecord the booth feed, not the phone mic, and leave the first minute in.", 16, "16:40"),
-      lesson("les_signal", "crs_mixing", null, 1, "The Signal Chain", "Deck, mixer, booth, PA. Name every knob you can touch before the doors open.", 16, "16:12", { slidesMeta: "PDF · 14 slides · 2.1 MB" }),
-      lesson("les_eqmix", "crs_mixing", null, 2, "EQ That Doesn't Kill the Kick", "Swap bass, don't stack it. The incoming kick earns the low end over four bars.", 19, "19:04"),
-      lesson("les_phrase", "crs_mixing", null, 3, "Phrase Mixing", "Count 8, 16, 32. If you can't sing the phrase, you aren't ready to blend it.", 17, "17:30"),
-      lesson("les_open", "crs_mixing", null, 4, "Building a 45-Minute Open", "Start where the room is, not where you want it. Save the anthem for someone else's peak.", 21, "21:15"),
-      lesson("les_close", "crs_mixing", null, 5, "Closing a Room", "Bring the energy down without emptying the floor. Last track, lights up, no encore surprise.", 12, "12:48"),
-      lesson("les_booked", "crs_ash", null, 1, "Why Promoters Book You Twice", "Ash F on the difference between a good set and a DJ they text again on Monday.", 20, "20:11", { slidesMeta: "PDF · 16 slides · 2.4 MB" }),
-      lesson("les_rates", "crs_ash", null, 2, "Rates, Riders, and the Awkward Email", "Write the number once. Say what it includes. Don't negotiate against yourself in the same thread.", 18, "18:22"),
-      lesson("les_content", "crs_ash", null, 3, "Content That Fills a Room", "Film the room, not your jog wheel. Post the moment people already felt.", 15, "15:36"),
-      lesson("les_b2b", "crs_ash", null, 4, "Playing B2B Without Stepping on the Other DJ", "Agree the handoff before you get on. One of you talks to the booth, not both.", 24, "24:02"),
-      lesson("les_decks", "crs_dj", "coh_dj6", 1, "Meet the Decks", "Power, needles or CDJs, and the mixer you will actually use this cohort.", 12, "12:00", { slidesMeta: "PDF · 18 slides · 2.8 MB" }),
-      lesson("les_phrasing", "crs_dj", "coh_dj6", 2, "Phrasing & Song Structure", "Find the 1. Mark the chorus. Know when the kick comes back.", 15, "15:00"),
-      lesson("les_beat", "crs_dj", "coh_dj6", 3, "Beatmatching", "Pitch fader for the big move. Platter for the last few percent.\nStay inside six percent or drop a fresh cue.\nMatch the kick before you touch the EQ.", 19, "18:42", { slidesTitle: "Slides: Beatmatching by Ear", slidesMeta: "PDF · 24 slides · 3.2 MB" }),
-      lesson("les_eqtrans", "crs_dj", "coh_dj6", 4, "EQ & Transitions", "Bass swap, then mids if the vocals fight. Leave the highs alone until the phrase ends.", 21, "21:00"),
-      lesson("les_fx", "crs_dj", "coh_dj6", 5, "Effects & Loops", "A loop is a tool, not a personality. Filter sweeps once a night, not once a track.", 17, "17:00"),
-      lesson("les_set", "crs_dj", "coh_dj6", 6, "Building Your First Set", "Sequence an opening hour from the tracks you already have. This one waits until the earlier lessons are done.", 25, "25:00", { drip: true, slidesMeta: "PDF · 20 slides · 2.6 MB" }),
-      lesson("les_c5_setup", "crs_dj", "coh_dj5", 1, "Deck Setup in a Cold Room", "Cohort 5 archive. Warm the gear, check the booth polarity, then play.", 13, "13:20"),
-      lesson("les_c5_cdj", "crs_dj", "coh_dj5", 2, "Beatmatching on CDJs", "Same ear, different platters. Jog sensitivity is not a moral failing.", 18, "18:10"),
-      lesson("les_c5_loud", "crs_dj", "coh_dj5", 3, "EQ in a Loud Room", "If you can't hear the bass clash, trust the meters and a short headphone check.", 16, "16:44"),
-      lesson("les_c5_open", "crs_dj", "coh_dj5", 4, "Your First Opening Set", "Cohort 5's closing assignment. Keep it under an hour.", 11, "11:05"),
+      lesson("les_welcome", "crs_headliner", null, "trk_welcome", 1, "Welcome to JSTDRMN Academy", "How the academy works and where to start.", 8, "08:00", { headliner: true, slidesTitle: "Slides: Welcome to JSTDRMN Academy", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_intro", "crs_headliner", null, "trk_intro", 2, "Introduction to EDM", "The sounds, rooms, and roles this academy is built around.", 12, "12:00", { headliner: true }),
+      lesson("les_tree", "crs_headliner", null, "trk_tree", 3, "The Progression Tree", "How you grow here, and the path we recommend through the tiers.", 10, "10:00", { headliner: true }),
+      lesson("les_brand", "crs_headliner", null, "trk_brand", 4, "Branding", "The name, look, and story people recognize before the first track.", 14, "14:00", { headliner: true }),
+      lesson("les_djing", "crs_headliner", null, "trk_dj", 5, "DJing", "Booth craft for playing the room.", 16, "16:00", { headliner: true }),
+      lesson("les_producing", "crs_headliner", null, "trk_prod", 6, "Producing", "Writing tracks, split into beginner and advanced.", 11, "11:00", { headliner: true }),
+      lesson("les_begin", "crs_headliner", null, "trk_begin", 7, "Beginner Production", "A first sketch: arrangement and drums.", 18, "18:00", { headliner: true }),
+      lesson("les_advanced", "crs_headliner", null, "trk_adv", 8, "Advanced Production", "Sound design and arrangements that hold up in a club.", 20, "20:00", { headliner: true }),
+      lesson("les_mashups", "crs_headliner", null, "trk_mash", 9, "Mashups & Remixes", "Reworking records without losing what made people move.", 15, "15:00", { headliner: true }),
+      lesson("les_signal", "crs_mixing", null, null, 1, "The Signal Chain", "Deck, mixer, booth, PA. Name every knob you can touch before the doors open.", 16, "16:12", { slidesTitle: "Slides: The Signal Chain", slidesMeta: "PDF · 14 slides · 2.1 MB" }),
+      lesson("les_eqmix", "crs_mixing", null, null, 2, "EQ That Doesn't Kill the Kick", "Swap bass, don't stack it. The incoming kick earns the low end over four bars.", 19, "19:04", { slidesTitle: "Slides: EQ That Doesn't Kill the Kick", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_phrase", "crs_mixing", null, null, 3, "Phrase Mixing", "Count 8, 16, 32. If you can't sing the phrase, you aren't ready to blend it.", 17, "17:30", { slidesTitle: "Slides: Phrase Mixing", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_open", "crs_mixing", null, null, 4, "Building a 45-Minute Open", "Start where the room is, not where you want it. Save the anthem for someone else's peak.", 21, "21:15", { slidesTitle: "Slides: Building a 45-Minute Open", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_close", "crs_mixing", null, null, 5, "Closing a Room", "Bring the energy down without emptying the floor. Last track, lights up, no encore surprise.", 12, "12:48", { slidesTitle: "Slides: Closing a Room", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_decks", "crs_dj", "coh_dj6", null, 1, "Meet the Decks", "Power, needles or CDJs, and the mixer you will actually use this cohort.", 12, "12:00", { slidesTitle: "Slides: Meet the Decks", slidesMeta: "PDF · 18 slides · 2.8 MB" }),
+      lesson("les_phrasing", "crs_dj", "coh_dj6", null, 2, "Phrasing & Song Structure", "Find the 1. Mark the chorus. Know when the kick comes back.", 15, "15:00", { slidesTitle: "Slides: Phrasing & Song Structure", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_beat", "crs_dj", "coh_dj6", null, 3, "Beatmatching", "Pitch fader for the big move. Platter for the last few percent.\nStay inside six percent or drop a fresh cue.\nMatch the kick before you touch the EQ.", 19, "18:42", { slidesTitle: "Slides: Beatmatching by Ear", slidesMeta: "PDF · 24 slides · 3.2 MB" }),
+      lesson("les_eqtrans", "crs_dj", "coh_dj6", null, 4, "EQ & Transitions", "Bass swap, then mids if the vocals fight. Leave the highs alone until the phrase ends.", 21, "21:00", { slidesTitle: "Slides: EQ & Transitions", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_fx", "crs_dj", "coh_dj6", null, 5, "Effects & Loops", "A loop is a tool, not a personality. Filter sweeps once a night, not once a track.", 17, "17:00", { slidesTitle: "Slides: Effects & Loops", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_set", "crs_dj", "coh_dj6", null, 6, "Building Your First Set", "Sequence an opening hour from the tracks you already have. This one waits until the earlier lessons are done.", 25, "25:00", { drip: true, slidesTitle: "Slides: Building Your First Set", slidesMeta: "PDF · 20 slides · 2.6 MB" }),
+      lesson("les_c5_setup", "crs_dj", "coh_dj5", null, 1, "Deck Setup in a Cold Room", "Cohort 5 archive. Warm the gear, check the booth polarity, then play.", 13, "13:20", { slidesTitle: "Slides: Deck Setup in a Cold Room", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_c5_cdj", "crs_dj", "coh_dj5", null, 2, "Beatmatching on CDJs", "Same ear, different platters. Jog sensitivity is not a moral failing.", 18, "18:10", { slidesTitle: "Slides: Beatmatching on CDJs", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_c5_loud", "crs_dj", "coh_dj5", null, 3, "EQ in a Loud Room", "If you can't hear the bass clash, trust the meters and a short headphone check.", 16, "16:44", { slidesTitle: "Slides: EQ in a Loud Room", slidesMeta: "PDF · lesson handout" }),
+      lesson("les_c5_open", "crs_dj", "coh_dj5", null, 4, "Your First Opening Set", "Cohort 5's closing assignment. Keep it under an hour.", 11, "11:05", { slidesTitle: "Slides: Your First Opening Set", slidesMeta: "PDF · lesson handout" }),
     ],
   });
 
   await prisma.entitlement.createMany({
     data: [
       { userId: "usr_maya", product: "headliner", status: "active", source: "seed" },
-      { userId: "usr_jordan", product: "course", courseId: "crs_mixing", status: "active", source: "seed" },
+      { userId: "usr_jordan", product: "program", courseId: "crs_mixing", status: "active", source: "seed" },
       { userId: "usr_jordan", product: "cohort", courseId: "crs_dj", cohortId: "coh_dj6", status: "active", source: "seed" },
     ],
   });
 
   await prisma.progress.createMany({
     data: [
-      { userId: "usr_maya", lessonId: "les_gain", status: "completed" },
-      { userId: "usr_maya", lessonId: "les_headphones", status: "in_progress" },
+      { userId: "usr_maya", lessonId: "les_welcome", status: "completed" },
+      { userId: "usr_maya", lessonId: "les_intro", status: "in_progress" },
       { userId: "usr_jordan", lessonId: "les_decks", status: "completed" },
       { userId: "usr_jordan", lessonId: "les_phrasing", status: "completed" },
       { userId: "usr_jordan", lessonId: "les_beat", status: "in_progress" },
@@ -233,10 +269,30 @@ async function main() {
   });
   await prisma.comment.create({
     data: {
-      lessonId: "les_gain",
+      lessonId: "les_intro",
       userId: "usr_maya",
-      body: "Does this change if the booth monitors are already hot before I touch the trim?",
+      body: "Is the progression tree the order to watch these, or can I jump to DJing first?",
       createdAt: new Date("2026-10-07T21:10:00Z"),
+    },
+  });
+
+  await prisma.submission.create({
+    data: {
+      id: "sub_maya_friday",
+      userId: "usr_maya",
+      title: "Friday open",
+      url: "https://soundcloud.com/example/friday-open",
+      kind: "mix",
+      notes: "Booth recording from last weekend. The middle transition is the part I want notes on.",
+      createdAt: new Date("2026-10-06T02:15:00Z"),
+      comments: {
+        create: {
+          id: "scm_yu_friday",
+          userId: "usr_yu",
+          body: "The handoff in the middle works. Keep the incoming kick quieter for the first eight bars.",
+          createdAt: new Date("2026-10-06T18:40:00Z"),
+        },
+      },
     },
   });
 

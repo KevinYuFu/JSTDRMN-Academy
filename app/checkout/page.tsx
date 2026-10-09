@@ -4,8 +4,8 @@ import { startCheckout } from "@/app/actions";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { formatCad, prices, stripeLive } from "@/lib/config";
-import { prisma } from "@/lib/db";
+import { resolveOffer } from "@/lib/catalog";
+import { formatCad, stripeLive } from "@/lib/config";
 import { containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
@@ -19,48 +19,19 @@ export default async function CheckoutPage({
   const user = await requireUser();
   const query = await searchParams;
   const product = query.product || "";
-  const slug = query.slug || (product === "course" ? "club-mixing" : product === "ash" ? "ash-f-b2b" : "");
-  let title = "";
-  let amount: number | null = null;
-  let cadence: "month" | "once" = "once";
-  let href = "/dashboard";
+  const slug = query.slug || "";
+  const offer = await resolveOffer(product, slug);
+  if (!offer) redirect("/");
   let already = false;
-
-  if (product === "headliner") {
-    title = "Headliner";
-    amount = prices.headlinerMonthlyCents;
-    cadence = "month";
-    href = "/courses/tutorials";
-    const course = await prisma.course.findUnique({ where: { slug: "tutorials" } });
-    if (course && !isStaff(user.role)) {
-      const decision = containerAccess({
-        role: user.role,
-        access: "headliner",
-        courseId: course.id,
-        cohortId: null,
-        entitlements: await entitlementRecords(user.id),
-      });
-      already = decision.allowed;
-    }
-  } else if (product === "course" || product === "ash") {
-    const course = await prisma.course.findUnique({ where: { slug } });
-    if (!course) redirect("/#pricing");
-    title = course.title;
-    amount = product === "ash" ? prices.ashMonthlyCents : prices.courseCents;
-    cadence = product === "ash" ? "month" : "once";
-    href = `/courses/${course.slug}`;
-    if (!isStaff(user.role)) {
-      const decision = containerAccess({
-        role: user.role,
-        access: product === "ash" ? "ash_subscription" : "purchase",
-        courseId: course.id,
-        cohortId: null,
-        entitlements: await entitlementRecords(user.id),
-      });
-      already = decision.allowed;
-    }
-  } else {
-    redirect("/#pricing");
+  if (!isStaff(user.role)) {
+    const decision = containerAccess({
+      role: user.role,
+      access: offer.access,
+      courseId: offer.courseId,
+      cohortId: null,
+      entitlements: await entitlementRecords(user.id),
+    });
+    already = decision.allowed;
   }
 
   return (
@@ -68,17 +39,17 @@ export default async function CheckoutPage({
       <AppHeader active="courses" />
       <main className="shell">
         <div className="auth-card" style={{ maxWidth: 520 }}>
-          <h1>{title}</h1>
+          <h1>{offer.label}</h1>
           <p className="amount" style={{ color: "#fff2cc", fontSize: 22, margin: "8px 0 12px" }}>
-            {formatCad(amount, cadence === "month" ? "month" : "once")} CAD
+            {formatCad(offer.amountCents, offer.cadence)} CAD
           </p>
           {query.canceled ? <div className="error">Checkout was canceled. Nothing was charged.</div> : null}
           {query.error === "price" ? (
-            <div className="error">Headliner doesn’t have a price yet. Set HEADLINER_PRICE_CENTS before using live Stripe.</div>
+            <div className="error">This price isn’t set yet. Headliner needs HEADLINER_PRICE_CENTS before live Stripe.</div>
           ) : null}
           {already || isStaff(user.role) ? (
             <p>
-              This is already on your account. <Link href={href}>Open it</Link>.
+              This is already on your account. <Link href={offer.href}>Open it</Link>.
             </p>
           ) : (
             <>
@@ -88,8 +59,8 @@ export default async function CheckoutPage({
                   : "No Stripe secret is set, so this is a mock checkout. It grants access the same way the webhook will."}
               </p>
               <form action={startCheckout}>
-                <input type="hidden" name="product" value={product} />
-                <input type="hidden" name="slug" value={slug} />
+                <input type="hidden" name="product" value={offer.product} />
+                <input type="hidden" name="slug" value={offer.slug} />
                 <Button type="submit">{stripeLive() ? "Continue to Stripe" : "Continue"}</Button>
               </form>
             </>

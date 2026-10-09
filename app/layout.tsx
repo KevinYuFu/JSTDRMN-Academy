@@ -16,7 +16,7 @@ const unbounded = Unbounded({
 
 export const metadata: Metadata = {
   title: "JSTDRMN Academy",
-  description: "Classes, Headliner tutorials, and bootcamp cohort portals for JSTDRMN in Toronto.",
+  description: "Headliner membership, programs, and bootcamp cohort portals for JSTDRMN in Toronto.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

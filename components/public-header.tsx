@@ -44,7 +44,7 @@ export async function PublicHeader() {
           signedIn={Boolean(user)}
           links={[
             ...links.map((link) => ({ href: link.href, label: link.label, external: link.external })),
-            { href: "/#pricing", label: "Pricing" },
+            { href: "/", label: "Programs" },
           ]}
         />
       </div>
