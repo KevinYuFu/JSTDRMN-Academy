@@ -6,15 +6,17 @@ Adding a program is a course row. The landing grid, the detail page, checkout, a
 
 ## Architecture
 
-Next.js (App Router) and TypeScript. SQLite through Prisma, so one process and no hosted database are required for the prototype. Postgres is a connection-string change when this leaves a laptop.
+Next.js (App Router) and TypeScript. Local development uses SQLite through Prisma. Production on Vercel uses hosted Postgres. The build switches the Prisma datasource when `DATABASE_URL` is a `postgres://` or `postgresql://` URL. See the README for the env vars and the one-time database setup.
 
 Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. Teacher and admin see every course and every cohort, edit lessons, read notes, see Headliner submissions, and grant or revoke seats. Students see titles for locked work and can open only what an entitlement allows.
 
 Headliner’s price is CAD cents in `HEADLINER_PRICE_CENTS`. Leave it unset and the banner shows `$X/month`. Every other program stores `priceCents` on its own row. A null price is hidden. Billing is `monthly`, `once`, or `application`.
 
-Video is a switch in `lib/video.ts`: `mock`, `youtube`, `vimeo`, `vimeo_private`, `bunny`, or `file`. Nothing in the player knows about DRM.
+Video is a switch in `lib/video.ts`: `drive`, `mock`, `youtube`, `vimeo`, `vimeo_private`, `bunny`, or `file`. Nothing in the player knows about DRM. New lessons default to Google Drive.
 
-Unlisted YouTube links and Google Drive links are still shareable. Anyone with the URL can open them, so they are not for paid lessons. Use Bunny Stream (signed embed) or a private, domain-restricted Vimeo video for anything that should stay inside an entitlement. `vimeo_private` uses the normal player URL; the privacy is a Vimeo domain allow-list, not a secret in the query string. Bunny signs `https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}` with SHA256 of the security key, video id, and expiry, and only when `BUNNY_STREAM_LIBRARY_ID` and `BUNNY_STREAM_TOKEN_KEY` are set. Without them the embed URL is unsigned and should not be used for paid video.
+Google Drive is the host for now. A lesson URL such as `https://drive.google.com/file/d/<id>/view` is embedded as `https://drive.google.com/file/d/<id>/preview`. Share each file only with the specific student email addresses that should watch it. Do not choose “anyone with the link.” A link-shared file can be opened outside this app by anyone who receives the URL, which skips the entitlement check. The student also has to be signed into that Google account in the browser for the preview to play.
+
+Bunny Stream is the planned upgrade. The `bunny` provider stub stays: it signs `https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}` with SHA256 of the security key, video id, and expiry, and only when `BUNNY_STREAM_LIBRARY_ID` and `BUNNY_STREAM_TOKEN_KEY` are set. Without them the embed URL is unsigned. Unlisted YouTube links are still shareable, so they are not for paid lessons. `vimeo_private` uses the normal player URL; privacy is a Vimeo domain allow-list, not a secret in the query string.
 
 Slides are generated one-page PDFs from the lesson notes, served only after the same access check as the video. The “24 slides · 3.2 MB” line on Beatmatching is catalog copy from the mockup.
 
@@ -66,9 +68,9 @@ Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progressi
 2. Put real prices on bootcamp rows when they should show on the card. Leave `priceCents` null to keep the price hidden.
 3. Confirm whether JSTDRMN’s HubSpot seat includes Operations Hub. If not, follow recommendation (b) in HUBSPOT.md.
 4. Connect Discord the way [DISCORD.md](./DISCORD.md) describes: OAuth plus a bot that adds and removes the Headliner role.
-5. Host paid video on Bunny Stream or private Vimeo. Do not use unlisted YouTube or Drive links for paid lessons.
+5. Keep Drive files shared to student emails only. Move paid video to Bunny Stream when that account is ready. The provider stub is already in `lib/video.ts`.
 6. Replace generated handouts with uploaded PDFs.
-7. Move SQLite to Postgres.
+7. Deploy on Vercel with hosted Postgres. The README has the env vars and the database steps.
 
 ## Open questions
 

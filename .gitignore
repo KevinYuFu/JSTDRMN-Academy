@@ -36,6 +36,7 @@ yarn-error.log*
 # sqlite
 /prisma/dev.db
 /prisma/dev.db-journal
+/prisma/schema.deploy.prisma
 /dev.db
 /dev.db-journal
 

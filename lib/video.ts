@@ -7,6 +7,7 @@ export type ResolvedVideo =
 
 /** Providers the lesson form and the player both read. Adding one is a row here plus a branch in resolveVideo. */
 export const videoProviders = [
+  { id: "drive", label: "Google Drive" },
   { id: "mock", label: "Mock player" },
   { id: "youtube", label: "YouTube URL" },
   { id: "vimeo", label: "Vimeo URL" },
@@ -14,6 +15,9 @@ export const videoProviders = [
   { id: "bunny", label: "Bunny Stream" },
   { id: "file", label: "File URL" },
 ] as const;
+
+/** New lessons start on Drive. Bunny Stream stays in the list as the planned upgrade. */
+export const defaultVideoProvider = "drive";
 
 export function youtubeId(url: string): string | null {
   const trimmed = url.trim();
@@ -54,6 +58,29 @@ export function vimeoId(url: string): string | null {
   return null;
 }
 
+export function driveFileId(url: string): string | null {
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(trimmed)) return trimmed;
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.replace(/^www\./, "");
+    if (host !== "drive.google.com") return null;
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const fileAt = parts.indexOf("file");
+    const fromPath = fileAt >= 0 && parts[fileAt + 1] === "d" ? parts[fileAt + 2] : null;
+    if (fromPath && /^[a-zA-Z0-9_-]+$/.test(fromPath)) return fromPath;
+    const fromQuery = parsed.searchParams.get("id");
+    if (fromQuery && /^[a-zA-Z0-9_-]+$/.test(fromQuery)) return fromQuery;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function drivePreviewUrl(fileId: string) {
+  return `https://drive.google.com/file/d/${fileId}/preview`;
+}
+
 export function bunnyVideoId(url: string): string | null {
   const trimmed = url.trim();
   if (/^[A-Za-z0-9-]{8,}$/.test(trimmed)) return trimmed;
@@ -90,11 +117,16 @@ function bunnyEmbed(url: string, nowMs: number): ResolvedVideo {
 
 /**
  * Video storage stays behind this switch.
+ * drive embeds https://drive.google.com/file/d/<id>/preview. Share the file with student emails, not "anyone with the link".
  * vimeo_private uses the same player URL as vimeo. Privacy is a Vimeo domain restriction, not a secret in the URL.
- * bunny signs the embed only when BUNNY_STREAM_LIBRARY_ID and BUNNY_STREAM_TOKEN_KEY are set.
+ * bunny is the planned upgrade. It signs the embed only when BUNNY_STREAM_LIBRARY_ID and BUNNY_STREAM_TOKEN_KEY are set.
  */
 export function resolveVideo(provider: string, url: string, nowMs = Date.now()): ResolvedVideo {
   if (provider === "file") return { type: "file", src: url };
+  if (provider === "drive") {
+    const id = driveFileId(url);
+    return id ? { type: "iframe", src: drivePreviewUrl(id) } : { type: "mock", src: url };
+  }
   if (provider === "youtube") {
     const id = youtubeId(url);
     return id ? { type: "iframe", src: `https://www.youtube.com/embed/${id}` } : { type: "mock", src: url };

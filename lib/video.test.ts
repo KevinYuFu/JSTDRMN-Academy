@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { bunnyToken, resolveVideo, youtubeId } from "./video";
+import { bunnyToken, drivePreviewUrl, resolveVideo, youtubeId } from "./video";
 
 describe("resolveVideo", () => {
   it("turns YouTube and Vimeo links into embeds and leaves mock and file sources alone", () => {
@@ -25,6 +25,23 @@ describe("resolveVideo", () => {
       type: "iframe",
       src: "https://player.vimeo.com/video/123456789",
     });
+  });
+
+  it("embeds Google Drive files through the preview URL", () => {
+    const id = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms";
+    const preview = drivePreviewUrl(id);
+    assert.equal(preview, `https://drive.google.com/file/d/${id}/preview`);
+    assert.deepEqual(resolveVideo("drive", `https://drive.google.com/file/d/${id}/view?usp=sharing`), {
+      type: "iframe",
+      src: preview,
+    });
+    assert.deepEqual(resolveVideo("drive", preview), { type: "iframe", src: preview });
+    assert.deepEqual(resolveVideo("drive", `https://drive.google.com/open?id=${id}`), {
+      type: "iframe",
+      src: preview,
+    });
+    assert.deepEqual(resolveVideo("drive", id), { type: "iframe", src: preview });
+    assert.equal(resolveVideo("drive", "not a drive file").type, "mock");
   });
 
   it("signs Bunny Stream embeds when the token key is set and leaves them unsigned otherwise", () => {

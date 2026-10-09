@@ -15,7 +15,7 @@ import { applyPendingGrants, syncContact } from "@/lib/hubspot";
 import { entitlementRecords } from "@/lib/learn";
 import { stripeClient } from "@/lib/stripe";
 import { safeNext } from "@/lib/utils";
-import { videoProviders } from "@/lib/video";
+import { defaultVideoProvider, videoProviders } from "@/lib/video";
 
 const signupSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -144,7 +144,7 @@ export async function addLesson(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const durationMin = Number(formData.get("durationMin") ?? 0);
-  const provider = String(formData.get("videoProvider") ?? "mock");
+  const provider = String(formData.get("videoProvider") ?? "") || defaultVideoProvider;
   const videoUrl = String(formData.get("videoUrl") ?? "").trim();
   const slidesTitle = String(formData.get("slidesTitle") ?? "").trim();
   const slidesMeta = String(formData.get("slidesMeta") ?? "").trim();
