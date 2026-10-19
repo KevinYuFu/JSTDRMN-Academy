@@ -80,7 +80,7 @@ Session cookies are `Secure` when `NODE_ENV` is `production`, which is how Verce
 
 ### Scheduled announcements
 
-Hobby accounts can schedule a cron only once per day. `vercel.json` calls `/api/cron/announcements` at `0 14 * * *` (14:00 UTC, about 10am Toronto). Each run posts every announcement whose send time has already passed. For a precise clock time later, use Vercel Pro, or a free external pinger such as [cron-job.org](https://cron-job.org) that requests the route with `Authorization: Bearer` set to `CRON_SECRET`.
+Hobby accounts can schedule a cron only once per day. `vercel.json` calls `/api/cron/announcements` at `0 19 * * *` (19:00 UTC). Announcements post daily at about 3pm Toronto (3pm during EDT, 2pm during EST). Each run posts every announcement whose send time has already passed, so teachers should set send times before then. For a precise clock time later, use Vercel Pro, or a free external pinger such as [cron-job.org](https://cron-job.org) that requests the route with `Authorization: Bearer` set to `CRON_SECRET`.
 
 ### Database
 

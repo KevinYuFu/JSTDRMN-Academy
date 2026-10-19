@@ -19,7 +19,7 @@ Authorization is `Bot {token}`. Add on grant, delete on revoke or expiry handlin
 5. **Cohort and producer roles** use the same PUT and DELETE. `DISCORD_PRODUCER_ROLE_ID` is the producers chat. A cohort role id can sit on that cohort later; the call is the same shape as Headliner, with that role id. The bot’s role stays above every role it assigns. That is how a producers channel can stay closed until the academy says the member is in it.
 6. **An invite** is only the door. `DISCORD_HEADLINER_INVITE_URL` is shown on the Join Headliner Discord card. The role is what keeps the chat limited to paying Headliners. Prefer an invite that does not grant the role by itself.
 7. **Event join links are not all Discord.** An event action is a type (`link` or `calendar`), a URL, and a button label. Connect Discord is required only when that URL is a Discord host. Zoom, Instagram, a Google Calendar link, and an `.ics` download open without it.
-8. **Scheduled announcements** post with `POST /channels/{channel.id}/messages` from `GET /api/cron/announcements`. Each run sends every announcement that is already due. On a Vercel Hobby account that job runs once a day (`0 14 * * *`, about 10am Toronto). For a precise time later, use Vercel Pro or a free external pinger such as cron-job.org hitting the route with `CRON_SECRET`. No bot token means the row is marked sent and the text is logged locally instead of posted.
+8. **Scheduled announcements** post with `POST /channels/{channel.id}/messages` from `GET /api/cron/announcements`. Each run sends every announcement that is already due. On a Vercel Hobby account that job runs once a day at `0 19 * * *`, about 3pm Toronto (3pm during EDT, 2pm during EST). Teachers should set send times before then. For a precise time later, use Vercel Pro or a free external pinger such as cron-job.org hitting the route with `CRON_SECRET`. No bot token means the row is marked sent and the text is logged locally instead of posted.
 
 The card is rendered only when `discordCardAccess` allows it: staff, or a live Headliner entitlement. A course purchase or a cohort seat does not show the join card.
 
@@ -31,7 +31,7 @@ The card is rendered only when `discordCardAccess` allows it: staff, or a live H
 - Grant and revoke of a `headliner` entitlement call that function. A Discord failure does not roll back the entitlement.
 - `GET /api/discord/connect` sends the member to Discord OAuth when `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` are set. Otherwise it returns them to `/headliner?discord=unconfigured`.
 - `GET /api/discord/callback` stores the Discord user id and username and syncs the Headliner role. Without the OAuth env it does not call Discord.
-- `postChannelMessage` no-ops without `DISCORD_BOT_TOKEN`. The announcement cron uses that skip as its mock mode. On Hobby, the scheduled job runs once a day and still posts every due row on that run.
+- `postChannelMessage` no-ops without `DISCORD_BOT_TOKEN`. The announcement cron uses that skip as its mock mode. On Hobby, the scheduled job runs once a day at about 3pm Toronto and still posts every due row on that run. Teachers should set send times before then.
 - The invite URL is optional. The card still renders for an active Headliner and says the invite is not published yet.
 
 ## Env
