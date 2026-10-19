@@ -14,7 +14,6 @@ async function run(request: Request) {
   const due = await prisma.announcement.findMany({
     where: { status: "scheduled", sendAt: { lte: now } },
     orderBy: { sendAt: "asc" },
-    take: 20,
   });
   const results: { id: string; status: string }[] = [];
   for (const item of due) {

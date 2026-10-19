@@ -70,13 +70,17 @@ Set these on the Vercel project. Blank optional values keep the same fallbacks a
 | `HUBSPOT_DJ_BOOTCAMP_URL`, `HUBSPOT_PRODUCTION_BOOTCAMP_URL`, `HUBSPOT_MASHUP_BOOTCAMP_URL` | No | Optional overrides. The apply link that students see is the `hubspotUrl` on the program row. |
 | `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_HEADLINER_ROLE_ID` | No | Role add/remove. No-op until all three are set. | 
 | `DISCORD_PRODUCER_ROLE_ID` | No | Documented producer-role id for a producers channel. The bot call is the same shape as Headliner. |
-| `CRON_SECRET` | No | If set, `GET /api/cron/announcements` requires `Authorization: Bearer`. Vercel Cron uses this. |
+| `CRON_SECRET` | No | If set, `GET /api/cron/announcements` requires `Authorization: Bearer`. Vercel Cron sends it. An external pinger must send the same header. |
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | No | Connect Discord. Off until both are set. |
 | `DISCORD_REDIRECT_URI` | With Discord OAuth | Defaults to `{APP_URL}/api/discord/callback`. |
 | `DISCORD_HEADLINER_INVITE_URL` | No | Shown on the Join Headliner Discord card. The card still renders without it. |
 | `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_TOKEN_KEY` | No | Planned video host. The stub stays unsigned until both are set. |
 
 Session cookies are `Secure` when `NODE_ENV` is `production`, which is how Vercel runs the app.
+
+### Scheduled announcements
+
+Hobby accounts can schedule a cron only once per day. `vercel.json` calls `/api/cron/announcements` at `0 14 * * *` (14:00 UTC, about 10am Toronto). Each run posts every announcement whose send time has already passed. For a precise clock time later, use Vercel Pro, or a free external pinger such as [cron-job.org](https://cron-job.org) that requests the route with `Authorization: Bearer` set to `CRON_SECRET`.
 
 ### Database
 
