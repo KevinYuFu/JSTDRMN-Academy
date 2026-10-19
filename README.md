@@ -1,6 +1,6 @@
 # JSTDRMN Academy
 
-Standalone site for [JSTDRMN](https://www.jstdrmn.com) Academy (“Just Dreamin’”), a Toronto EDM collective. It is separate from the HubSpot marketing site. The menu is Programs, Private Sessions, Events, Dashboard, and My Courses. Headliner is one subscription on a banner. Group classes and self-paced lessons are cards in the programs grid, including FB2B (Ash F, From Bedroom to Banger) and the bootcamps.
+Standalone site for [JSTDRMN](https://www.jstdrmn.com) Academy (“Just Dreamin’”), a Toronto EDM collective. It is separate from the HubSpot marketing site. GitHub is the repo for versioning: [KevinYuFu/JSTDRMN-Academy](https://github.com/KevinYuFu/JSTDRMN-Academy). The menu is Programs, Private Sessions, Events, Dashboard, and My Courses. Headliner is one subscription on a banner. Group classes and self-paced lessons are cards in the programs grid, including FB2B (Ash F, From Bedroom to Banger) and the bootcamps.
 
 No Stripe, HubSpot, or Discord keys are required. Checkout is mocked and still grants access. HubSpot and Discord stay quiet until their env vars are set.
 

@@ -30,7 +30,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — .env only holds local defaults, no secrets
+# env files — .env.example is the template. .env stays local.
+.env
 .env*.local
 
 # sqlite
