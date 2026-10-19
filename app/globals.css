@@ -69,11 +69,12 @@ img { max-width: 100%; }
   border-left: 1px solid var(--tint-2);
   padding-left: 14px;
 }
-.nav-desktop { display: flex; gap: 28px; align-items: center; }
+.nav-desktop { display: flex; gap: 14px; align-items: center; }
 .nav-desktop a {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--soft);
   padding-bottom: 4px;
+  white-space: nowrap;
 }
 .nav-desktop a.active {
   color: var(--text);
@@ -466,6 +467,100 @@ button.slides:hover { filter: brightness(1.12); }
 .detail-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .request-form { padding: 18px; margin: 4px 0 14px; max-width: 560px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
+.sessions-page { padding: 8px 40px 64px; max-width: 1200px; margin: 0 auto; }
+.sessions-hero { padding: 28px 0 8px; }
+.sessions-hero h1 {
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.sessions-hero p { color: var(--soft); font-size: 18px; max-width: 42ch; margin-top: 8px; }
+.shell-note { margin-top: 16px; }
+.mentor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+.mentor-card {
+  width: 100%;
+  background: var(--card);
+  border: 0;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 220px;
+  padding: 18px;
+  text-align: left;
+}
+.mentor-card:hover { filter: brightness(1.08); }
+.mentor-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--purple-brand);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  object-fit: cover;
+  background-size: cover;
+  background-position: center;
+}
+.mentor-name { font-family: var(--font-unbounded), sans-serif; font-size: 18px; font-weight: 600; }
+.mentor-role { color: var(--soft); font-size: 14px; }
+.mentor-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.mentor-panel { padding: 4px 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.mentor-panel-head { display: flex; gap: 14px; align-items: center; }
+.mentor-panel h3 {
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.mentor-panel ul { margin: 0; padding-left: 18px; color: var(--soft); }
+.mentor-panel li + li { margin-top: 4px; }
+.event-feature {
+  margin-top: 20px;
+  padding: 22px;
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, rgba(123, 36, 165, 0.45), rgba(30, 30, 30, 0.2) 55%),
+    #1a1220;
+  border: 1px solid rgba(168, 55, 230, 0.45);
+}
+.event-feature h2, .event-card h3 {
+  font-family: var(--font-unbounded), sans-serif;
+  font-weight: 600;
+}
+.event-feature h2 { font-size: 28px; margin: 6px 0; }
+.event-when { color: var(--cream); margin: 4px 0 8px; }
+.event-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.event-card {
+  background: var(--card);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow);
+}
+.event-card h3 { font-size: 18px; }
 .cohort-list { list-style: none; margin-top: 16px; }
 .cohort-list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--tint-1); }
 .cohort-list span { color: var(--muted); }
@@ -722,7 +817,8 @@ button.slides:hover { filter: brightness(1.12); }
   .public-nav { display: none; }
   .learn-grid, .price-grid, .shelf, .split, .stat-row, .boot-grid { grid-template-columns: 1fr; }
   .headliner-banner { flex-direction: column; align-items: flex-start; margin: 8px 16px 0; }
-  .program-section { padding-left: 16px; padding-right: 16px; }
+  .program-section, .sessions-page { padding-left: 16px; padding-right: 16px; }
+  .sessions-hero h1 { font-size: 28px; }
   .banner-side { flex-wrap: wrap; }
   .boot-panel { min-height: 280px; border-right: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
   .titlebar { flex-direction: column; align-items: stretch; }

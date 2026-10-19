@@ -12,13 +12,13 @@ export default async function HomePage() {
     getUser(),
   ]);
   const banner = programs.find((program) => program.placement === "banner");
-  const cards = programs.filter((program) => program.placement === "grid");
+  const cards = programs.filter((program) => program.placement === "grid" && program.access !== "request");
   const subscribeHref = user ? "/checkout?product=headliner" : "/signup?next=/checkout?product=headliner";
   const headlinerPrice = formatCad(prices.headlinerMonthlyCents, "month");
 
   return (
     <div className="programs-page">
-      <AppHeader />
+      <AppHeader active="programs" />
       {banner ? (
         <section className="headliner-banner" aria-label={banner.title}>
           <div>
@@ -36,7 +36,7 @@ export default async function HomePage() {
       ) : null}
       <section className="program-section" aria-label="Programs">
         <h2>Programs</h2>
-        <p className="note">Each program is its own card. Price shows only when that program has one.</p>
+        <p className="note">Group classes and self-paced lessons. Price shows only when that program has one.</p>
         <div className="program-grid">
           {cards.map((program) => {
             const price = programPriceLabel(program);

@@ -87,7 +87,7 @@ Keep applications on the HubSpot pages you already have. Keep the manual grant s
 | `HUBSPOT_PRIVATE_APP_TOKEN` | Behavior |
 | --- | --- |
 | Unset | `syncContact` returns immediately. `POST /api/hubspot/webhook` returns `{ "ok": true, "skipped": true }` and grants nothing. |
-| Set, `HUBSPOT_LIVE` not `true` | Signup and purchase write a row to the HubSpot log (visible on the teacher desk) and do not call HubSpot. The webhook grants a cohort when the JSON includes an email and a cohort slug. Deal-stage batches are acknowledged and not granted, because the email isn’t in the payload. |
+| Set, `HUBSPOT_LIVE` not `true` | Signup and purchase write a row to the HubSpot log (visible on the Academy lead view) and do not call HubSpot. The webhook grants a cohort when the JSON includes an email and a cohort slug. Deal-stage batches are acknowledged and not granted, because the email isn’t in the payload. |
 | Set, and `HUBSPOT_LIVE=true` | Signup and purchase call the contacts API. A `deal.propertyChange` for `dealstage`, when the stage is in `HUBSPOT_ACCEPTED_DEAL_STAGES` (default `closedwon,accepted`), loads the deal and its contact and grants `academy_cohort`. |
 
 If the email has no Academy account yet, the grant waits. It applies when they sign up with that same email.

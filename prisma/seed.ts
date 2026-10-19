@@ -1,8 +1,9 @@
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
+import { googleCalendarUrl, parseToronto } from "../lib/events";
 
 const prisma = new PrismaClient();
-const SEED_VERSION = "3";
+const SEED_VERSION = "6";
 
 async function main() {
   const existing = await prisma.meta.findUnique({ where: { key: "seed" } });
@@ -12,7 +13,11 @@ async function main() {
   }
 
   await prisma.$transaction([
+    prisma.announcement.deleteMany(),
+    prisma.event.deleteMany(),
+    prisma.eventType.deleteMany(),
     prisma.sessionRequest.deleteMany(),
+    prisma.mentor.deleteMany(),
     prisma.comment.deleteMany(),
     prisma.progress.deleteMany(),
     prisma.checkout.deleteMany(),
@@ -151,9 +156,9 @@ async function main() {
       {
         id: "crs_one",
         slug: "one-on-one",
-        title: "One-on-One Sessions",
-        tagline: "Time with a teacher on your own work.",
-        description: "Tell us what you want to work on and when you’re free. This is a request only. Nothing is booked and nothing is charged yet.",
+        title: "Private Sessions",
+        tagline: "1-on-1 mentorship.",
+        description: "Requests land on the Academy lead view. Nothing is booked and nothing is charged yet.",
         kind: "session",
         access: "request",
         priceCents: null,
@@ -161,7 +166,7 @@ async function main() {
         statusLabel: "Open",
         panel: "purple",
         sort: 6,
-        placement: "grid",
+        placement: "off",
         special: false,
       },
     ],
@@ -289,6 +294,170 @@ async function main() {
       body: "Is the progression tree the order to watch these, or can I jump to DJing first?",
       createdAt: new Date("2026-10-07T21:10:00Z"),
     },
+  });
+
+  await prisma.mentor.createMany({
+    data: [
+      {
+        id: "mnt_yu",
+        slug: "yu-fu",
+        name: "Yu Fu",
+        roleLine: "Academy Lead, JSTDRMN",
+        photoUrl: null,
+        bio: "From concert band conducting and a cappella to live mixing, directing, and now EDM production. Yu focuses on hyper bass and leads the JSTDRMN Academy.",
+        background: JSON.stringify([
+          "Concert band conducting",
+          "A cappella",
+          "Live mixing",
+          "Directing",
+          "EDM production",
+        ]),
+        specialties: JSON.stringify(["EDM production", "Hyper bass"]),
+        genres: JSON.stringify(["Hyper bass", "EDM production"]),
+        active: true,
+        placeholder: false,
+        sort: 1,
+      },
+      {
+        id: "mnt_soon_1",
+        slug: "mentor-name",
+        name: "Mentor name",
+        roleLine: "Coming soon",
+        photoUrl: null,
+        bio: "Coming soon.",
+        background: "[]",
+        specialties: "[]",
+        genres: "[]",
+        active: true,
+        placeholder: true,
+        sort: 2,
+      },
+      {
+        id: "mnt_soon_2",
+        slug: "mentor-name-2",
+        name: "Mentor name",
+        roleLine: "Coming soon",
+        photoUrl: null,
+        bio: "Coming soon.",
+        background: "[]",
+        specialties: "[]",
+        genres: "[]",
+        active: true,
+        placeholder: true,
+        sort: 3,
+      },
+    ],
+  });
+
+  const syncStart = parseToronto("2026-10-20T16:00")!;
+  const syncEnd = parseToronto("2026-10-20T17:00")!;
+  const feedbackStart = parseToronto("2026-10-21T18:00")!;
+  await prisma.eventType.createMany({
+    data: [
+      {
+        id: "etype_connect",
+        slug: "community-connect",
+        name: "Community Connect",
+        actionType: "link",
+        actionUrl: "https://discord.com/channels/jstdrmn/community-connect",
+        buttonLabel: "Join",
+        sort: 1,
+      },
+      {
+        id: "etype_green",
+        slug: "green-room",
+        name: "Green Room",
+        actionType: "link",
+        actionUrl: "https://zoom.us/j/jstdrmn-green-room",
+        buttonLabel: "Join Zoom",
+        sort: 2,
+      },
+      {
+        id: "etype_sync",
+        slug: "sync",
+        name: "Sync",
+        actionType: "calendar",
+        actionUrl: googleCalendarUrl({ title: "Sync", description: "Bring one loop you want heard.", start: syncStart, end: syncEnd }),
+        buttonLabel: "Add to calendar",
+        sort: 3,
+      },
+      {
+        id: "etype_feedback",
+        slug: "production-feedback",
+        name: "Production Feedback",
+        actionType: "link",
+        actionUrl: "https://discord.com/channels/jstdrmn/production-feedback",
+        buttonLabel: "Join",
+        sort: 4,
+      },
+    ],
+  });
+  await prisma.event.createMany({
+    data: [
+      {
+        id: "evt_connect",
+        slug: "community-connect",
+        title: "Community Connect",
+        description: "A weekly hang for the academy. Say what you’re working on.",
+        typeId: "etype_connect",
+        startsAt: parseToronto("2026-10-22T19:00")!,
+        endsAt: parseToronto("2026-10-22T20:00")!,
+        recurrence: "weekly",
+        audience: "all",
+      },
+      {
+        id: "evt_green",
+        slug: "green-room",
+        title: "Green Room",
+        description: "Headliners on Zoom. One hour, cameras optional.",
+        typeId: "etype_green",
+        startsAt: parseToronto("2026-10-24T20:00")!,
+        endsAt: parseToronto("2026-10-24T21:30")!,
+        recurrence: "",
+        audience: "headliners",
+      },
+      {
+        id: "evt_sync",
+        slug: "sync",
+        title: "Sync",
+        description: "Bring one loop you want heard.",
+        typeId: "etype_sync",
+        startsAt: syncStart,
+        endsAt: syncEnd,
+        recurrence: "",
+        audience: "all",
+      },
+      {
+        id: "evt_feedback",
+        slug: "production-feedback",
+        title: "Production Feedback",
+        description: "Weekly listen for producers. Change the day here and the Events page follows.",
+        typeId: "etype_feedback",
+        startsAt: feedbackStart,
+        endsAt: parseToronto("2026-10-21T19:00")!,
+        recurrence: "weekly",
+        audience: "producers",
+      },
+    ],
+  });
+  await prisma.announcement.createMany({
+    data: [
+      {
+        body: "Production Feedback starts in 30 minutes.",
+        channelId: "100000000000000001",
+        roleMention: "Producers",
+        sendAt: new Date(feedbackStart.getTime() - 30 * 60 * 1000),
+        eventId: "evt_feedback",
+        leadMinutes: 30,
+        status: "scheduled",
+      },
+      {
+        body: "Community Connect is Thursday at 7pm Toronto.",
+        channelId: "100000000000000002",
+        sendAt: parseToronto("2026-10-23T15:00")!,
+        status: "scheduled",
+      },
+    ],
   });
 
   await prisma.meta.create({ data: { key: "seed", value: SEED_VERSION } });

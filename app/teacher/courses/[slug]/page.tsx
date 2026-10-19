@@ -36,7 +36,7 @@ export default async function EditorPage({
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Teacher</Link> › <b>{course.title}</b>
+          <Link href="/teacher">Academy lead</Link> › <b>{course.title}</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 12 }}>{course.title}</h1>
         {query.added ? <div className="banner">Lesson added. Students see it the next time they open the course.</div> : null}

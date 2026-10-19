@@ -1,6 +1,6 @@
 # JSTDRMN Academy
 
-Standalone site for [JSTDRMN](https://www.jstdrmn.com) Academy (“Just Dreamin’”), a Toronto EDM collective. It is separate from the HubSpot marketing site. The menu is Dashboard and My Courses. Headliner is one subscription on a banner. Every other offering is a card in the programs grid, including FB2B (Ash F, From Bedroom to Banger), one-on-one sessions, and the bootcamps.
+Standalone site for [JSTDRMN](https://www.jstdrmn.com) Academy (“Just Dreamin’”), a Toronto EDM collective. It is separate from the HubSpot marketing site. The menu is Programs, Private Sessions, Events, Dashboard, and My Courses. Headliner is one subscription on a banner. Group classes and self-paced lessons are cards in the programs grid, including FB2B (Ash F, From Bedroom to Banger) and the bootcamps.
 
 No Stripe, HubSpot, or Discord keys are required. Checkout is mocked and still grants access. HubSpot and Discord stay quiet until their env vars are set.
 
@@ -25,7 +25,7 @@ Access rules live in `lib/entitlements.ts`.
 
 | Who | Email | Password | What they can open |
 | --- | --- | --- | --- |
-| Yu, teacher | yu@jstdrmn.com | boothlights | Every program, both DJ Bootcamp cohorts, the lesson editor, grant/revoke, student notes, and one-on-one requests |
+| Yu, Academy lead | yu@jstdrmn.com | boothlights | Every program, both DJ Bootcamp cohorts, the lesson editor, grant/revoke, student notes, mentors, events, announcements, and private-session requests |
 | Maya Chen | maya@jstdrmn.com | headliner | The Headliner path and the Headliner Discord card. Everything else shows an upsell |
 | Jordan Blake | jordan@jstdrmn.com | cohort6 | Foundations of Club Mixing, and DJ Bootcamp Cohort 6 only |
 
@@ -35,7 +35,8 @@ Prices are CAD. A new program is a course record: title, blurb, status, price, b
 
 - **Headliner** — the banner. Monthly, price not set (`$X/month`) until `HEADLINER_PRICE_CENTS` is set. Access lasts while the subscription is paid. The path is a track tree: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner and Advanced), and Mashups & Remixes.
 - **Programs** — the grid. Foundations of Club Mixing is $50 once. FB2B is a special offering Ash F presents, $50/month, with a placeholder instead of a made-up curriculum. Bootcamps show a status tag and hide the price until `priceCents` is set. Learn More opens that program. Bootcamps apply through the HubSpot link on the record.
-- **One-on-one sessions** — a grid card like the others. Learn More opens a request form: name, email, topic, and preferred times. Requests show on the teacher desk. Scheduling and payment are not built yet.
+- **Private Sessions** — its own tab. Mentor cards open in the page. Request a session stores the chosen mentor for the Academy lead. Scheduling and payment are not built yet. The lead adds, edits, and hides mentors.
+- **Events** — academy events, separate from showcase nights. Four seeded types (Community Connect, Green Room, Sync, Production Feedback). Each type and event has a join action: a link, or Add to calendar. Connect Discord shows up only for a Discord destination.
 - **Headliner perks** — Join Headliner Discord. Headliner only.
 
 ## Stripe, HubSpot, and Discord
@@ -67,7 +68,9 @@ Set these on the Vercel project. Blank optional values keep the same fallbacks a
 | `HUBSPOT_LIVE` | No | `true` lets a deal-stage event look up the contact. Default is off. |
 | `HUBSPOT_ACCEPTED_DEAL_STAGES` | No | Comma-separated stage ids, default `closedwon,accepted`. |
 | `HUBSPOT_DJ_BOOTCAMP_URL`, `HUBSPOT_PRODUCTION_BOOTCAMP_URL`, `HUBSPOT_MASHUP_BOOTCAMP_URL` | No | Optional overrides. The apply link that students see is the `hubspotUrl` on the program row. |
-| `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_HEADLINER_ROLE_ID` | No | Role add/remove. No-op until all three are set. |
+| `DISCORD_BOT_TOKEN`, `DISCORD_GUILD_ID`, `DISCORD_HEADLINER_ROLE_ID` | No | Role add/remove. No-op until all three are set. | 
+| `DISCORD_PRODUCER_ROLE_ID` | No | Documented producer-role id for a producers channel. The bot call is the same shape as Headliner. |
+| `CRON_SECRET` | No | If set, `GET /api/cron/announcements` requires `Authorization: Bearer`. Vercel Cron uses this. |
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` | No | Connect Discord. Off until both are set. |
 | `DISCORD_REDIRECT_URI` | With Discord OAuth | Defaults to `{APP_URL}/api/discord/callback`. |
 | `DISCORD_HEADLINER_INVITE_URL` | No | Shown on the Join Headliner Discord card. The card still renders without it. |

@@ -38,7 +38,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Teacher</Link> › <b>Access</b>
+          <Link href="/teacher">Academy lead</Link> › <b>Access</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
         <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>

@@ -20,6 +20,7 @@ model User {
   passwordHash       String
   role               String
   discordId          String?
+  discordUsername    String?
   createdAt          DateTime            @default(now())
   sessions           Session[]
   entitlements       Entitlement[]
@@ -62,6 +63,23 @@ model Course {
   sessionRequests SessionRequest[]
 }
 
+model Mentor {
+  id           String           @id
+  slug         String           @unique
+  name         String
+  roleLine     String
+  photoUrl     String?
+  bio          String
+  /// JSON string arrays. Teachers edit them as one item per line.
+  background   String
+  specialties  String
+  genres       String
+  active       Boolean          @default(true)
+  placeholder  Boolean          @default(false)
+  sort         Int              @default(0)
+  requests     SessionRequest[]
+}
+
 model Track {
   id       String   @id
   courseId String
@@ -88,6 +106,7 @@ model Cohort {
   sort         Int           @default(0)
   lessons      Lesson[]
   entitlements Entitlement[]
+  events       Event[]
 }
 
 model Lesson {
@@ -159,11 +178,65 @@ model SessionRequest {
   id             String   @id @default(cuid())
   courseId       String
   course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  mentorId       String?
+  mentor         Mentor?  @relation(fields: [mentorId], references: [id], onDelete: SetNull)
   name           String
   email          String
   topic          String
   preferredTimes String
   createdAt      DateTime @default(now())
+}
+
+model EventType {
+  id          String  @id
+  slug        String  @unique
+  name        String
+  /// link = any URL. calendar = Google Calendar link, or an .ics download when the URL is blank.
+  actionType  String
+  actionUrl   String  @default("")
+  buttonLabel String
+  sort        Int     @default(0)
+  active      Boolean @default(true)
+  events      Event[]
+}
+
+model Event {
+  id          String         @id
+  slug        String         @unique
+  title       String
+  description String
+  typeId      String
+  type        EventType      @relation(fields: [typeId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime
+  /// "" or "weekly"
+  recurrence  String         @default("")
+  /// all, headliners, cohort, producers
+  audience    String
+  cohortId    String?
+  cohort      Cohort?        @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  active      Boolean        @default(true)
+  cancelled   Boolean        @default(false)
+  /// Blank fields inherit the event type's join action.
+  actionType  String?
+  actionUrl   String?
+  buttonLabel String?
+  announcements Announcement[]
+}
+
+model Announcement {
+  id          String    @id @default(cuid())
+  body        String
+  channelId   String
+  roleMention String?
+  sendAt      DateTime
+  eventId     String?
+  event       Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  /// Minutes before the event start. Null means sendAt was chosen on its own.
+  leadMinutes Int?
+  status      String
+  note        String?
+  createdAt   DateTime  @default(now())
 }
 
 model Checkout {

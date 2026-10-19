@@ -1,16 +1,18 @@
 # JSTDRMN Academy — plan
 
-A standalone website for JSTDRMN Academy (“Just Dreamin’”), the Toronto EDM collective. The marketing site stays on HubSpot CMS. This app does not reuse that site’s menu (About, Community, Showcases, Label, Management). The academy menu is Dashboard and My Courses, plus the logo and log in / sign up or the avatar. Another menu item is another entry in `lib/nav.ts`.
+A standalone website for JSTDRMN Academy (“Just Dreamin’”), the Toronto EDM collective. The marketing site stays on HubSpot CMS. This app does not reuse that site’s menu (About, Community, Showcases, Label, Management). The academy menu is Programs, Private Sessions, Events, Dashboard, and My Courses, plus the logo and log in / sign up or the avatar. Another menu item is another entry in `lib/nav.ts`.
 
-The classroom is one Headliner subscription, a grid of programs, and bootcamp cohort portals.
+The Academy lead view is the CRM for the site; HubSpot stays for marketing leads and applications.
 
-Adding a program is a course row. The landing grid, the detail page, checkout, and the grant screen all read that row. No new page or product string. A program with `billing: "request"` uses the same detail page and shows a request form instead of checkout.
+The classroom is one Headliner subscription, a grid of group and self-paced programs, bootcamp cohort portals, and a Private Sessions roster.
+
+Adding a program is a course row. The landing grid, the detail page, checkout, and the grant screen all read that row. No new page or product string. Private Sessions is a mentor roster, not a program card.
 
 ## Architecture
 
 Next.js (App Router) and TypeScript. Local development uses SQLite through Prisma. Production on Vercel uses hosted Postgres. The build switches the Prisma datasource when `DATABASE_URL` is a `postgres://` or `postgresql://` URL. See the README for the env vars and the one-time database setup.
 
-Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. Teacher and admin see every course and every cohort, edit lessons, read notes, see one-on-one requests, and grant or revoke seats. Students see titles for locked work and can open only what an entitlement allows.
+Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. The Academy lead (teacher or admin) sees every course and cohort, edits lessons, manages mentors, events, and the announcement queue, reads session requests, and grants or revokes seats. Students see Discord link status on My Courses. Students see titles for locked work and can open only what an entitlement allows.
 
 Headliner’s price is CAD cents in `HEADLINER_PRICE_CENTS`. Leave it unset and the banner shows `$X/month`. Every other program stores `priceCents` on its own row. A null price is hidden. Billing is `monthly`, `once`, `application`, or `request`.
 
@@ -28,13 +30,17 @@ HubSpot is described in [HUBSPOT.md](./HUBSPOT.md). Discord is described in [DIS
 
 ## Data model
 
-- **User** — email, password hash, role, optional `discordId` after Connect Discord.
+- **User** — email, password hash, role, optional `discordId` and `discordUsername` after Connect Discord.
 - **Course** — a program. `placement` is `banner` (Headliner strip) or `grid` (a card). `access` is `headliner`, `purchase`, `subscription`, `cohort`, or `request`. `priceCents` is null when the card should hide a price. `special` marks a card such as FB2B. `presenter` is the person in front of the title (“Ash F presents FB2B”). `hubspotUrl` is the apply link for bootcamps. `statusLabel` is the tag on the card. `billing` is `monthly`, `once`, `application`, or `request`.
 - **Track** — a node in a program’s curriculum. `parentId` makes the progression tree. Lessons point at a track. A new branch is a new track row.
 - **Cohort** — a portal inside a bootcamp. Slugs are global (`cohort-6`) so a webhook can name one.
 - **Lesson** — belongs to a course, optionally a cohort and a track. `headliner` marks the membership subset. `drip` hides the lesson until earlier ones are marked complete. `videoProvider` + `videoUrl` are the pluggable source.
 - **Entitlement** — `headliner` (the membership), `program` (one course, whether it was a one-time purchase or a subscription), or `cohort` (one cohort). `active` or `revoked`, optional `endsAt`. Older rows stored as `course` or `ash` are read as `program`.
-- **SessionRequest** — a one-on-one request on a program whose billing is `request`: name, email, topic, preferred times. Teachers see the latest ones on the desk. Nothing is booked or charged.
+- **Mentor** — a Private Sessions profile: name, slug, role line, optional photo URL, bio, background, specialties, genres, `active`, `placeholder`, and sort. Hidden mentors stay in the database with `active` false. Placeholders show on the grid as Coming soon and do not take requests.
+- **SessionRequest** — a private-session request: name, email, topic, preferred times, and the chosen mentor. The Academy lead sees the latest ones. Nothing is booked or charged.
+- **EventType** — Community Connect, Green Room, Sync, and Production Feedback in the seed. Each type has a default join action: `link` or `calendar`, a URL, and a button label. A link can be Discord, Zoom, Instagram, or any other page. Calendar uses a Google Calendar link, or an `.ics` download when the URL is blank. New types are more rows, not a code change.
+- **Event** — title, type, description, start and end in America/Toronto, weekly or one-off, audience (`all`, `headliners`, `cohort`, `producers`), and optional overrides of the type’s join action. Connect Discord is required only when that destination is a Discord URL.
+- **Announcement** — a queued Discord message: body, channel id, optional role mention, send time, or “minutes before” an event. Status is `scheduled`, `sent`, or `failed`. `GET /api/cron/announcements` posts due rows, or logs them when `DISCORD_BOT_TOKEN` is unset.
 - **Progress** — `in_progress` or `completed` per student per lesson.
 - **Comment** — a lesson note, with optional parent for a teacher reply.
 - **Checkout** — pending or paid, mock or stripe.
@@ -58,11 +64,11 @@ Implemented in `lib/entitlements.ts` and covered by `npm test`.
 
 | Who | Email | Password | Access |
 | --- | --- | --- | --- |
-| Yu (teacher) | yu@jstdrmn.com | boothlights | Everything, including one-on-one requests |
+| Yu (teacher) | yu@jstdrmn.com | boothlights | Everything, including the mentor roster and session requests |
 | Maya Chen | maya@jstdrmn.com | headliner | Headliner path and the Discord card |
 | Jordan Blake | jordan@jstdrmn.com | cohort6 | Foundations of Club Mixing, and DJ Bootcamp Cohort 6 only |
 
-Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner Production and Advanced Production), and Mashups & Remixes. Each track has a mock video. FB2B is Ash F’s special offering at $50/month CAD, with a placeholder and no invented lessons. One-on-One Sessions is a grid card with a request form and no price. DJ Bootcamp Cohorts 5 and 6 are unchanged. Jordan is two lessons into Cohort 6, on Beatmatching. Maya has an unanswered note on Introduction to EDM. Yu has answered Jordan.
+Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner Production and Advanced Production), and Mashups & Remixes. Each track has a mock video. FB2B is Ash F’s special offering at $50/month CAD, with a placeholder and no invented lessons. Private Sessions lists Yu Fu plus two Coming soon placeholder mentors. DJ Bootcamp Cohorts 5 and 6 are unchanged. Jordan is two lessons into Cohort 6, on Beatmatching. Maya has an unanswered note on Introduction to EDM. Yu has answered Jordan.
 
 ## Next steps
 
@@ -73,7 +79,7 @@ Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progressi
 5. Keep Drive files shared to student emails only. Move paid video to Bunny Stream when that account is ready. The provider stub is already in `lib/video.ts`.
 6. Replace generated handouts with uploaded PDFs.
 7. Deploy on Vercel with hosted Postgres. The README has the env vars and the database steps.
-8. One-on-one sessions are a request form only. Later: booking (a student picks a time and a teacher confirms) and payment (a Stripe price on that program). Do not add a calendar or a charge until that work starts.
+8. Private sessions are a request form on a mentor profile. Later: booking (a student picks a time and that mentor confirms) and payment. Do not add a calendar or a charge until that work starts.
 
 ## Open questions
 

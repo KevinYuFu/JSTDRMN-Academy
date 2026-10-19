@@ -37,14 +37,20 @@ export async function GET(request: Request) {
     headers: { Authorization: `Bearer ${token.access_token}` },
   });
   if (!profileResponse.ok) redirect("/headliner?discord=error");
-  const profile = (await profileResponse.json()) as { id?: string };
+  const profile = (await profileResponse.json()) as { id?: string; username?: string };
   if (!profile.id) redirect("/headliner?discord=error");
 
-  await prisma.user.update({ where: { id: user.id }, data: { discordId: profile.id } });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { discordId: profile.id, discordUsername: profile.username?.slice(0, 80) || null },
+  });
   const active = discordCardAccess({
     role: user.role,
     entitlements: await entitlementRecords(user.id),
   }).allowed;
   await syncHeadlinerRole({ discordUserId: profile.id, active });
-  redirect("/headliner?discord=connected");
+  const next = jar.get("discord_oauth_next")?.value;
+  jar.delete("discord_oauth_next");
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/headliner";
+  redirect(`${dest}${dest.includes("?") ? "&" : "?"}discord=connected`);
 }

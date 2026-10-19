@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { setMentorActive } from "@/app/actions";
 import { AppHeader } from "@/components/app-header";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -12,8 +13,9 @@ function when(date: Date) {
 
 export default async function TeacherPage() {
   const teacher = await requireStaff();
-  const [courses, comments, students, logs, cohorts, requests] = await Promise.all([
+  const [courses, comments, students, logs, cohorts, requests, mentors] = await Promise.all([
     prisma.course.findMany({
+      where: { access: { not: "request" } },
       orderBy: { sort: "asc" },
       include: { lessons: true, cohorts: { orderBy: { sort: "asc" } } },
     }),
@@ -23,14 +25,19 @@ export default async function TeacherPage() {
       take: 6,
       include: { user: true, lesson: { include: { course: true, cohort: true } }, replies: { include: { user: true } } },
     }),
-    prisma.user.count({ where: { role: "student" } }),
+    prisma.user.findMany({
+      where: { role: "student" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, email: true, discordId: true, discordUsername: true },
+    }),
     prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
     prisma.sessionRequest.findMany({
       orderBy: { createdAt: "desc" },
       take: 8,
-      include: { course: true },
+      include: { course: true, mentor: true },
     }),
+    prisma.mentor.findMany({ orderBy: { sort: "asc" } }),
   ]);
   const waiting = comments.filter((comment) => !comment.replies.some((reply) => isStaff(reply.user.role))).length;
 
@@ -38,10 +45,15 @@ export default async function TeacherPage() {
     <>
       <AppHeader active="teacher" />
       <main className="shell">
-        <h1 className="page-title" style={{ marginBottom: 6 }}>Teacher desk</h1>
-        <p className="note" style={{ marginBottom: 16 }}>{teacher.name}, every course and every past cohort is open on this account.</p>
+        <h1 className="page-title" style={{ marginBottom: 6 }}>Academy lead</h1>
+        <p className="note" style={{ marginBottom: 12 }}>{teacher.name}, this is the management view: students, Discord links, events, announcements, session requests, and mentors.</p>
+        <div className="detail-actions" style={{ marginBottom: 16 }}>
+          <Link className="pill pill-purple" href="/teacher/events">Events</Link>
+          <Link className="pill pill-purple" href="/teacher/announcements">Announcements</Link>
+          <Link className="pill pill-black" href="/teacher/access">Grant or revoke</Link>
+        </div>
         <div className="stat-row">
-          <div className="stat"><b>{students}</b><span>Students</span></div>
+          <div className="stat"><b>{students.length}</b><span>Students</span></div>
           <div className="stat"><b>{courses.length}</b><span>Courses</span></div>
           <div className="stat"><b>{cohorts.length}</b><span>Bootcamp cohorts</span></div>
           <div className="stat"><b>{waiting}</b><span>Notes waiting</span></div>
@@ -71,6 +83,31 @@ export default async function TeacherPage() {
                 <Link className="pill pill-purple" href={`/bootcamps/${cohort.course.slug}/${cohort.slug}`}>Open</Link>
               </div>
             ))}
+            <h2 className="section-label" style={{ marginTop: 18 }}>Mentors</h2>
+            <p className="note">Private Sessions reads this list. Hide takes a mentor off the public page.</p>
+            {mentors.map((mentor) => (
+              <div key={mentor.id} className="list-row">
+                <div>
+                  <b>{mentor.name}</b>
+                  <div className="note">
+                    {mentor.roleLine}
+                    {mentor.placeholder ? " · Placeholder" : ""}
+                    {mentor.active ? "" : " · Hidden"}
+                  </div>
+                </div>
+                <div className="detail-actions">
+                  <Link className="pill pill-black" href={`/teacher/mentors/${mentor.slug}`}>Edit</Link>
+                  <form action={setMentorActive}>
+                    <input type="hidden" name="id" value={mentor.id} />
+                    <input type="hidden" name="active" value={mentor.active ? "false" : "true"} />
+                    <button className="pill pill-black" type="submit">{mentor.active ? "Hide" : "Show"}</button>
+                  </form>
+                </div>
+              </div>
+            ))}
+            <p style={{ margin: "14px 0" }}>
+              <Link className="pill pill-purple" href="/teacher/mentors/new">Add mentor</Link>
+            </p>
             <p style={{ margin: "14px 0" }}>
               <Link className="pill pill-purple" href="/teacher/access">Grant or revoke access</Link>
             </p>
@@ -96,13 +133,23 @@ export default async function TeacherPage() {
                 </article>
               );
             })}
-            <h2 className="section-label" style={{ marginTop: 18 }}>One-on-one requests</h2>
+            <h2 className="section-label">Students</h2>
+            {students.map((student) => (
+              <div key={student.id} className="list-row">
+                <div>
+                  <b>{student.name}</b>
+                  <div className="note">{student.email}</div>
+                </div>
+                <span className="note">{student.discordId ? `Discord ${student.discordUsername ?? "linked"}` : "Discord not linked"}</span>
+              </div>
+            ))}
+            <h2 className="section-label" style={{ marginTop: 18 }}>Private session requests</h2>
             {requests.length === 0 ? <p className="note">No session requests yet.</p> : null}
             {requests.map((request) => (
               <article key={request.id} className="thread">
                 <div className="who">
                   <b>{request.name}</b>
-                  <span> · {when(request.createdAt)} · {request.course.title}</span>
+                  <span> · {when(request.createdAt)} · {request.mentor?.name ?? "Mentor"}</span>
                 </div>
                 <p>{request.topic}</p>
                 <p className="note">{request.email} · {request.preferredTimes}</p>

@@ -19,6 +19,7 @@ export default async function CoursePage({
   const course = await prisma.course.findUnique({ where: { slug } });
   if (!course) redirect("/dashboard");
   if (course.access === "cohort") redirect(`/bootcamps/${course.slug}`);
+  if (course.access === "request") redirect("/private-sessions");
   if (course.access === "headliner" && !query.lesson) redirect("/headliner");
   if (course.placement === "grid" && !query.lesson) {
     const count = await prisma.lesson.count({ where: { courseId: course.id } });

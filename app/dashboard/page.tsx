@@ -105,6 +105,13 @@ export default async function DashboardPage() {
         <p className="note" style={{ marginBottom: 18 }}>
           {user.name.split(" ")[0]}, this shelf is only what your account can open.
         </p>
+        <div className="card" style={{ padding: "14px 16px", marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <b>Discord</b>
+            <div className="note">{user.discordId ? `Linked${user.discordUsername ? ` as ${user.discordUsername}` : ""}` : "Not linked"}</div>
+          </div>
+          {user.discordId ? null : <a className="pill pill-purple" href="/api/discord/connect?next=/dashboard">Connect Discord</a>}
+        </div>
         <h2 className="section-label">Yours</h2>
         {mine.length === 0 ? (
           <div className="card" style={{ padding: 18, marginBottom: 22 }}>

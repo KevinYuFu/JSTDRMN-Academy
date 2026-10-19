@@ -12,6 +12,9 @@ import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff, lessonAccess, earlierLessonsComplete, normalizeProduct, type Product } from "@/lib/entitlements";
 import { applyPendingGrants, syncContact } from "@/lib/hubspot";
 import { entitlementRecords } from "@/lib/learn";
+import { announcementWhen } from "@/lib/announcements";
+import { audiences, parseToronto } from "@/lib/events";
+import { mentorSlug, packMentorList, parseMentorList } from "@/lib/mentors";
 import { stripeClient } from "@/lib/stripe";
 import { safeNext } from "@/lib/utils";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
@@ -333,19 +336,215 @@ export async function confirmMockPayment(formData: FormData) {
 
 export async function requestSession(formData: FormData) {
   const courseId = String(formData.get("courseId") ?? "");
+  const mentorId = String(formData.get("mentorId") ?? "");
   const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course || course.billing !== "request") redirect("/");
+  const mentor = await prisma.mentor.findUnique({ where: { id: mentorId } });
+  if (!course || course.billing !== "request" || !mentor || !mentor.active || mentor.placeholder) {
+    redirect("/private-sessions?error=1");
+  }
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const topic = String(formData.get("topic") ?? "").trim();
   const preferredTimes = String(formData.get("preferredTimes") ?? "").trim();
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const back = `/private-sessions?mentor=${mentor.slug}`;
   if (name.length < 2 || name.length > 80 || !emailOk || topic.length < 2 || topic.length > 500 || preferredTimes.length < 2 || preferredTimes.length > 500) {
-    redirect(`/programs/${course.slug}?error=1`);
+    redirect(`${back}&error=1`);
   }
   await prisma.sessionRequest.create({
-    data: { courseId: course.id, name, email, topic, preferredTimes },
+    data: { courseId: course.id, mentorId: mentor.id, name, email, topic, preferredTimes },
   });
   revalidatePath("/teacher");
-  redirect(`/programs/${course.slug}?sent=1`);
+  redirect("/private-sessions?sent=1");
+}
+
+export async function saveMentor(formData: FormData) {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const requestedSlug = mentorSlug(String(formData.get("slug") ?? "") || name);
+  const roleLine = String(formData.get("roleLine") ?? "").trim();
+  const photoUrl = String(formData.get("photoUrl") ?? "").trim();
+  const bio = String(formData.get("bio") ?? "").trim();
+  const background = parseMentorList(String(formData.get("background") ?? ""));
+  const specialties = parseMentorList(String(formData.get("specialties") ?? ""));
+  const genres = parseMentorList(String(formData.get("genres") ?? ""));
+  const sort = Number(formData.get("sort") ?? 0);
+  const active = formData.get("active") === "on";
+  const placeholder = formData.get("placeholder") === "on";
+  const photoOk = photoUrl === "" || /^https?:\/\//.test(photoUrl);
+  if (name.length < 2 || name.length > 80 || roleLine.length < 2 || roleLine.length > 120 || bio.length < 2 || bio.length > 2000 || !photoOk || !Number.isFinite(sort)) {
+    const current = id ? await prisma.mentor.findUnique({ where: { id } }) : null;
+    redirect(current ? `/teacher/mentors/${current.slug}?error=1` : "/teacher/mentors/new?error=1");
+  }
+  let slug = requestedSlug;
+  const taken = await prisma.mentor.findUnique({ where: { slug } });
+  if (taken && taken.id !== id) slug = `${requestedSlug}-${Date.now().toString(36)}`.slice(0, 60);
+  const data = {
+    name,
+    slug,
+    roleLine,
+    photoUrl: photoUrl || null,
+    bio,
+    background: packMentorList(background),
+    specialties: packMentorList(specialties),
+    genres: packMentorList(genres),
+    active,
+    placeholder,
+    sort: Math.round(sort),
+  };
+  if (id) {
+    await prisma.mentor.update({ where: { id }, data });
+  } else {
+    await prisma.mentor.create({ data: { id: `mnt_${randomBytes(6).toString("hex")}`, ...data } });
+  }
+  revalidatePath("/private-sessions");
+  revalidatePath("/teacher");
+  redirect("/teacher?saved=mentor");
+}
+
+export async function setMentorActive(formData: FormData) {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  const active = String(formData.get("active") ?? "") === "true";
+  if (!id) redirect("/teacher");
+  await prisma.mentor.update({ where: { id }, data: { active } });
+  revalidatePath("/private-sessions");
+  revalidatePath("/teacher");
+  redirect("/teacher");
+}
+
+function cleanAction(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "inherit") return null;
+  return trimmed;
+}
+
+export async function saveEvent(formData: FormData) {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const typeId = String(formData.get("typeId") ?? "");
+  const startsAt = parseToronto(String(formData.get("startsAt") ?? ""));
+  const endsAt = parseToronto(String(formData.get("endsAt") ?? ""));
+  const recurrence = String(formData.get("recurrence") ?? "") === "weekly" ? "weekly" : "";
+  const audience = String(formData.get("audience") ?? "all");
+  const cohortId = String(formData.get("cohortId") ?? "") || null;
+  const active = formData.get("active") === "on";
+  const cancelled = formData.get("cancelled") === "on";
+  const actionType = cleanAction(String(formData.get("actionType") ?? ""));
+  const actionUrl = cleanAction(String(formData.get("actionUrl") ?? ""));
+  const buttonLabel = cleanAction(String(formData.get("buttonLabel") ?? ""));
+  const requestedSlug = mentorSlug(String(formData.get("slug") ?? "") || title);
+  const current = id ? await prisma.event.findUnique({ where: { id } }) : null;
+  const fail = current ? `/teacher/events/${current.slug}?error=1` : "/teacher/events/new?error=1";
+  const type = await prisma.eventType.findUnique({ where: { id: typeId } });
+  if (!type || title.length < 2 || description.length < 2 || !startsAt || !endsAt || endsAt <= startsAt || !audiences.includes(audience as (typeof audiences)[number])) {
+    redirect(fail);
+  }
+  if (audience === "cohort" && !cohortId) redirect(fail);
+  if (actionType && actionType !== "link" && actionType !== "calendar") redirect(fail);
+  if (actionUrl && !/^https?:\/\//.test(actionUrl)) redirect(fail);
+  let slug = requestedSlug;
+  const taken = await prisma.event.findUnique({ where: { slug } });
+  if (taken && taken.id !== id) slug = `${requestedSlug}-${Date.now().toString(36)}`.slice(0, 60);
+  const data = {
+    title,
+    slug,
+    description,
+    typeId,
+    startsAt,
+    endsAt,
+    recurrence,
+    audience,
+    cohortId: audience === "cohort" ? cohortId : null,
+    active,
+    cancelled,
+    actionType,
+    actionUrl,
+    buttonLabel,
+  };
+  const saved = id
+    ? await prisma.event.update({ where: { id }, data })
+    : await prisma.event.create({ data: { id: `evt_${randomBytes(6).toString("hex")}`, ...data } });
+  const queued = await prisma.announcement.findMany({
+    where: { eventId: saved.id, status: "scheduled", leadMinutes: { not: null } },
+  });
+  for (const item of queued) {
+    if (item.leadMinutes == null) continue;
+    await prisma.announcement.update({
+      where: { id: item.id },
+      data: { sendAt: new Date(saved.startsAt.getTime() - item.leadMinutes * 60 * 1000) },
+    });
+  }
+  revalidatePath("/events");
+  revalidatePath("/teacher/events");
+  revalidatePath("/teacher/announcements");
+  redirect("/teacher/events?saved=1");
+}
+
+export async function saveEventType(formData: FormData) {
+  await requireStaff();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const actionType = String(formData.get("actionType") ?? "link") === "calendar" ? "calendar" : "link";
+  const actionUrl = String(formData.get("actionUrl") ?? "").trim();
+  const buttonLabel = String(formData.get("buttonLabel") ?? "").trim();
+  if (name.length < 2 || buttonLabel.length < 2 || (actionUrl && !/^https?:\/\//.test(actionUrl))) {
+    redirect("/teacher/events?error=type");
+  }
+  const slug = mentorSlug(name);
+  const data = { name, slug, actionType, actionUrl, buttonLabel };
+  if (id) {
+    const taken = await prisma.eventType.findUnique({ where: { slug } });
+    await prisma.eventType.update({
+      where: { id },
+      data: { name, actionType, actionUrl, buttonLabel, ...(taken && taken.id !== id ? {} : { slug }) },
+    });
+  } else {
+    const taken = await prisma.eventType.findUnique({ where: { slug } });
+    await prisma.eventType.create({
+      data: {
+        id: `etype_${randomBytes(4).toString("hex")}`,
+        ...data,
+        slug: taken ? `${slug}-${Date.now().toString(36)}`.slice(0, 60) : slug,
+        sort: (await prisma.eventType.count()) + 1,
+      },
+    });
+  }
+  revalidatePath("/events");
+  revalidatePath("/teacher/events");
+  redirect("/teacher/events?saved=type");
+}
+
+export async function saveAnnouncement(formData: FormData) {
+  await requireStaff();
+  const body = String(formData.get("body") ?? "").trim();
+  const channelId = String(formData.get("channelId") ?? "").trim();
+  const roleMention = String(formData.get("roleMention") ?? "").trim();
+  const eventId = String(formData.get("eventId") ?? "") || null;
+  const leadRaw = String(formData.get("leadMinutes") ?? "").trim();
+  const leadMinutes = leadRaw === "" ? null : Number(leadRaw);
+  const explicit = parseToronto(String(formData.get("sendAt") ?? ""));
+  if (body.length < 2 || body.length > 1800 || channelId.length < 2 || channelId.length > 40) {
+    redirect("/teacher/announcements?error=1");
+  }
+  const event = eventId ? await prisma.event.findUnique({ where: { id: eventId } }) : null;
+  if (eventId && !event) redirect("/teacher/announcements?error=1");
+  const when = announcementWhen(event?.startsAt ?? null, leadMinutes != null && Number.isFinite(leadMinutes) ? leadMinutes : null, explicit);
+  if (!when) redirect("/teacher/announcements?error=1");
+  await prisma.announcement.create({
+    data: {
+      body,
+      channelId,
+      roleMention: roleMention || null,
+      eventId,
+      leadMinutes: event && leadMinutes != null && Number.isFinite(leadMinutes) ? Math.round(leadMinutes) : null,
+      sendAt: when,
+      status: "scheduled",
+    },
+  });
+  revalidatePath("/teacher/announcements");
+  redirect("/teacher/announcements?saved=1");
 }

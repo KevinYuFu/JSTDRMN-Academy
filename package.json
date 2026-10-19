@@ -9,7 +9,7 @@
     "build": "node scripts/prepare-prisma.mjs && node scripts/prisma-generate.mjs && next build",
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
-    "test": "tsx --test lib/entitlements.test.ts lib/hubspot.test.ts lib/video.test.ts lib/discord.test.ts"
+    "test": "tsx --test lib/entitlements.test.ts lib/hubspot.test.ts lib/video.test.ts lib/discord.test.ts lib/mentors.test.ts lib/events.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
