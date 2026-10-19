@@ -1,0 +1,273 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Meta {
+  key   String @id
+  value String
+}
+
+model User {
+  id                 String              @id
+  email              String              @unique
+  name               String
+  passwordHash       String
+  role               String
+  discordId          String?
+  discordUsername    String?
+  createdAt          DateTime            @default(now())
+  sessions           Session[]
+  entitlements       Entitlement[]
+  progress           Progress[]
+  comments           Comment[]
+  checkouts          Checkout[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id           String        @id
+  slug         String        @unique
+  title        String
+  tagline      String
+  description  String
+  kind         String
+  access       String
+  priceCents   Int?
+  billing      String
+  statusLabel  String
+  hubspotUrl   String?
+  panel        String
+  sort         Int           @default(0)
+  /// banner = the Headliner strip. grid = a card. Anything else stays off the public page.
+  placement    String        @default("grid")
+  special      Boolean       @default(false)
+  presenter    String?
+  lessons      Lesson[]
+  cohorts      Cohort[]
+  tracks          Track[]
+  entitlements    Entitlement[]
+  sessionRequests SessionRequest[]
+}
+
+model Mentor {
+  id           String           @id
+  slug         String           @unique
+  name         String
+  roleLine     String
+  photoUrl     String?
+  bio          String
+  /// JSON string arrays. Teachers edit them as one item per line.
+  background   String
+  specialties  String
+  genres       String
+  active       Boolean          @default(true)
+  placeholder  Boolean          @default(false)
+  sort         Int              @default(0)
+  requests     SessionRequest[]
+}
+
+model Track {
+  id       String   @id
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parentId String?
+  parent   Track?   @relation("TrackTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Track[]  @relation("TrackTree")
+  slug     String
+  title    String
+  blurb    String
+  position Int      @default(0)
+  lessons  Lesson[]
+
+  @@unique([courseId, slug])
+}
+
+model Cohort {
+  id           String        @id
+  courseId     String
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug         String        @unique
+  name         String
+  startsLabel  String
+  sort         Int           @default(0)
+  lessons      Lesson[]
+  entitlements Entitlement[]
+  events       Event[]
+}
+
+model Lesson {
+  id            String     @id
+  courseId      String
+  course        Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cohortId      String?
+  cohort        Cohort?    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  trackId       String?
+  track         Track?     @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  position      Int
+  title         String
+  summary       String
+  durationMin   Int
+  runtimeLabel  String
+  videoProvider String
+  videoUrl      String
+  slidesTitle   String?
+  slidesMeta    String?
+  headliner     Boolean    @default(false)
+  drip          Boolean    @default(false)
+  comments      Comment[]
+  progress      Progress[]
+}
+
+model Entitlement {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product    String
+  courseId   String?
+  course     Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cohortId   String?
+  cohort     Cohort?   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  status     String
+  source     String
+  externalId String?
+  endsAt     DateTime?
+  createdAt  DateTime  @default(now())
+  revokedAt  DateTime?
+}
+
+model Progress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status    String
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  lessonId  String
+  lesson    Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?  @relation("Thread", fields: [parentId], references: [id])
+  replies   Comment[] @relation("Thread")
+  body      String
+  createdAt DateTime  @default(now())
+}
+
+model SessionRequest {
+  id             String   @id @default(cuid())
+  courseId       String
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  mentorId       String?
+  mentor         Mentor?  @relation(fields: [mentorId], references: [id], onDelete: SetNull)
+  name           String
+  email          String
+  topic          String
+  preferredTimes String
+  createdAt      DateTime @default(now())
+}
+
+model EventType {
+  id          String  @id
+  slug        String  @unique
+  name        String
+  /// link = any URL. calendar = Google Calendar link, or an .ics download when the URL is blank.
+  actionType  String
+  actionUrl   String  @default("")
+  buttonLabel String
+  sort        Int     @default(0)
+  active      Boolean @default(true)
+  events      Event[]
+}
+
+model Event {
+  id          String         @id
+  slug        String         @unique
+  title       String
+  description String
+  typeId      String
+  type        EventType      @relation(fields: [typeId], references: [id])
+  startsAt    DateTime
+  endsAt      DateTime
+  /// "" or "weekly"
+  recurrence  String         @default("")
+  /// all, headliners, cohort, producers
+  audience    String
+  cohortId    String?
+  cohort      Cohort?        @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  active      Boolean        @default(true)
+  cancelled   Boolean        @default(false)
+  /// Blank fields inherit the event type's join action.
+  actionType  String?
+  actionUrl   String?
+  buttonLabel String?
+  announcements Announcement[]
+}
+
+model Announcement {
+  id          String    @id @default(cuid())
+  body        String
+  channelId   String
+  roleMention String?
+  sendAt      DateTime
+  eventId     String?
+  event       Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  /// Minutes before the event start. Null means sendAt was chosen on its own.
+  leadMinutes Int?
+  status      String
+  note        String?
+  createdAt   DateTime  @default(now())
+}
+
+model Checkout {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     String
+  courseId    String?
+  cohortId    String?
+  amountCents Int?
+  currency    String
+  status      String
+  mode        String
+  label       String
+  createdAt   DateTime @default(now())
+}
+
+model PendingGrant {
+  id         String    @id @default(cuid())
+  email      String
+  product    String
+  courseId   String?
+  cohortId   String?
+  source     String
+  createdAt  DateTime  @default(now())
+  consumedAt DateTime?
+}
+
+model HubspotLog {
+  id        String   @id @default(cuid())
+  action    String
+  payload   String
+  createdAt DateTime @default(now())
+}
