@@ -28,7 +28,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
         </div>
         <h1 className="page-title" style={{ marginBottom: 8 }}>Announcements</h1>
         <p className="note" style={{ marginBottom: 16 }}>
-          Queue a Discord message for a channel. Without a bot token, the cron logs it instead of posting. Vercel can call <span className="note">/api/cron/announcements</span> every few minutes.
+          Queue a Discord message for a channel. Without a bot token, the cron logs it instead of posting. On Vercel Hobby, <span className="note">/api/cron/announcements</span> runs once a day at about 3pm Toronto and sends every announcement that is already due. Set the send time before then.
         </p>
         {query.saved ? <div className="banner">Queued.</div> : null}
         {query.error ? <div className="error">A message, a channel id, and either a send time or an event are required.</div> : null}
