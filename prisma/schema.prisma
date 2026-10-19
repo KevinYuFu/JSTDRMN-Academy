@@ -26,8 +26,6 @@ model User {
   progress           Progress[]
   comments           Comment[]
   checkouts          Checkout[]
-  submissions        Submission[]
-  submissionComments SubmissionComment[]
 }
 
 model Session {
@@ -59,8 +57,9 @@ model Course {
   presenter    String?
   lessons      Lesson[]
   cohorts      Cohort[]
-  tracks       Track[]
-  entitlements Entitlement[]
+  tracks          Track[]
+  entitlements    Entitlement[]
+  sessionRequests SessionRequest[]
 }
 
 model Track {
@@ -156,26 +155,15 @@ model Comment {
   createdAt DateTime  @default(now())
 }
 
-model Submission {
-  id        String              @id
-  userId    String
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  url       String
-  kind      String
-  notes     String              @default("")
-  createdAt DateTime            @default(now())
-  comments  SubmissionComment[]
-}
-
-model SubmissionComment {
-  id           String     @id @default(cuid())
-  submissionId String
-  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  body         String
-  createdAt    DateTime   @default(now())
+model SessionRequest {
+  id             String   @id @default(cuid())
+  courseId       String
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name           String
+  email          String
+  topic          String
+  preferredTimes String
+  createdAt      DateTime @default(now())
 }
 
 model Checkout {

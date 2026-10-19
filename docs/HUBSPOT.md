@@ -1,6 +1,6 @@
 # HubSpot and the Academy
 
-JSTDRMN’s public site already lives on HubSpot CMS. Bootcamp applications should stay there. This app is the student portal: videos, slides, and who is allowed in. HubSpot does not need to host the lessons.
+JSTDRMN’s marketing site lives on HubSpot CMS. The Academy is its own website and does not reuse that menu. Bootcamp applications stay on HubSpot: Apply on a bootcamp program links out. This app is the classroom: videos, slides, and who is allowed in. HubSpot does not host the lessons.
 
 Yu doesn’t have to pick a HubSpot plan to run the prototype. Until `HUBSPOT_PRIVATE_APP_TOKEN` is set, signup sync and the cohort webhook do nothing. The teacher screen can still grant a seat by email.
 

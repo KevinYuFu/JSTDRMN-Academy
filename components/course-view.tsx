@@ -6,6 +6,7 @@ import { isStaff } from "@/lib/entitlements";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Icon } from "./icons";
+import { SlidesCard } from "./slides-card";
 import { VideoPlayer } from "./video-player";
 
 type CourseData = Awaited<ReturnType<typeof openCourse>>;
@@ -150,21 +151,7 @@ export function CourseView({
           )}
 
           {current && allowed && current.slidesTitle ? (
-            <div className="card slides">
-              <div className="ico">
-                <Icon name="slides" />
-              </div>
-              <div className="meta">
-                <h3>{current.slidesTitle}</h3>
-                <p>{current.slidesMeta}</p>
-              </div>
-              <a className="pill pill-black" href={`/api/slides/${current.id}`} target="_blank" rel="noreferrer">
-                <Icon name="eye" /> View
-              </a>
-              <a className="pill pill-purple" href={`/api/slides/${current.id}?download=1`}>
-                <Icon name="download" /> Download
-              </a>
-            </div>
+            <SlidesCard title={current.slidesTitle} meta={current.slidesMeta} src={`/api/slides/${current.id}`} />
           ) : null}
 
           {current && allowed && current.progress !== "completed" ? (

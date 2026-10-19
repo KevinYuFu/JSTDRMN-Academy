@@ -2,7 +2,7 @@ import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const SEED_VERSION = "2";
+const SEED_VERSION = "3";
 
 async function main() {
   const existing = await prisma.meta.findUnique({ where: { key: "seed" } });
@@ -12,8 +12,7 @@ async function main() {
   }
 
   await prisma.$transaction([
-    prisma.submissionComment.deleteMany(),
-    prisma.submission.deleteMany(),
+    prisma.sessionRequest.deleteMany(),
     prisma.comment.deleteMany(),
     prisma.progress.deleteMany(),
     prisma.checkout.deleteMany(),
@@ -149,6 +148,22 @@ async function main() {
         placement: "grid",
         special: false,
       },
+      {
+        id: "crs_one",
+        slug: "one-on-one",
+        title: "One-on-One Sessions",
+        tagline: "Time with a teacher on your own work.",
+        description: "Tell us what you want to work on and when you’re free. This is a request only. Nothing is booked and nothing is charged yet.",
+        kind: "session",
+        access: "request",
+        priceCents: null,
+        billing: "request",
+        statusLabel: "Open",
+        panel: "purple",
+        sort: 6,
+        placement: "grid",
+        special: false,
+      },
     ],
   });
 
@@ -273,26 +288,6 @@ async function main() {
       userId: "usr_maya",
       body: "Is the progression tree the order to watch these, or can I jump to DJing first?",
       createdAt: new Date("2026-10-07T21:10:00Z"),
-    },
-  });
-
-  await prisma.submission.create({
-    data: {
-      id: "sub_maya_friday",
-      userId: "usr_maya",
-      title: "Friday open",
-      url: "https://soundcloud.com/example/friday-open",
-      kind: "mix",
-      notes: "Booth recording from last weekend. The middle transition is the part I want notes on.",
-      createdAt: new Date("2026-10-06T02:15:00Z"),
-      comments: {
-        create: {
-          id: "scm_yu_friday",
-          userId: "usr_yu",
-          body: "The handoff in the middle works. Keep the incoming kick quieter for the first eight bars.",
-          createdAt: new Date("2026-10-06T18:40:00Z"),
-        },
-      },
     },
   });
 

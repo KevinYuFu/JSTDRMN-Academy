@@ -6,7 +6,7 @@ import { ProgressionTree } from "@/components/progression-tree";
 import { getUser } from "@/lib/auth";
 import { formatCad, prices } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { discordCardAccess, feedbackAccess } from "@/lib/entitlements";
+import { discordCardAccess } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 import { flattenTracks, buildTrackTree } from "@/lib/tracks";
 
@@ -31,7 +31,6 @@ export default async function HeadlinerPage({
   const records = user ? await entitlementRecords(user.id) : [];
   const role = user?.role ?? "student";
   const discord = discordCardAccess({ role, entitlements: records });
-  const feedback = feedbackAccess({ role, entitlements: records });
   const subscribeHref = user ? "/checkout?product=headliner" : "/signup?next=/checkout?product=headliner";
   const firstLesson = new Map<string, string>();
   for (const lesson of course.lessons) {
@@ -58,9 +57,7 @@ export default async function HeadlinerPage({
           </div>
           <div className="banner-side">
             <div className="amount">{formatCad(prices.headlinerMonthlyCents, "month")} CAD</div>
-            {feedback.allowed ? (
-              <Link className="pill pill-purple" href="/headliner/feedback">Feedback space</Link>
-            ) : (
+            {discord.allowed ? null : (
               <Link className="pill pill-purple" href={subscribeHref}>Subscribe</Link>
             )}
           </div>

@@ -9,8 +9,7 @@ import { fulfillCheckout, grantEntitlement, revokeEntitlement } from "@/lib/bill
 import { resolveOffer } from "@/lib/catalog";
 import { appUrl, stripeLive } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { asCourseAccess, containerAccess, feedbackAccess, isStaff, lessonAccess, earlierLessonsComplete, normalizeProduct, type Product } from "@/lib/entitlements";
-import { isSubmissionKind } from "@/lib/feedback";
+import { asCourseAccess, containerAccess, isStaff, lessonAccess, earlierLessonsComplete, normalizeProduct, type Product } from "@/lib/entitlements";
 import { applyPendingGrants, syncContact } from "@/lib/hubspot";
 import { entitlementRecords } from "@/lib/learn";
 import { stripeClient } from "@/lib/stripe";
@@ -332,50 +331,21 @@ export async function confirmMockPayment(formData: FormData) {
   redirect(lessons > 0 ? `/courses/${course.slug}?unlocked=1` : `/programs/${course.slug}?unlocked=1`);
 }
 
-export async function submitFeedback(formData: FormData) {
-  const user = await requireUser();
-  const perk = feedbackAccess({ role: user.role, entitlements: await entitlementRecords(user.id) });
-  if (!perk.allowed) redirect("/headliner/feedback");
-  const title = String(formData.get("title") ?? "").trim();
-  const url = String(formData.get("url") ?? "").trim();
-  const kind = String(formData.get("kind") ?? "");
-  const notes = String(formData.get("notes") ?? "").trim();
-  let parsed: URL | null = null;
-  try {
-    parsed = new URL(url);
-  } catch {
-    parsed = null;
+export async function requestSession(formData: FormData) {
+  const courseId = String(formData.get("courseId") ?? "");
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course || course.billing !== "request") redirect("/");
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const topic = String(formData.get("topic") ?? "").trim();
+  const preferredTimes = String(formData.get("preferredTimes") ?? "").trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (name.length < 2 || name.length > 80 || !emailOk || topic.length < 2 || topic.length > 500 || preferredTimes.length < 2 || preferredTimes.length > 500) {
+    redirect(`/programs/${course.slug}?error=1`);
   }
-  if (title.length < 2 || title.length > 120 || !isSubmissionKind(kind) || !parsed || !["http:", "https:"].includes(parsed.protocol) || notes.length > 2000) {
-    redirect("/headliner/feedback?error=1");
-  }
-  await prisma.submission.create({
-    data: {
-      id: `sub_${randomBytes(4).toString("hex")}`,
-      userId: user.id,
-      title,
-      url: parsed.toString(),
-      kind,
-      notes,
-    },
+  await prisma.sessionRequest.create({
+    data: { courseId: course.id, name, email, topic, preferredTimes },
   });
-  revalidatePath("/headliner/feedback");
   revalidatePath("/teacher");
-  redirect("/headliner/feedback?sent=1");
-}
-
-export async function commentOnSubmission(formData: FormData) {
-  const user = await requireUser();
-  const perk = feedbackAccess({ role: user.role, entitlements: await entitlementRecords(user.id) });
-  if (!perk.allowed) redirect("/headliner/feedback");
-  const submissionId = String(formData.get("submissionId") ?? "");
-  const body = String(formData.get("body") ?? "").trim();
-  const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
-  if (!submission || body.length < 2 || body.length > 2000) redirect("/headliner/feedback?error=1");
-  await prisma.submissionComment.create({
-    data: { submissionId, userId: user.id, body },
-  });
-  revalidatePath("/headliner/feedback");
-  revalidatePath("/teacher");
-  redirect(`/headliner/feedback#sub-${submissionId}`);
+  redirect(`/programs/${course.slug}?sent=1`);
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PublicHeader } from "@/components/public-header";
+import { AppHeader } from "@/components/app-header";
 import { formatCad, prices, programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
@@ -18,7 +18,7 @@ export default async function HomePage() {
 
   return (
     <div className="programs-page">
-      <PublicHeader />
+      <AppHeader />
       {banner ? (
         <section className="headliner-banner" aria-label={banner.title}>
           <div>

@@ -4,7 +4,6 @@ import {
   containerAccess,
   discordCardAccess,
   earlierLessonsComplete,
-  feedbackAccess,
   lessonAccess,
   type EntitlementRecord,
   type LessonGate,
@@ -247,19 +246,20 @@ describe("containerAccess", () => {
 describe("Headliner-only perks", () => {
   const member = grant({ product: "headliner", courseId: null, cohortId: null });
 
-  it("opens the feedback space only for an active Headliner", () => {
-    assert.equal(feedbackAccess({ role: "student", entitlements: [member], now }).allowed, true);
-    const missing = feedbackAccess({ role: "student", entitlements: [], now });
+  it("opens the Discord card only for an active Headliner", () => {
+    assert.equal(discordCardAccess({ role: "student", entitlements: [member], now }).allowed, true);
+    assert.equal(discordCardAccess({ role: "admin", entitlements: [], now }).allowed, true);
+    const missing = discordCardAccess({ role: "student", entitlements: [], now });
     assert.deepEqual(missing, { allowed: false, upsell: "headliner", reason: "missing" });
-    const otherProgram = feedbackAccess({
+    const otherProgram = discordCardAccess({
       role: "student",
       entitlements: [grant({ product: "program", courseId: "crs_fb2b", cohortId: null })],
       now,
     });
     assert.equal(otherProgram.allowed, false);
     assert.equal(otherProgram.upsell, "headliner");
-    assert.equal(feedbackAccess({ role: "teacher", entitlements: [], now }).reason, "role");
-    const revoked = feedbackAccess({
+    assert.equal(discordCardAccess({ role: "teacher", entitlements: [], now }).reason, "role");
+    const revoked = discordCardAccess({
       role: "student",
       entitlements: [grant({ product: "headliner", courseId: null, cohortId: null, status: "revoked" })],
       now,
@@ -267,11 +267,6 @@ describe("Headliner-only perks", () => {
     assert.equal(revoked.allowed, false);
     assert.equal(revoked.reason, "revoked");
     assert.equal(revoked.upsell, "headliner");
-  });
-
-  it("opens the Discord card only for an active Headliner", () => {
-    assert.equal(discordCardAccess({ role: "student", entitlements: [member], now }).allowed, true);
-    assert.equal(discordCardAccess({ role: "admin", entitlements: [], now }).allowed, true);
     const expired = discordCardAccess({
       role: "student",
       entitlements: [

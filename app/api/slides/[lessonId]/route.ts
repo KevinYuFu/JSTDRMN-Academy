@@ -7,7 +7,7 @@ import { buildHandout } from "@/lib/pdf";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request, context: { params: Promise<{ lessonId: string }> }) {
+export async function GET(_request: Request, context: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await context.params;
   const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, include: { course: true } });
   if (!lesson || !lesson.slidesTitle) return NextResponse.json({ error: "No slides" }, { status: 404 });
@@ -41,12 +41,10 @@ export async function GET(request: Request, context: { params: Promise<{ lessonI
   }
 
   const pdf = buildHandout(lesson.slidesTitle, lesson.summary);
-  const download = new URL(request.url).searchParams.get("download") === "1";
-  const filename = `${lesson.slidesTitle.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase()}.pdf`;
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${filename}"`,
+      "Content-Disposition": "inline",
       "Cache-Control": "private, no-store",
     },
   });

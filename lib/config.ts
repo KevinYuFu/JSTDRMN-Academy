@@ -13,13 +13,9 @@ export const prices = {
 
 export const appUrl = process.env.APP_URL || "http://127.0.0.1:43123";
 
+/** Bootcamp apply URLs on the HubSpot marketing site. The academy menu does not use these. */
 export const hubspotLinks = {
   site: "https://www.jstdrmn.com",
-  about: "https://www.jstdrmn.com/about",
-  community: "https://www.jstdrmn.com/community",
-  showcases: "https://www.jstdrmn.com/showcases",
-  label: "https://www.jstdrmn.com/label",
-  management: "https://www.jstdrmn.com/management",
   dj: process.env.HUBSPOT_DJ_BOOTCAMP_URL || "https://www.jstdrmn.com/bootcamp",
   production: process.env.HUBSPOT_PRODUCTION_BOOTCAMP_URL || "https://www.jstdrmn.com/bootcamp",
   mashup: process.env.HUBSPOT_MASHUP_BOOTCAMP_URL || "https://www.jstdrmn.com/bootcamp",

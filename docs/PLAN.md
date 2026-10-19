@@ -1,16 +1,18 @@
 # JSTDRMN Academy — plan
 
-A standalone student portal for JSTDRMN (“Just Dreamin’”), the Toronto EDM collective. The public site stays on HubSpot CMS. This app is the classroom: one Headliner subscription, a grid of programs, and bootcamp cohort portals.
+A standalone website for JSTDRMN Academy (“Just Dreamin’”), the Toronto EDM collective. The marketing site stays on HubSpot CMS. This app does not reuse that site’s menu (About, Community, Showcases, Label, Management). The academy menu is Dashboard and My Courses, plus the logo and log in / sign up or the avatar. Another menu item is another entry in `lib/nav.ts`.
 
-Adding a program is a course row. The landing grid, the detail page, checkout, and the grant screen all read that row. No new page or product string.
+The classroom is one Headliner subscription, a grid of programs, and bootcamp cohort portals.
+
+Adding a program is a course row. The landing grid, the detail page, checkout, and the grant screen all read that row. No new page or product string. A program with `billing: "request"` uses the same detail page and shows a request form instead of checkout.
 
 ## Architecture
 
 Next.js (App Router) and TypeScript. Local development uses SQLite through Prisma. Production on Vercel uses hosted Postgres. The build switches the Prisma datasource when `DATABASE_URL` is a `postgres://` or `postgresql://` URL. See the README for the env vars and the one-time database setup.
 
-Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. Teacher and admin see every course and every cohort, edit lessons, read notes, see Headliner submissions, and grant or revoke seats. Students see titles for locked work and can open only what an entitlement allows.
+Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. Teacher and admin see every course and every cohort, edit lessons, read notes, see one-on-one requests, and grant or revoke seats. Students see titles for locked work and can open only what an entitlement allows.
 
-Headliner’s price is CAD cents in `HEADLINER_PRICE_CENTS`. Leave it unset and the banner shows `$X/month`. Every other program stores `priceCents` on its own row. A null price is hidden. Billing is `monthly`, `once`, or `application`.
+Headliner’s price is CAD cents in `HEADLINER_PRICE_CENTS`. Leave it unset and the banner shows `$X/month`. Every other program stores `priceCents` on its own row. A null price is hidden. Billing is `monthly`, `once`, `application`, or `request`.
 
 Video is a switch in `lib/video.ts`: `drive`, `mock`, `youtube`, `vimeo`, `vimeo_private`, `bunny`, or `file`. Nothing in the player knows about DRM. New lessons default to Google Drive.
 
@@ -18,7 +20,7 @@ Google Drive is the host for now. A lesson URL such as `https://drive.google.com
 
 Bunny Stream is the planned upgrade. The `bunny` provider stub stays: it signs `https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}` with SHA256 of the security key, video id, and expiry, and only when `BUNNY_STREAM_LIBRARY_ID` and `BUNNY_STREAM_TOKEN_KEY` are set. Without them the embed URL is unsigned. Unlisted YouTube links are still shareable, so they are not for paid lessons. `vimeo_private` uses the normal player URL; privacy is a Vimeo domain allow-list, not a secret in the query string.
 
-Slides are generated one-page PDFs from the lesson notes, served only after the same access check as the video. The “24 slides · 3.2 MB” line on Beatmatching is catalog copy from the mockup.
+Slides are generated one-page PDFs from the lesson notes. A student who can open the lesson clicks the slides card. The PDF fills an in-page viewer. Escape or the X closes it. `GET /api/slides/[lessonId]` uses the same access check as the video and returns `Content-Disposition: inline`. There is no download button and no attachment response. The “24 slides · 3.2 MB” line on Beatmatching is catalog copy from the mockup.
 
 Stripe Checkout covers one-time payments and monthly subscriptions. The mode comes from the program’s `billing` field. With no `STRIPE_SECRET_KEY`, checkout is a local mock that calls the same `fulfillCheckout` function as `POST /api/stripe/webhook`. Canceling a Stripe subscription (`customer.subscription.deleted`) revokes the entitlement whose external id is that subscription, and a Headliner revoke asks Discord to drop the role (no-op until the bot env is set).
 
@@ -27,12 +29,12 @@ HubSpot is described in [HUBSPOT.md](./HUBSPOT.md). Discord is described in [DIS
 ## Data model
 
 - **User** — email, password hash, role, optional `discordId` after Connect Discord.
-- **Course** — a program. `placement` is `banner` (Headliner strip) or `grid` (a card). `access` is `headliner`, `purchase`, `subscription`, or `cohort`. `priceCents` is null when the card should hide a price. `special` marks a card such as FB2B. `presenter` is the person in front of the title (“Ash F presents FB2B”). `hubspotUrl` is the apply link for bootcamps. `statusLabel` is the tag on the card.
+- **Course** — a program. `placement` is `banner` (Headliner strip) or `grid` (a card). `access` is `headliner`, `purchase`, `subscription`, `cohort`, or `request`. `priceCents` is null when the card should hide a price. `special` marks a card such as FB2B. `presenter` is the person in front of the title (“Ash F presents FB2B”). `hubspotUrl` is the apply link for bootcamps. `statusLabel` is the tag on the card. `billing` is `monthly`, `once`, `application`, or `request`.
 - **Track** — a node in a program’s curriculum. `parentId` makes the progression tree. Lessons point at a track. A new branch is a new track row.
 - **Cohort** — a portal inside a bootcamp. Slugs are global (`cohort-6`) so a webhook can name one.
 - **Lesson** — belongs to a course, optionally a cohort and a track. `headliner` marks the membership subset. `drip` hides the lesson until earlier ones are marked complete. `videoProvider` + `videoUrl` are the pluggable source.
 - **Entitlement** — `headliner` (the membership), `program` (one course, whether it was a one-time purchase or a subscription), or `cohort` (one cohort). `active` or `revoked`, optional `endsAt`. Older rows stored as `course` or `ash` are read as `program`.
-- **Submission** — a Headliner mix or track: title, http(s) URL, kind (`mix` or `track`), notes. **SubmissionComment** is a note on that post.
+- **SessionRequest** — a one-on-one request on a program whose billing is `request`: name, email, topic, preferred times. Teachers see the latest ones on the desk. Nothing is booked or charged.
 - **Progress** — `in_progress` or `completed` per student per lesson.
 - **Comment** — a lesson note, with optional parent for a teacher reply.
 - **Checkout** — pending or paid, mock or stripe.
@@ -43,12 +45,12 @@ HubSpot is described in [HUBSPOT.md](./HUBSPOT.md). Discord is described in [DIS
 
 Implemented in `lib/entitlements.ts` and covered by `npm test`.
 
-- Staff open everything, including dripped lessons, the feedback space, and the Discord card.
+- Staff open everything, including dripped lessons and the Discord card.
 - Headliner opens only lessons flagged `headliner` on the Headliner program. It does not open Foundations of Club Mixing, FB2B, or any bootcamp.
 - Lessons on that program without the flag stay locked for members.
 - A program entitlement opens that course only. A purchase and a subscription use the same `program` product plus `courseId`, so a new paid program does not need a new product name.
 - A cohort entitlement opens that cohort’s lessons only. Cohort 6 does not open Cohort 5.
-- The feedback space and the Join Headliner Discord card use `headlinerPerk`. An active Headliner entitlement or a staff role. A program purchase or a cohort seat does not open them. Expired and revoked both deny.
+- The Join Headliner Discord card uses `headlinerPerk`. An active Headliner entitlement or a staff role. A program purchase or a cohort seat does not open it. Expired and revoked both deny.
 - Revoked and past `endsAt` both deny. A newer active grant still wins.
 - Drip runs only after the student already owns the lesson.
 
@@ -56,11 +58,11 @@ Implemented in `lib/entitlements.ts` and covered by `npm test`.
 
 | Who | Email | Password | Access |
 | --- | --- | --- | --- |
-| Yu (teacher) | yu@jstdrmn.com | boothlights | Everything, including the feedback space |
-| Maya Chen | maya@jstdrmn.com | headliner | Headliner path, Discord card, feedback space |
+| Yu (teacher) | yu@jstdrmn.com | boothlights | Everything, including one-on-one requests |
+| Maya Chen | maya@jstdrmn.com | headliner | Headliner path and the Discord card |
 | Jordan Blake | jordan@jstdrmn.com | cohort6 | Foundations of Club Mixing, and DJ Bootcamp Cohort 6 only |
 
-Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner Production and Advanced Production), and Mashups & Remixes. Each track has a mock video. FB2B is Ash F’s special offering at $50/month CAD, with a placeholder and no invented lessons. DJ Bootcamp Cohorts 5 and 6 are unchanged. Jordan is two lessons into Cohort 6, on Beatmatching. Maya has an unanswered note on Introduction to EDM and a mix in the feedback space. Yu has answered Jordan and commented on Maya’s mix.
+Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner Production and Advanced Production), and Mashups & Remixes. Each track has a mock video. FB2B is Ash F’s special offering at $50/month CAD, with a placeholder and no invented lessons. One-on-One Sessions is a grid card with a request form and no price. DJ Bootcamp Cohorts 5 and 6 are unchanged. Jordan is two lessons into Cohort 6, on Beatmatching. Maya has an unanswered note on Introduction to EDM. Yu has answered Jordan.
 
 ## Next steps
 
@@ -71,6 +73,7 @@ Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progressi
 5. Keep Drive files shared to student emails only. Move paid video to Bunny Stream when that account is ready. The provider stub is already in `lib/video.ts`.
 6. Replace generated handouts with uploaded PDFs.
 7. Deploy on Vercel with hosted Postgres. The README has the env vars and the database steps.
+8. One-on-one sessions are a request form only. Later: booking (a student picks a time and a teacher confirms) and payment (a Stripe price on that program). Do not add a calendar or a charge until that work starts.
 
 ## Open questions
 

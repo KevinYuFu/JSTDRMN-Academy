@@ -1,6 +1,6 @@
 # JSTDRMN Academy
 
-Student portal for [JSTDRMN](https://www.jstdrmn.com) (“Just Dreamin’”), a Toronto EDM collective. Headliner is one subscription on a banner. Every other offering is a card in the programs grid, including FB2B (Ash F, From Bedroom to Banger) and the bootcamps. The public site stays on HubSpot; this app is the classroom.
+Standalone site for [JSTDRMN](https://www.jstdrmn.com) Academy (“Just Dreamin’”), a Toronto EDM collective. It is separate from the HubSpot marketing site. The menu is Dashboard and My Courses. Headliner is one subscription on a banner. Every other offering is a card in the programs grid, including FB2B (Ash F, From Bedroom to Banger), one-on-one sessions, and the bootcamps.
 
 No Stripe, HubSpot, or Discord keys are required. Checkout is mocked and still grants access. HubSpot and Discord stay quiet until their env vars are set.
 
@@ -25,8 +25,8 @@ Access rules live in `lib/entitlements.ts`.
 
 | Who | Email | Password | What they can open |
 | --- | --- | --- | --- |
-| Yu, teacher | yu@jstdrmn.com | boothlights | Every program, both DJ Bootcamp cohorts, the lesson editor, grant/revoke, student notes, Headliner submissions |
-| Maya Chen | maya@jstdrmn.com | headliner | The Headliner path, the Headliner Discord card, and the feedback space. Everything else shows an upsell |
+| Yu, teacher | yu@jstdrmn.com | boothlights | Every program, both DJ Bootcamp cohorts, the lesson editor, grant/revoke, student notes, and one-on-one requests |
+| Maya Chen | maya@jstdrmn.com | headliner | The Headliner path and the Headliner Discord card. Everything else shows an upsell |
 | Jordan Blake | jordan@jstdrmn.com | cohort6 | Foundations of Club Mixing, and DJ Bootcamp Cohort 6 only |
 
 ## Products
@@ -35,7 +35,8 @@ Prices are CAD. A new program is a course record: title, blurb, status, price, b
 
 - **Headliner** — the banner. Monthly, price not set (`$X/month`) until `HEADLINER_PRICE_CENTS` is set. Access lasts while the subscription is paid. The path is a track tree: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner and Advanced), and Mashups & Remixes.
 - **Programs** — the grid. Foundations of Club Mixing is $50 once. FB2B is a special offering Ash F presents, $50/month, with a placeholder instead of a made-up curriculum. Bootcamps show a status tag and hide the price until `priceCents` is set. Learn More opens that program. Bootcamps apply through the HubSpot link on the record.
-- **Headliner perks** — the feedback space (mix or track link, comments) and Join Headliner Discord. Headliner only.
+- **One-on-one sessions** — a grid card like the others. Learn More opens a request form: name, email, topic, and preferred times. Requests show on the teacher desk. Scheduling and payment are not built yet.
+- **Headliner perks** — Join Headliner Discord. Headliner only.
 
 ## Stripe, HubSpot, and Discord
 

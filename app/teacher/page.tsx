@@ -12,7 +12,7 @@ function when(date: Date) {
 
 export default async function TeacherPage() {
   const teacher = await requireStaff();
-  const [courses, comments, students, logs, cohorts, submissions] = await Promise.all([
+  const [courses, comments, students, logs, cohorts, requests] = await Promise.all([
     prisma.course.findMany({
       orderBy: { sort: "asc" },
       include: { lessons: true, cohorts: { orderBy: { sort: "asc" } } },
@@ -26,10 +26,10 @@ export default async function TeacherPage() {
     prisma.user.count({ where: { role: "student" } }),
     prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
-    prisma.submission.findMany({
+    prisma.sessionRequest.findMany({
       orderBy: { createdAt: "desc" },
-      take: 6,
-      include: { user: true, comments: true },
+      take: 8,
+      include: { course: true },
     }),
   ]);
   const waiting = comments.filter((comment) => !comment.replies.some((reply) => isStaff(reply.user.role))).length;
@@ -96,16 +96,16 @@ export default async function TeacherPage() {
                 </article>
               );
             })}
-            <h2 className="section-label" style={{ marginTop: 18 }}>Headliner submissions</h2>
-            {submissions.length === 0 ? <p className="note">No mixes or tracks in the feedback space yet.</p> : null}
-            {submissions.map((submission) => (
-              <article key={submission.id} className="thread">
+            <h2 className="section-label" style={{ marginTop: 18 }}>One-on-one requests</h2>
+            {requests.length === 0 ? <p className="note">No session requests yet.</p> : null}
+            {requests.map((request) => (
+              <article key={request.id} className="thread">
                 <div className="who">
-                  <b>{submission.title}</b>
-                  <span> · {submission.user.name} · {when(submission.createdAt)}</span>
+                  <b>{request.name}</b>
+                  <span> · {when(request.createdAt)} · {request.course.title}</span>
                 </div>
-                <p className="note">{submission.kind} · {submission.comments.length} comment{submission.comments.length === 1 ? "" : "s"}</p>
-                <Link href="/headliner/feedback" className="pill pill-black" style={{ marginTop: 8 }}>Open</Link>
+                <p>{request.topic}</p>
+                <p className="note">{request.email} · {request.preferredTimes}</p>
               </article>
             ))}
             <h2 className="section-label" style={{ marginTop: 18 }}>HubSpot log</h2>

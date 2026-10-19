@@ -28,7 +28,10 @@ export function MobileNav({
             <button type="submit">Log out</button>
           </form>
         ) : (
-          <a href="/login">Log in</a>
+          <>
+            <a href="/login">Log in</a>
+            <a href="/signup">Sign up</a>
+          </>
         )}
       </div>
     </>

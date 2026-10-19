@@ -33,6 +33,7 @@ export default async function DashboardPage() {
 
   const cards: Card[] = [];
   for (const course of courses) {
+    if (course.access === "request") continue;
     if (course.access !== "cohort") {
       const decision = containerAccess({
         role: user.role,

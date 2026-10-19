@@ -145,7 +145,7 @@ export function containerAccess(input: {
 }
 
 /**
- * Headliner perks that are not lessons: the feedback space and the Discord card.
+ * Headliner perks that are not lessons: the Discord card.
  * Staff, or a live Headliner entitlement. A program purchase or a cohort seat does not count.
  */
 export function headlinerPerk(input: {
@@ -169,7 +169,6 @@ export function headlinerPerk(input: {
   return { allowed: true, upsell: null, reason: "entitlement" };
 }
 
-export const feedbackAccess = headlinerPerk;
 export const discordCardAccess = headlinerPerk;
 
 export function earlierLessonsComplete(
