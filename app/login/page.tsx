@@ -33,11 +33,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </div>
             <Button type="submit">Log in</Button>
           </form>
-          <div className="demo">
-            <p><strong>Maya</strong> · Headliner · maya@jstdrmn.com / headliner</p>
-            <p><strong>Jordan</strong> · Cohort 6 + Foundations · jordan@jstdrmn.com / cohort6</p>
-            <p><strong>Yu</strong> · Academy lead · yu@jstdrmn.com / boothlights</p>
-          </div>
         </div>
       </div>
     </>

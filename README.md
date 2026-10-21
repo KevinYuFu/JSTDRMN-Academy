@@ -8,12 +8,17 @@ No Stripe, HubSpot, or Discord keys are required. Checkout is mocked and still g
 
 ```bash
 npm install
+```
+
+Copy `.env.example` to `.env`. Set `DATABASE_URL` and `DATABASE_URL_UNPOOLED`. On your laptop both can be the same Postgres URL.
+
+```bash
 npm run dev
 ```
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-`npm run dev` creates the SQLite database, seeds it, and starts Next.js. The seed runs once. Delete `prisma/dev.db` if you want the demo data back.
+`npm run dev` applies committed migrations, then starts Next.js. It does not seed.
 
 ```bash
 npm test
@@ -21,17 +26,15 @@ npm test
 
 Access rules live in `lib/entitlements.ts`.
 
-## Demo logins
+## Yu's login
 
-| Who | Email | Password | What they can open |
-| --- | --- | --- | --- |
-| Yu, Academy lead | yu@jstdrmn.com | boothlights | Every program, both DJ Bootcamp cohorts, the lesson editor, grant/revoke, student notes, mentors, events, announcements, and private-session requests |
-| Maya Chen | maya@jstdrmn.com | headliner | The Headliner path and the Headliner Discord card. Everything else shows an upsell |
-| Jordan Blake | jordan@jstdrmn.com | cohort6 | Foundations of Club Mixing, and DJ Bootcamp Cohort 6 only |
+The seed creates one teacher: `yu@jstdrmn.com`. A teacher can open every program. The password is `SEED_ADMIN_PASSWORD`. It is not in the repo.
+
+Student accounts come from sign-up. The seed does not add other logins.
 
 ## Products
 
-Prices are CAD. A new program is a course record: title, blurb, status, price, billing, and where it sits (`banner` or `grid`).
+Prices are CAD. A new program is a course record: title, blurb, status, price, billing, and where it sits (`banner` or `grid`). The one-time seed loads DJ Bootcamp only. The other programs below show up when those course rows exist.
 
 - **Headliner** — the banner. Monthly, price not set (`$X/month`) until `HEADLINER_PRICE_CENTS` is set. Access lasts while the subscription is paid. The path is a track tree: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner and Advanced), and Mashups & Remixes.
 - **Programs** — the grid. Foundations of Club Mixing is $50 once. FB2B is a special offering Ash F presents, $50/month, with a placeholder instead of a made-up curriculum. Bootcamps show a status tag and hide the price until `priceCents` is set. Learn More opens that program. Bootcamps apply through the HubSpot link on the record.
@@ -49,7 +52,15 @@ New lessons default to a Google Drive preview embed (`https://drive.google.com/f
 
 ## Deploy on Vercel
 
-Local development stays on SQLite. Vercel has no disk to keep that file, so production uses hosted Postgres (Neon, Supabase, or Vercel Postgres). The build runs `prisma generate` and `next build`. It does not migrate or seed. When `DATABASE_URL` starts with `postgres://` or `postgresql://`, the build writes `prisma/schema.deploy.prisma` with the Postgres provider and generates the client from that file. A `file:` URL keeps the SQLite schema.
+Production is Neon Postgres on Vercel.
+
+- The app reads `DATABASE_URL` (pooled).
+- Migrations read `DATABASE_URL_UNPOOLED` (direct).
+- Vercel may also set `POSTGRES_PRISMA_URL` and other `POSTGRES_*` names. This app does not read those.
+
+**Migrations run on every deploy.** `vercel.json` sets the build to `npm run build`. That script is `prisma generate && prisma migrate deploy && next build`. `migrate deploy` only applies migration files that are already in git. It does not seed. It does not delete rows.
+
+**The seed does not run on deploy.** Run it yourself, once. Steps are below.
 
 ### Environment variables
 
@@ -57,8 +68,10 @@ Set these on the Vercel project. Blank optional values keep the same fallbacks a
 
 | Variable | Required in production | What it does |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | Pooled Postgres URL for the running app (`postgresql://…`). Locally this is `file:./dev.db`. |
-| `DIRECT_URL` | For migrations | Non-pooled Postgres URL. `prisma db push` uses it. If you omit it, the deploy schema points `directUrl` at `DATABASE_URL`. |
+| `DATABASE_URL` | Yes | Pooled Postgres URL. The running app uses this. |
+| `DATABASE_URL_UNPOOLED` | Yes | Direct Postgres URL. Migrations use this during the build. Set it for Production and Preview. |
+| `SEED_ADMIN_PASSWORD` | Only when you seed | Password for Yu. At least 8 characters. The build does not read it. |
+| `SEED_ADMIN_EMAIL` | No | Defaults to `yu@jstdrmn.com`. |
 | `APP_URL` | Yes | Public `https` origin, no trailing slash. Stripe return URLs, the Discord redirect, and HubSpot signature checks use it. |
 | `HEADLINER_PRICE_CENTS` | No | CAD cents for Headliner. Leave blank to keep showing `$X/month`. Other prices live on each program row. |
 | `STRIPE_SECRET_KEY` | No | Empty keeps mock checkout, which still grants access. |
@@ -82,18 +95,24 @@ Session cookies are `Secure` when `NODE_ENV` is `production`, which is how Verce
 
 Hobby accounts can schedule a cron only once per day. `vercel.json` calls `/api/cron/announcements` at `0 19 * * *` (19:00 UTC). Announcements post daily at about 3pm Toronto (3pm during EDT, 2pm during EST). Each run posts every announcement whose send time has already passed, so teachers should set send times before then. For a precise clock time later, use Vercel Pro, or a free external pinger such as [cron-job.org](https://cron-job.org) that requests the route with `Authorization: Bearer` set to `CRON_SECRET`.
 
-### Database
+### Seed once
 
-1. Create a Postgres database and copy its pooled URL into `DATABASE_URL`. Put the direct URL in `DIRECT_URL` when the host gives you both.
-2. From a machine that has those variables:
+Prisma reads `.env`. `vercel env pull` writes `.env.local`, which Prisma does not read. Copy `DATABASE_URL` and `DATABASE_URL_UNPOOLED` into `.env`, or export them in the terminal.
 
 ```bash
-node scripts/prepare-prisma.mjs
-npx prisma generate --schema prisma/schema.deploy.prisma
-npx prisma db push --schema prisma/schema.deploy.prisma
-npx tsx prisma/seed.ts
+SEED_ADMIN_PASSWORD="choose-a-long-password" npx prisma db seed
 ```
 
-Run the seed once, for the demo accounts. Do not run it again on an academy that already has students. A newer seed version deletes the existing rows and writes the demo data back.
+What that writes:
 
-3. Import the repo in Vercel and deploy. Later deploys pick up code only. Schema changes are another `prisma db push` from your machine, not part of the Vercel build.
+- DJ Bootcamp, Cohort 5, Cohort 6, and the placeholder lessons
+- Four sample events (Community Connect, Green Room, Sync, Production Feedback) and their event types
+- Yu, role `teacher`
+
+Running it again updates those same rows. It does not delete students, other courses, or events you added. If you already replaced a placeholder video on one of those lessons, a second seed puts the placeholder back.
+
+Leave `SEED_ADMIN_PASSWORD` unset on a later run if Yu already exists and you want to keep the current password.
+
+Log in as `yu@jstdrmn.com` with the password you set.
+
+If Preview and Production use the same database, a preview deploy migrates that database too. Point Preview at its own database if you do not want that.

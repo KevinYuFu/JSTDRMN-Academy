@@ -10,7 +10,7 @@ Adding a program is a course row. The landing grid, the detail page, checkout, a
 
 ## Architecture
 
-Next.js (App Router) and TypeScript. Local development uses SQLite through Prisma. Production on Vercel uses hosted Postgres. The build switches the Prisma datasource when `DATABASE_URL` is a `postgres://` or `postgresql://` URL. See the README for the env vars and the one-time database setup.
+Next.js (App Router) and TypeScript. The database is Postgres. On Vercel that is Neon. The app connects with `DATABASE_URL` (pooled). Migrations connect with `DATABASE_URL_UNPOOLED` (direct). Every Vercel build runs `prisma migrate deploy`. The seed does not run on deploy. See the README.
 
 Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. The Academy lead (teacher or admin) sees every course and cohort, edits lessons, manages mentors, events, and the announcement queue, reads session requests, and grants or revokes seats. Students see Discord link status on My Courses. Students see titles for locked work and can open only what an entitlement allows.
 
@@ -60,15 +60,15 @@ Implemented in `lib/entitlements.ts` and covered by `npm test`.
 - Revoked and past `endsAt` both deny. A newer active grant still wins.
 - Drip runs only after the student already owns the lesson.
 
-## Seeded accounts
+## Seed
 
-| Who | Email | Password | Access |
-| --- | --- | --- | --- |
-| Yu (teacher) | yu@jstdrmn.com | boothlights | Everything, including the mentor roster and session requests |
-| Maya Chen | maya@jstdrmn.com | headliner | Headliner path and the Discord card |
-| Jordan Blake | jordan@jstdrmn.com | cohort6 | Foundations of Club Mixing, and DJ Bootcamp Cohort 6 only |
+Run once with `npx prisma db seed`. The steps are in the README. The seed upserts rows. It does not delete students or other courses.
 
-Headliner tracks: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner Production and Advanced Production), and Mashups & Remixes. Each track has a mock video. FB2B is Ash F’s special offering at $50/month CAD, with a placeholder and no invented lessons. Private Sessions lists Yu Fu plus two Coming soon placeholder mentors. DJ Bootcamp Cohorts 5 and 6 are unchanged. Jordan is two lessons into Cohort 6, on Beatmatching. Maya has an unanswered note on Introduction to EDM. Yu has answered Jordan.
+- DJ Bootcamp, Cohort 5, Cohort 6, and the placeholder lessons from the mock curriculum
+- Yu at `yu@jstdrmn.com`, role `teacher` (staff, same access as `admin`). The password is `SEED_ADMIN_PASSWORD`. It is not stored in the repo
+- Sample events: Community Connect, Green Room, Sync, and Production Feedback
+
+Headliner, the other programs, mentors, and student logins are not part of this seed. Add those in the teacher view.
 
 ## Next steps
 

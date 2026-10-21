@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "prisma generate && prisma db push && tsx prisma/seed.ts && next dev -H 0.0.0.0 -p 43123",
-    "setup": "prisma generate && prisma db push && tsx prisma/seed.ts",
+    "dev": "prisma generate && prisma migrate deploy && next dev -H 0.0.0.0 -p 43123",
+    "setup": "prisma generate && prisma migrate deploy",
     "postinstall": "prisma generate",
-    "build": "node scripts/prepare-prisma.mjs && node scripts/prisma-generate.mjs && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
-    "test": "tsx --test lib/entitlements.test.ts lib/hubspot.test.ts lib/video.test.ts lib/discord.test.ts lib/mentors.test.ts lib/events.test.ts"
+    "test": "tsx --test lib/entitlements.test.ts lib/hubspot.test.ts lib/video.test.ts lib/discord.test.ts lib/mentors.test.ts lib/events.test.ts lib/seed-data.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
