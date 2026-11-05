@@ -13,7 +13,7 @@ const mono = Space_Mono({
 
 const display = Unbounded({
   subsets: ["latin"],
-  weight: ["700", "900"],
+  weight: ["700", "800"],
   variable: "--font-stree-display",
 });
 
