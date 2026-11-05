@@ -79,10 +79,15 @@ describe("postgres migrations on deploy", () => {
 
     const migrationRoot = "prisma/migrations";
     const folders = readdirSync(migrationRoot).filter((name) => statSync(join(migrationRoot, name)).isDirectory());
-    assert.equal(folders.length, 1);
-    const sql = readFileSync(join(migrationRoot, folders[0], "migration.sql"), "utf8");
+    assert.deepEqual(folders.sort(), ["20261021205041_init", "20261105200000_google_login"]);
+    const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
     assert.match(sql, /CREATE TABLE "User"/);
+    const googleSql = readFileSync(join(migrationRoot, "20261105200000_google_login", "migration.sql"), "utf8");
+    assert.match(googleSql, /"googleSub"/);
+    assert.match(googleSql, /DROP NOT NULL/);
+    assert.equal(/drop table/i.test(googleSql), false);
+    assert.equal(/delete from/i.test(googleSql), false);
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });

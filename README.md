@@ -28,9 +28,13 @@ Access rules live in `lib/entitlements.ts`.
 
 ## Yu's login
 
-The seed creates one teacher: `yu@jstdrmn.com`. A teacher can open every program. The password is `SEED_ADMIN_PASSWORD`. It is not in the repo.
+The seed creates one teacher: `yu@jstdrmn.com` (or `SEED_ADMIN_EMAIL`). A teacher can open every program.
 
-Student accounts come from sign-up. The seed does not add other logins.
+Sign in with Google, or with a password. The password is `SEED_ADMIN_PASSWORD`. It is not in the repo. Leave that unset and the seed creates Yu with no password. Then use Continue with Google.
+
+`TEACHER_EMAILS` is a comma list of extra teacher emails, such as Yu's personal Gmail and `academy@jstdrmn.com`. A new Google sign-in for one of those emails creates a teacher. A student already on the list becomes a teacher the next time they use Google. Teacher and admin are never removed by the list. Add the email before the first Google sign-in, or sign in again after you add it.
+
+Student accounts come from Google sign-in or the sign-up form. The seed does not add other logins unless they are in `TEACHER_EMAILS`.
 
 ## Products
 
@@ -70,8 +74,13 @@ Set these on the Vercel project. Blank optional values keep the same fallbacks a
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Pooled Postgres URL. The running app uses this. |
 | `DATABASE_URL_UNPOOLED` | Yes | Direct Postgres URL. Migrations use this during the build. Set it for Production and Preview. |
-| `SEED_ADMIN_PASSWORD` | Only when you seed | Password for Yu. At least 8 characters. The build does not read it. |
+| `SEED_ADMIN_PASSWORD` | No | Password for Yu. At least 8 characters. Leave unset to keep Google-only. The build does not read it. |
 | `SEED_ADMIN_EMAIL` | No | Defaults to `yu@jstdrmn.com`. |
+| `AUTH_GOOGLE_ID` | With Google login | OAuth client id. `GOOGLE_CLIENT_ID` works too. |
+| `AUTH_GOOGLE_SECRET` | With Google login | OAuth client secret. `GOOGLE_CLIENT_SECRET` works too. |
+| `AUTH_SECRET` | With Google login | Signs the short-lived Google state cookie. At least 16 characters. `NEXTAUTH_SECRET` works too. |
+| `AUTH_URL` | With Google login | Public `https` origin, no trailing slash. The redirect is `{AUTH_URL}/api/auth/google/callback`. Falls back to `NEXTAUTH_URL`, then `APP_URL`. |
+| `TEACHER_EMAILS` | No | Comma-separated teacher emails. Does not remove teacher or admin. |
 | `APP_URL` | Yes | Public `https` origin, no trailing slash. Stripe return URLs, the Discord redirect, and HubSpot signature checks use it. |
 | `HEADLINER_PRICE_CENTS` | No | CAD cents for Headliner. Leave blank to keep showing `$X/month`. Other prices live on each program row. |
 | `STRIPE_SECRET_KEY` | No | Empty keeps mock checkout, which still grants access. |
@@ -111,8 +120,23 @@ What that writes:
 
 Running it again updates those same rows. It does not delete students, other courses, or events you added. If you already replaced a placeholder video on one of those lessons, a second seed puts the placeholder back.
 
-Leave `SEED_ADMIN_PASSWORD` unset on a later run if Yu already exists and you want to keep the current password.
+Leave `SEED_ADMIN_PASSWORD` unset on a later run if Yu already exists and you want to keep the current password. The first seed can also omit it. Yu then has no password and signs in with Google.
 
-Log in as `yu@jstdrmn.com` with the password you set.
+Log in as `yu@jstdrmn.com`. Use Google, or the password you set.
+
+## Google sign-in
+
+Continue with Google is the main button on `/login`. Password login stays underneath it.
+
+Google writes the same `jstdrmn_session` cookie as a password login. Route checks do not change. Discord linking does not change.
+
+1. The button opens Google.
+2. Google returns to `/api/auth/google/callback`.
+3. The app accepts the email only when Google says it is verified.
+4. The same email links to the existing user. A new email creates a user.
+5. A session row is saved. The cookie is the same one password login uses.
+6. Role stays as it is for a teacher or admin. `TEACHER_EMAILS` makes that email a teacher. Other new people are students.
+
+Google stays off until `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `AUTH_SECRET` are set. The button then says it is not set up. Password login still works. Do not put the real secrets in git. Create the Google client and set the Vercel env vars by hand. The pull request has those steps.
 
 If Preview and Production use the same database, a preview deploy migrates that database too. Point Preview at its own database if you do not want that.

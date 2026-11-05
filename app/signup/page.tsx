@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signup } from "@/app/actions";
 import { AppHeader } from "@/components/app-header";
+import { GoogleButton } from "@/components/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,8 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             <Link href={`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Log in</Link>.
           </p>
           {message ? <div className="error">{message}</div> : null}
+          <GoogleButton next={next} />
+          <div className="auth-divider">or</div>
           <form action={signup} className="stack">
             <input type="hidden" name="next" value={next} />
             <div className="stack">
@@ -42,7 +45,9 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
             </div>
-            <Button type="submit">Sign up</Button>
+            <Button type="submit" variant="black">
+              Sign up with password
+            </Button>
           </form>
         </div>
       </div>

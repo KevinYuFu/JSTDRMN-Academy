@@ -30,8 +30,12 @@ export async function login(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const next = safeNext(String(formData.get("next") ?? ""), "");
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+  const nextQuery = next ? `&next=${encodeURIComponent(next)}` : "";
+  if (user && !user.passwordHash) {
+    redirect(`/login?error=google_only${nextQuery}`);
+  }
   if (!user || !(await checkPassword(password, user.passwordHash))) {
-    redirect(`/login?error=1${next ? `&next=${encodeURIComponent(next)}` : ""}`);
+    redirect(`/login?error=1${nextQuery}`);
   }
   await createSession(user.id);
   if (next) redirect(next);

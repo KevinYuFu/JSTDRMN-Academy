@@ -65,7 +65,7 @@ Implemented in `lib/entitlements.ts` and covered by `npm test`.
 Run once with `npx prisma db seed`. The steps are in the README. The seed upserts rows. It does not delete students or other courses.
 
 - DJ Bootcamp, Cohort 5, Cohort 6, and the placeholder lessons from the mock curriculum
-- Yu at `yu@jstdrmn.com`, role `teacher` (staff, same access as `admin`). The password is `SEED_ADMIN_PASSWORD`. It is not stored in the repo
+- Yu at `yu@jstdrmn.com`, role `teacher` (staff, same access as `admin`). Sign in with Google, or with `SEED_ADMIN_PASSWORD` if you set one. The password is not stored in the repo. `TEACHER_EMAILS` can add more teacher emails, such as a personal Gmail. The list does not remove teacher or admin.
 - Sample events: Community Connect, Green Room, Sync, and Production Feedback
 
 Headliner, the other programs, mentors, and student logins are not part of this seed. Add those in the teacher view.
