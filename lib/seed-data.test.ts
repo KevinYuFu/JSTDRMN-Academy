@@ -37,7 +37,7 @@ describe("postgres seed catalog", () => {
 
   it("includes the sample events and Yu, with no password in source", () => {
     assert.equal(seedAdmin.email, "yu@jstdrmn.com");
-    assert.equal(seedAdmin.role, "teacher");
+    assert.equal(seedAdmin.role, "lead");
     assert.equal("password" in seedAdmin, false);
     assert.deepEqual(
       sampleEventTypes.map((type) => type.slug),
@@ -79,7 +79,11 @@ describe("postgres migrations on deploy", () => {
 
     const migrationRoot = "prisma/migrations";
     const folders = readdirSync(migrationRoot).filter((name) => statSync(join(migrationRoot, name)).isDirectory());
-    assert.deepEqual(folders.sort(), ["20261021205041_init", "20261105200000_google_login"]);
+    assert.deepEqual(folders.sort(), [
+      "20261021205041_init",
+      "20261105200000_google_login",
+      "20261105220000_map_staff_roles_to_lead",
+    ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
     assert.match(sql, /CREATE TABLE "User"/);
@@ -88,6 +92,13 @@ describe("postgres migrations on deploy", () => {
     assert.match(googleSql, /DROP NOT NULL/);
     assert.equal(/drop table/i.test(googleSql), false);
     assert.equal(/delete from/i.test(googleSql), false);
+    const roleSql = readFileSync(join(migrationRoot, "20261105220000_map_staff_roles_to_lead", "migration.sql"), "utf8");
+    assert.match(roleSql, /UPDATE "User"/);
+    assert.match(roleSql, /'lead'/);
+    assert.match(roleSql, /'teacher'/);
+    assert.match(roleSql, /'admin'/);
+    assert.equal(/drop table/i.test(roleSql), false);
+    assert.equal(/delete from/i.test(roleSql), false);
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });

@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { roleLabel } from "@/lib/roles";
 import { formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventManagerPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const query = await searchParams;
   const now = new Date();
   const [events, types] = await Promise.all([
@@ -24,7 +25,7 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Academy lead</Link> › <b>Events</b>
+          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Events</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 8 }}>Events</h1>
         <p className="note" style={{ marginBottom: 16 }}>Move a time or a destination here. The Events page reads the same records. Types carry the default join action.</p>

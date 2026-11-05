@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isStaff } from "@/lib/entitlements";
 import {
   GOOGLE_NEXT_COOKIE,
   GOOGLE_STATE_COOKIE,
@@ -20,6 +19,7 @@ import {
   type GoogleProfile,
 } from "@/lib/google";
 import { applyPendingGrants, syncContact } from "@/lib/hubspot";
+import { homeForRole } from "@/lib/roles";
 import { safeNext } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -131,5 +131,5 @@ export async function GET(request: Request) {
 
   await createSession(userId);
   if (next) redirect(next);
-  redirect(isStaff(role) ? "/teacher" : "/dashboard");
+  redirect(homeForRole(role));
 }

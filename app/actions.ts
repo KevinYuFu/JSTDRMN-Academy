@@ -10,6 +10,7 @@ import { resolveOffer } from "@/lib/catalog";
 import { appUrl, stripeLive } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff, lessonAccess, earlierLessonsComplete, normalizeProduct, type Product } from "@/lib/entitlements";
+import { homeForRole } from "@/lib/roles";
 import { applyPendingGrants, syncContact } from "@/lib/hubspot";
 import { entitlementRecords } from "@/lib/learn";
 import { announcementWhen } from "@/lib/announcements";
@@ -39,7 +40,7 @@ export async function login(formData: FormData) {
   }
   await createSession(user.id);
   if (next) redirect(next);
-  redirect(isStaff(user.role) ? "/teacher" : "/dashboard");
+  redirect(homeForRole(user.role));
 }
 
 export async function signup(formData: FormData) {
@@ -69,7 +70,7 @@ export async function signup(formData: FormData) {
   await syncContact({ email: user.email, name: user.name, extra: { academy_signed_up: "true" } });
   await createSession(user.id);
   if (next) redirect(next);
-  redirect("/dashboard");
+  redirect(homeForRole("student"));
 }
 
 export async function logout() {

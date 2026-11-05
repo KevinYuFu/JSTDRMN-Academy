@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { roleLabel } from "@/lib/roles";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
 import { notFound } from "next/navigation";
 
@@ -19,7 +20,7 @@ export default async function EditorPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string; added?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { slug } = await params;
   const query = await searchParams;
   const course = await prisma.course.findUnique({
@@ -36,7 +37,7 @@ export default async function EditorPage({
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Academy lead</Link> › <b>{course.title}</b>
+          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>{course.title}</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 12 }}>{course.title}</h1>
         {query.added ? <div className="banner">Lesson added. Students see it the next time they open the course.</div> : null}
