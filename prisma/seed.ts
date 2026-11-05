@@ -1,5 +1,7 @@
+import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
+import { nameFromEmail, teacherEmails } from "../lib/google";
 import { djBootcamp, djCohorts, djLessons, sampleEventTypes, sampleEvents, seedAdmin } from "./seed-data";
 
 const prisma = new PrismaClient();
@@ -29,13 +31,8 @@ async function main() {
   const email = adminEmail();
   const password = adminPassword();
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (!existing && !password) {
-    throw new Error(
-      "Set SEED_ADMIN_PASSWORD (at least 8 characters) before the first seed. The password is not stored in the repo.",
-    );
-  }
-
   const passwordHash = password ? await hash(password, 10) : null;
+  const allowList = teacherEmails().filter((item) => item !== email);
 
   await prisma.$transaction(async (db) => {
     await db.course.upsert({
@@ -85,7 +82,7 @@ async function main() {
           ...(passwordHash ? { passwordHash } : {}),
         },
       });
-    } else if (passwordHash) {
+    } else {
       await db.user.create({
         data: {
           id: seedAdmin.id,
@@ -95,14 +92,31 @@ async function main() {
           passwordHash,
         },
       });
-    } else {
-      throw new Error("Set SEED_ADMIN_PASSWORD before the first seed.");
+    }
+
+    for (const teacherEmail of allowList) {
+      const row = await db.user.findUnique({ where: { email: teacherEmail } });
+      if (!row) {
+        await db.user.create({
+          data: {
+            id: `usr_${randomBytes(6).toString("hex")}`,
+            email: teacherEmail,
+            name: nameFromEmail(teacherEmail),
+            role: "teacher",
+            passwordHash: null,
+          },
+        });
+      } else if (row.role !== "teacher" && row.role !== "admin") {
+        await db.user.update({ where: { id: row.id }, data: { role: "teacher" } });
+      }
     }
   });
 
   console.log("Seeded DJ Bootcamp, sample events, and Yu.");
   if (passwordHash) console.log("Yu's password was set from SEED_ADMIN_PASSWORD.");
-  else console.log("Yu already existed. Password was left unchanged.");
+  else if (existing) console.log("Yu already existed. Password was left unchanged.");
+  else console.log("Yu has no password. Sign in with Google, or set SEED_ADMIN_PASSWORD and seed again.");
+  if (allowList.length) console.log(`Teacher allow-list: ${allowList.join(", ")}`);
 }
 
 main()

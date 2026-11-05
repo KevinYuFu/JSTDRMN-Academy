@@ -18,8 +18,11 @@ model User {
   id                 String              @id
   email              String              @unique
   name               String
-  passwordHash       String
+  /// Null when this person signs in with Google only.
+  passwordHash       String?
   role               String
+  /// Google account id (the sub claim). Set by Continue with Google.
+  googleSub          String?             @unique
   discordId          String?
   discordUsername    String?
   createdAt          DateTime            @default(now())
