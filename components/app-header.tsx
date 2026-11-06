@@ -1,10 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
-import { academyNav } from "@/lib/nav";
+import { academyNav, type AcademyNavItem } from "@/lib/nav";
 import { homeForRole } from "@/lib/roles";
 import { MobileNav } from "./mobile-nav";
 import { UserMenu } from "./user-menu";
+
+function itemClass(link: AcademyNavItem, active?: string | null) {
+  const names = [link.key === active ? "active" : "", link.variant === "staff" ? "nav-staff" : ""].filter(Boolean);
+  return names.length > 0 ? names.join(" ") : undefined;
+}
 
 export async function AppHeader({ active }: { active?: string | null }) {
   const user = await getUser();
@@ -17,7 +22,12 @@ export async function AppHeader({ active }: { active?: string | null }) {
       </Link>
       <nav className="nav-desktop" aria-label="Academy">
         {links.map((link) => (
-          <Link key={link.key} href={link.href} className={link.key === active ? "active" : undefined}>
+          <Link
+            key={link.key}
+            href={link.href}
+            className={itemClass(link, active)}
+            aria-current={link.key === active ? "page" : undefined}
+          >
             {link.label}
           </Link>
         ))}
@@ -30,7 +40,15 @@ export async function AppHeader({ active }: { active?: string | null }) {
           <Link href="/signup" className="pill pill-purple">Sign up</Link>
         </div>
       )}
-      <MobileNav signedIn={Boolean(user)} links={links.map((link) => ({ href: link.href, label: link.label }))} />
+      <MobileNav
+        signedIn={Boolean(user)}
+        links={links.map((link) => ({
+          href: link.href,
+          label: link.label,
+          variant: link.variant,
+          current: link.key === active,
+        }))}
+      />
     </header>
   );
 }

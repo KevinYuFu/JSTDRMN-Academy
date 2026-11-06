@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const message = query.error ? loginErrors[query.error] : null;
   return (
     <>
-      <AppHeader active="dashboard" />
+      <AppHeader />
       <div className="auth-wrap">
         <div className="auth-card">
           <h1>Log in</h1>
