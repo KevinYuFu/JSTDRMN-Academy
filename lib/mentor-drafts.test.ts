@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import { accessSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { describe, it } from "node:test";
+import {
+  MENTOR_DRAFT_PUBLICATION,
+  MENTOR_DRAFT_RATE_LABEL,
+  MENTOR_DRAFTS,
+  mentorDraftTopicLine,
+} from "./mentor-drafts";
+
+const root = path.resolve(import.meta.dirname, "..");
+
+function draft(slug: string) {
+  const found = MENTOR_DRAFTS.find((item) => item.slug === slug);
+  assert.ok(found, slug);
+  return found;
+}
+
+describe("mentor draft profiles", () => {
+  it("keeps the reviewed order and public names", () => {
+    assert.deepEqual(
+      MENTOR_DRAFTS.map((item) => item.name),
+      ["Yuzu", "ODIN", "DAWNER", "VYMVN"],
+    );
+    assert.deepEqual(
+      MENTOR_DRAFTS.map((item) => item.slug),
+      ["yuzu", "odin", "dawner", "vymvn"],
+    );
+    assert.equal(draft("yuzu").name, "Yuzu");
+    assert.equal(draft("yuzu").portraitAlt, "Yuzu");
+    const text = MENTOR_DRAFTS.map((item) => `${item.name}\n${item.bio}\n${item.portraitAlt}`).join("\n");
+    assert.equal(text.includes("Yu Fu"), false);
+  });
+
+  it("uses one provisional rate for every card", () => {
+    assert.equal(MENTOR_DRAFT_RATE_LABEL, "CAD $60 / 1h");
+    assert.equal(MENTOR_DRAFT_RATE_LABEL.endsWith("1h"), true);
+    assert.equal(new Set([MENTOR_DRAFT_RATE_LABEL]).size, 1);
+  });
+
+  it("keeps the reviewed teaching topics", () => {
+    const shared = "Ableton, DJing, production, bass music, mixing/mastering";
+    assert.equal(mentorDraftTopicLine(draft("yuzu").teachingTopics), shared);
+    assert.equal(mentorDraftTopicLine(draft("odin").teachingTopics), shared);
+
+    const dawner = draft("dawner").teachingTopics;
+    const house = dawner.indexOf("house");
+    assert.equal(dawner[house + 1], "bass music");
+    assert.equal(
+      mentorDraftTopicLine(dawner),
+      "Ableton, DJing, production, house, bass music, mixing/mastering",
+    );
+
+    const vymvn = draft("vymvn").teachingTopics;
+    assert.deepEqual(vymvn.slice(-3), ["electronic", "dance music", "house"]);
+    assert.equal(
+      mentorDraftTopicLine(vymvn),
+      "Ableton, DJing, production, bass music, mixing/mastering, electronic, dance music, house",
+    );
+    for (const item of MENTOR_DRAFTS) {
+      assert.equal(item.teachingTopics.some((topic) => /hip-?hop/i.test(topic)), false);
+    }
+  });
+
+  it("keeps the reviewed bios and Instagram links", () => {
+    assert.equal(draft("yuzu").bio, "DJ, producer, and JSTDRMN Academy instructor.");
+    assert.equal(
+      draft("odin").bio,
+      "Toronto-based producer releasing flips and remixes as odinsounds, including dubstep tracks.",
+    );
+    assert.equal(
+      draft("dawner").bio,
+      "Toronto-based producer from St. John’s, Newfoundland, with over a decade of production and recording experience across pop, hip-hop, house, and bass.",
+    );
+    assert.equal(
+      draft("vymvn").bio,
+      "Toronto-based electronic artist making lyric-driven dance music, with releases on HEXAGON, ZEROCOOL, 2-Dutch, and NCS.",
+    );
+    assert.equal(draft("yuzu").instagramUrl, "https://www.instagram.com/yuzubops_official/");
+    assert.equal(draft("odin").instagramUrl, "https://www.instagram.com/odinsounds/");
+    assert.equal(draft("dawner").instagramUrl, "https://www.instagram.com/dawner.ca/");
+    assert.equal(draft("vymvn").instagramUrl, "https://www.instagram.com/vymvn/");
+    assert.equal(draft("yuzu").instagramLabel, "instagram.com/yuzubops_official");
+    assert.equal(draft("odin").instagramLabel, "instagram.com/odinsounds");
+    assert.equal(draft("dawner").instagramLabel, "instagram.com/dawner.ca");
+    assert.equal(draft("vymvn").instagramLabel, "instagram.com/vymvn");
+  });
+
+  it("serves local portraits and stays unpublished", () => {
+    assert.deepEqual(MENTOR_DRAFT_PUBLICATION, {
+      status: "draft",
+      writesDatabase: false,
+      bookable: false,
+      portraitLiveReuse: "unconfirmed",
+    });
+    for (const item of MENTOR_DRAFTS) {
+      assert.equal(item.portraitSrc.startsWith("/mentor-draft-portraits/"), true);
+      assert.equal(item.portraitSrc.endsWith(".jpg"), true);
+      assert.equal(item.portraitSrc.includes("http"), false);
+      accessSync(path.join(root, "public", item.portraitSrc.slice(1)));
+    }
+    assert.equal(draft("yuzu").portraitSrc, "/mentor-draft-portraits/yuzu.jpg");
+  });
+
+  it("is not wired into the database seed or mentor writers", () => {
+    const source = readFileSync(path.join(root, "lib/mentor-drafts.ts"), "utf8");
+    assert.equal(source.includes("prisma"), false);
+    assert.equal(source.includes("@/lib/db"), false);
+    const seed = readFileSync(path.join(root, "prisma/seed.ts"), "utf8");
+    assert.equal(seed.includes("mentor-drafts"), false);
+    assert.equal(seed.includes("MENTOR_DRAFTS"), false);
+    const privateSessions = readFileSync(path.join(root, "app/private-sessions/page.tsx"), "utf8");
+    assert.equal(privateSessions.includes("mentor-drafts"), false);
+  });
+});
