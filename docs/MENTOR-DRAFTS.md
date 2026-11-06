@@ -4,7 +4,7 @@ Local draft only. These four profiles are not Mentor rows and are not bookable.
 
 ## Where the data is
 
-`lib/mentor-drafts.ts` holds the typed list: order, names, bios, teaching topics, Instagram links, and the shared provisional rate `CAD $60 / 1h`. Portraits are files in `public/mentor-draft-portraits/`. Yuzu’s portrait is the grey studio head-and-shoulders crop from the local review (`photos/yu.jpg` in that handoff).
+`lib/mentor-drafts.ts` holds the typed list: order, names, bios, Instagram links, and the shared provisional rate `CAD $60 / 1h`. Teaching topics are `specialties`. Genres are `genres`. Those names match the existing Mentor columns, so this draft adds no migration and writes no rows. Portraits are files in `public/mentor-draft-portraits/`. Yuzu’s portrait is the grey studio head-and-shoulders crop from the local review (`photos/yu.jpg` in that handoff).
 
 ## Where the view is
 

@@ -2,12 +2,7 @@ import assert from "node:assert/strict";
 import { accessSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
-import {
-  MENTOR_DRAFT_PUBLICATION,
-  MENTOR_DRAFT_RATE_LABEL,
-  MENTOR_DRAFTS,
-  mentorDraftTopicLine,
-} from "./mentor-drafts";
+import { MENTOR_DRAFT_PUBLICATION, MENTOR_DRAFT_RATE_LABEL, MENTOR_DRAFTS } from "./mentor-drafts";
 
 const root = path.resolve(import.meta.dirname, "..");
 
@@ -39,27 +34,23 @@ describe("mentor draft profiles", () => {
     assert.equal(new Set([MENTOR_DRAFT_RATE_LABEL]).size, 1);
   });
 
-  it("keeps the reviewed teaching topics", () => {
-    const shared = "Ableton, DJing, production, bass music, mixing/mastering";
-    assert.equal(mentorDraftTopicLine(draft("yuzu").teachingTopics), shared);
-    assert.equal(mentorDraftTopicLine(draft("odin").teachingTopics), shared);
-
-    const dawner = draft("dawner").teachingTopics;
-    const house = dawner.indexOf("house");
-    assert.equal(dawner[house + 1], "bass music");
-    assert.equal(
-      mentorDraftTopicLine(dawner),
-      "Ableton, DJing, production, house, bass music, mixing/mastering",
-    );
-
-    const vymvn = draft("vymvn").teachingTopics;
-    assert.deepEqual(vymvn.slice(-3), ["electronic", "dance music", "house"]);
-    assert.equal(
-      mentorDraftTopicLine(vymvn),
-      "Ableton, DJing, production, bass music, mixing/mastering, electronic, dance music, house",
-    );
+  it("keeps teaching topics and genres in separate lists", () => {
+    const topics = ["Ableton", "DJing", "production", "mixing/mastering"];
+    assert.deepEqual([...draft("yuzu").genres], ["bass music"]);
+    assert.deepEqual([...draft("odin").genres], ["bass music"]);
+    assert.deepEqual([...draft("dawner").genres], ["house", "bass music"]);
+    assert.deepEqual([...draft("vymvn").genres], ["electronic", "dance music", "house", "bass music"]);
     for (const item of MENTOR_DRAFTS) {
-      assert.equal(item.teachingTopics.some((topic) => /hip-?hop/i.test(topic)), false);
+      assert.deepEqual([...item.specialties], topics);
+      assert.equal(new Set(item.genres).size, item.genres.length);
+      assert.equal(new Set(item.specialties).size, item.specialties.length);
+      for (const genre of item.genres) {
+        assert.equal(item.specialties.includes(genre), false);
+        assert.equal(/hip-?hop/i.test(genre), false);
+      }
+      for (const topic of item.specialties) {
+        assert.equal(/hip-?hop/i.test(topic), false);
+      }
     }
   });
 
@@ -124,6 +115,15 @@ describe("mentor draft profiles", () => {
     assert.equal(view.includes("Yu Fu"), false);
     assert.equal(page.includes("MentorDraftReview"), true);
     assert.equal(view.includes("MENTOR_DRAFT_RATE_LABEL"), true);
+    assert.equal(view.includes("Teaching topics"), true);
+    assert.equal(view.includes("Genres"), true);
+    assert.equal(view.includes("mentor.specialties"), true);
+    assert.equal(view.includes("mentor.genres"), true);
+    assert.equal(view.includes("teachingTopics"), false);
+    const schema = readFileSync(path.join(root, "prisma/schema.prisma"), "utf8");
+    const mentorModel = schema.slice(schema.indexOf("model Mentor {"), schema.indexOf("model Track {"));
+    assert.match(mentorModel, /specialties\s+String/);
+    assert.match(mentorModel, /genres\s+String/);
     const css = readFileSync(path.join(root, "components/mentor-draft-review.module.css"), "utf8");
     assert.match(css, /width:\s*96px/);
     assert.match(css, /height:\s*96px/);

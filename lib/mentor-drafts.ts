@@ -9,6 +9,9 @@
  * write the database, and the seed does not load it. Do not publish these
  * profiles as bookable offerings until that is explicitly approved.
  *
+ * `specialties` and `genres` use the same names as the Mentor columns. Teaching
+ * topics are specialties. Genres stay in genres. No new column is required.
+ *
  * Portrait files under public/mentor-draft-portraits/ are for this review.
  * The Yuzu file was photos/yu.jpg in the local handoff; the served name matches
  * the public name. Permission to reuse the portraits on the live site is unconfirmed.
@@ -23,24 +26,17 @@ export const MENTOR_DRAFT_PUBLICATION = {
   portraitLiveReuse: "unconfirmed",
 } as const;
 
-const sharedTeachingTopics = [
-  "Ableton",
-  "DJing",
-  "production",
-  "bass music",
-  "mixing/mastering",
-] as const;
-
-function withHouseImmediatelyBeforeBass(topics: readonly string[]) {
-  const bassIndex = topics.indexOf("bass music");
-  return [...topics.slice(0, bassIndex), "house", ...topics.slice(bassIndex)];
-}
+/** Teaching topics. Same list the Mentor editor stores in `specialties`. */
+const teachingTopics = ["Ableton", "DJing", "production", "mixing/mastering"] as const;
 
 export type MentorDraft = {
   slug: string;
   name: string;
   bio: string;
-  teachingTopics: readonly string[];
+  /** Maps to Mentor.specialties. Shown as Teaching topics. */
+  specialties: readonly string[];
+  /** Maps to Mentor.genres. Shown as Genres. */
+  genres: readonly string[];
   instagramUrl: string;
   instagramLabel: string;
   portraitSrc: string;
@@ -52,7 +48,8 @@ export const MENTOR_DRAFTS: readonly MentorDraft[] = [
     slug: "yuzu",
     name: "Yuzu",
     bio: "DJ, producer, and JSTDRMN Academy instructor.",
-    teachingTopics: [...sharedTeachingTopics],
+    specialties: [...teachingTopics],
+    genres: ["bass music"],
     instagramUrl: "https://www.instagram.com/yuzubops_official/",
     instagramLabel: "instagram.com/yuzubops_official",
     portraitSrc: "/mentor-draft-portraits/yuzu.jpg",
@@ -62,7 +59,8 @@ export const MENTOR_DRAFTS: readonly MentorDraft[] = [
     slug: "odin",
     name: "ODIN",
     bio: "Toronto-based producer releasing flips and remixes as odinsounds, including dubstep tracks.",
-    teachingTopics: [...sharedTeachingTopics],
+    specialties: [...teachingTopics],
+    genres: ["bass music"],
     instagramUrl: "https://www.instagram.com/odinsounds/",
     instagramLabel: "instagram.com/odinsounds",
     portraitSrc: "/mentor-draft-portraits/odin.jpg",
@@ -72,7 +70,8 @@ export const MENTOR_DRAFTS: readonly MentorDraft[] = [
     slug: "dawner",
     name: "DAWNER",
     bio: "Toronto-based producer from St. John’s, Newfoundland, with over a decade of production and recording experience across pop, hip-hop, house, and bass.",
-    teachingTopics: withHouseImmediatelyBeforeBass(sharedTeachingTopics),
+    specialties: [...teachingTopics],
+    genres: ["house", "bass music"],
     instagramUrl: "https://www.instagram.com/dawner.ca/",
     instagramLabel: "instagram.com/dawner.ca",
     portraitSrc: "/mentor-draft-portraits/dawner.jpg",
@@ -82,7 +81,8 @@ export const MENTOR_DRAFTS: readonly MentorDraft[] = [
     slug: "vymvn",
     name: "VYMVN",
     bio: "Toronto-based electronic artist making lyric-driven dance music, with releases on HEXAGON, ZEROCOOL, 2-Dutch, and NCS.",
-    teachingTopics: [...sharedTeachingTopics, "electronic", "dance music", "house"],
+    specialties: [...teachingTopics],
+    genres: ["electronic", "dance music", "house", "bass music"],
     instagramUrl: "https://www.instagram.com/vymvn/",
     instagramLabel: "instagram.com/vymvn",
     portraitSrc: "/mentor-draft-portraits/vymvn.jpg",
@@ -90,6 +90,3 @@ export const MENTOR_DRAFTS: readonly MentorDraft[] = [
   },
 ];
 
-export function mentorDraftTopicLine(topics: readonly string[]) {
-  return topics.join(", ");
-}
