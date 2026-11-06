@@ -2,7 +2,7 @@ import { isStaff } from "./roles";
 
 export type Product = "headliner" | "program" | "cohort";
 
-export type CourseAccess = "headliner" | "purchase" | "subscription" | "cohort";
+export type CourseAccess = "headliner" | "purchase" | "subscription" | "cohort" | "open";
 
 export type Upsell = "headliner" | "program" | "bootcamp";
 
@@ -23,11 +23,14 @@ export type LessonGate = {
   /** Opens only after every earlier lesson in the same list is complete. */
   drip: boolean;
   courseAccess: CourseAccess;
+  /** Subscription course that also opens this lesson. Null when the lesson stands alone. */
+  planCourseId?: string | null;
 };
 
 export type AccessReason =
   | "role"
   | "entitlement"
+  | "open"
   | "missing"
   | "revoked"
   | "expired"
@@ -51,7 +54,9 @@ export function normalizeProduct(value: string): Product | null {
 
 export function asCourseAccess(value: string): CourseAccess {
   if (value === "ash_subscription") return "subscription";
-  if (value === "headliner" || value === "purchase" || value === "subscription" || value === "cohort") return value;
+  if (value === "headliner" || value === "purchase" || value === "subscription" || value === "cohort" || value === "open") {
+    return value;
+  }
   return "purchase";
 }
 
@@ -62,18 +67,22 @@ function isLive(record: EntitlementRecord, now: Date) {
 }
 
 function matchesLesson(record: EntitlementRecord, lesson: LessonGate) {
+  if (lesson.courseAccess === "open") return false;
   if (lesson.courseAccess === "headliner") {
     return lesson.headliner && record.product === "headliner";
   }
   if (lesson.courseAccess === "purchase" || lesson.courseAccess === "subscription") {
-    return record.product === "program" && record.courseId === lesson.courseId;
+    if (record.product !== "program" || !record.courseId) return false;
+    if (record.courseId === lesson.courseId) return true;
+    return Boolean(lesson.planCourseId) && record.courseId === lesson.planCourseId;
   }
   return record.product === "cohort" && record.cohortId !== null && record.cohortId === lesson.cohortId;
 }
 
-function upsellFor(access: CourseAccess): Upsell {
+function upsellFor(access: CourseAccess): Upsell | null {
   if (access === "headliner") return "headliner";
   if (access === "purchase" || access === "subscription") return "program";
+  if (access === "open") return null;
   return "bootcamp";
 }
 
@@ -91,10 +100,19 @@ export function lessonAccess(input: {
   lesson: LessonGate;
   entitlements: EntitlementRecord[];
   earlierComplete: boolean;
+  /** Logged-out visitors are denied free courses. Callers that already have a user can omit this. */
+  signedIn?: boolean;
   now?: Date;
 }): AccessDecision {
   if (isStaff(input.role)) {
     return { allowed: true, upsell: null, reason: "role" };
+  }
+
+  const signedIn = input.signedIn ?? input.role !== "guest";
+  if (input.lesson.courseAccess === "open") {
+    if (!signedIn) return { allowed: false, upsell: null, reason: "missing" };
+    if (input.lesson.drip && !input.earlierComplete) return { allowed: false, upsell: null, reason: "drip" };
+    return { allowed: true, upsell: null, reason: "open" };
   }
 
   if (input.lesson.courseAccess === "headliner" && !input.lesson.headliner) {
@@ -124,6 +142,8 @@ export function containerAccess(input: {
   access: CourseAccess;
   courseId: string;
   cohortId: string | null;
+  planCourseId?: string | null;
+  signedIn?: boolean;
   entitlements: EntitlementRecord[];
   now?: Date;
 }): AccessDecision {
@@ -131,12 +151,14 @@ export function containerAccess(input: {
     id: "container",
     courseId: input.courseId,
     cohortId: input.cohortId,
+    planCourseId: input.planCourseId ?? null,
     headliner: true,
     drip: false,
     courseAccess: input.access,
   };
   return lessonAccess({
     role: input.role,
+    signedIn: input.signedIn,
     lesson: probe,
     entitlements: input.entitlements,
     earlierComplete: true,

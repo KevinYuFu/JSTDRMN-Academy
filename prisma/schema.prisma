@@ -58,10 +58,18 @@ model Course {
   hubspotUrl   String?
   panel        String
   sort         Int           @default(0)
-  /// banner = the Headliner strip. grid = a card. Anything else stays off the public page.
+  /// banner = the Headliner strip. grid = a card. plan = a hidden subscription. Anything else stays off the public page.
   placement    String        @default("grid")
   special      Boolean       @default(false)
   presenter    String?
+  /// on_demand (watch anytime) or live.
+  delivery     String        @default("on_demand")
+  /// in_person, online, hybrid, or blank when it is not set.
+  setting      String        @default("")
+  /// When set, one subscription on that course opens this course too.
+  planCourseId String?
+  plan         Course?       @relation("CoursePlan", fields: [planCourseId], references: [id], onDelete: SetNull)
+  included     Course[]      @relation("CoursePlan")
   lessons      Lesson[]
   cohorts      Cohort[]
   tracks          Track[]

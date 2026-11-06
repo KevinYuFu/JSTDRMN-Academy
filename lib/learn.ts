@@ -60,6 +60,7 @@ export async function openCourse(input: {
     orderBy: { position: "asc" },
   });
 
+  const signedIn = Boolean(input.user);
   const records = input.user ? await entitlementRecords(input.user.id) : [];
   const progressRows = input.user
     ? await prisma.progress.findMany({
@@ -73,7 +74,7 @@ export async function openCourse(input: {
     completed: progressByLesson.get(lesson.id) === "completed",
   }));
 
-  const role = input.user?.role ?? "student";
+  const role = input.user?.role ?? "guest";
   const lessons: LessonView[] = lessonRows.map((lesson) => ({
     id: lesson.id,
     position: lesson.position,
@@ -95,6 +96,7 @@ export async function openCourse(input: {
           : "none",
     access: lessonAccess({
       role,
+      signedIn,
       lesson: {
         id: lesson.id,
         courseId: course.id,
@@ -102,6 +104,7 @@ export async function openCourse(input: {
         headliner: lesson.headliner,
         drip: lesson.drip,
         courseAccess: asCourseAccess(course.access),
+        planCourseId: course.planCourseId,
       },
       entitlements: records,
       earlierComplete: earlierLessonsComplete(completion, lesson.id),
@@ -136,8 +139,10 @@ export async function openCourse(input: {
 
   const container = containerAccess({
     role,
+    signedIn,
     access: asCourseAccess(course.access),
     courseId: course.id,
+    planCourseId: course.planCourseId,
     cohortId: cohort?.id ?? null,
     entitlements: records,
   });

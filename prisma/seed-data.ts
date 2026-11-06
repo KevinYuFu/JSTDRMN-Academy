@@ -14,25 +14,141 @@ export const seedAdmin = {
   role: "lead",
 };
 
+const placeholderCopy = "Placeholder. No description yet.";
+
+/**
+ * One subscription for every on-demand intro.
+ * It stays off the public grid (placement "plan"). Checkout is not wired to it.
+ */
+export const introPass = {
+  id: "crs_intro_pass",
+  slug: "intro-courses",
+  title: "Intro courses",
+  tagline: "One subscription for the on-demand intro courses.",
+  description: "One subscription at $20/month includes every intro course.",
+  kind: "plan",
+  access: "subscription",
+  priceCents: 2000,
+  billing: "monthly",
+  statusLabel: "Subscription",
+  hubspotUrl: null,
+  panel: "purple",
+  sort: 0,
+  placement: "plan",
+  special: false,
+  presenter: null,
+  delivery: "on_demand",
+  setting: "",
+  planCourseId: null,
+} satisfies Prisma.CourseUncheckedCreateInput;
+
+type IntroSeed = Prisma.CourseUncheckedCreateInput;
+
+function introCourse(id: string, slug: string, title: string, sort: number, access: "open" | "subscription"): IntroSeed {
+  return {
+    id,
+    slug,
+    title,
+    tagline: placeholderCopy,
+    description: placeholderCopy,
+    kind: "course",
+    access,
+    priceCents: null,
+    billing: "monthly",
+    statusLabel: access === "open" ? "Free" : "Subscription",
+    hubspotUrl: null,
+    panel: "purple",
+    sort,
+    placement: "grid",
+    special: false,
+    presenter: null,
+    delivery: "on_demand",
+    setting: "",
+    planCourseId: introPass.id,
+  };
+}
+
+/** Intro to EDM and Intro to Ableton are free for any signed-in student. The same subscription still includes them. */
+export const introCourses = [
+  introCourse("crs_intro_edm", "intro-to-edm", "Intro to EDM", 10, "open"),
+  introCourse("crs_intro_ableton", "intro-to-ableton", "Intro to Ableton", 11, "open"),
+  introCourse("crs_intro_sound", "intro-to-sound-design", "Intro to Sound Design", 12, "subscription"),
+  introCourse("crs_intro_writing", "intro-to-songwriting-and-arrangement", "Intro to Songwriting and Arrangement", 13, "subscription"),
+  introCourse("crs_intro_mixing", "intro-to-mixing-and-mastering", "Intro to Mixing and Mastering", 14, "subscription"),
+  introCourse("crs_intro_av", "intro-to-av", "Intro to AV", 15, "subscription"),
+  introCourse("crs_intro_live_setup", "live-setup", "Live Setup", 16, "subscription"),
+] satisfies IntroSeed[];
+
 export const djBootcamp = {
   id: "crs_dj",
   slug: "dj-bootcamp",
   title: "DJ Bootcamp",
   tagline: "Master the decks and take your mixing skills to the next level.",
   description:
-    "Master the decks and take your mixing skills to the next level! Learn, practice, and unleash your sound with guidance from industry pros.",
+    "Master the decks and take your mixing skills to the next level! Learn, practice, and unleash your sound with guidance from industry pros. The program has 5 in-person weekly classes (3 hours each) at Lynx Music, and there is also online support during the week. The page lists 4 sessions at Lynx Music, Saturday 1–4 PM, from Sept 19 to Oct 10, a performance on Saturday Oct 31, and a performance review on Saturday Nov 7. The year is not stated on that page. The application deadline on the page is 9/7.",
   kind: "bootcamp",
   access: "cohort",
   priceCents: null,
-  billing: "application",
+  billing: "monthly",
   statusLabel: "Waitlist Open",
-  hubspotUrl: "https://www.jstdrmn.com/bootcamp",
+  hubspotUrl: "https://www.jstdrmn.com/dj",
   panel: "decks",
   sort: 3,
   placement: "grid",
   special: false,
   presenter: null,
+  delivery: "live",
+  setting: "in_person",
+  planCourseId: null,
 } satisfies Prisma.CourseUncheckedCreateInput;
+
+export const productionBootcamp = {
+  id: "crs_prod",
+  slug: "production-bootcamp",
+  title: "Production Bootcamp",
+  tagline: "Turn your ideas into tracks that hit! Get hands-on with production tools and techniques to bring your music to life.",
+  description:
+    "In this bootcamp, we will take you from no Ableton experience to completing your first track on Spotify in 5 sessions. 5 in-person sessions at Lynx Music, Sundays 1–4 PM: Apr 5, Apr 12, Apr 19, Apr 26, and May 3. Applications close Sunday, March 29, 2026.",
+  kind: "bootcamp",
+  access: "cohort",
+  priceCents: null,
+  billing: "monthly",
+  statusLabel: "Waitlist Open",
+  hubspotUrl: "https://www.jstdrmn.com/prod",
+  panel: "studio",
+  sort: 4,
+  placement: "grid",
+  special: false,
+  presenter: null,
+  delivery: "live",
+  setting: "in_person",
+  planCourseId: null,
+} satisfies Prisma.CourseUncheckedCreateInput;
+
+// TODO: ASH FB2B price amount is 500 dollars, but per month vs one-time is not confirmed. Leave priceCents null and do not display 500.
+export const fb2b = {
+  id: "crs_fb2b",
+  slug: "fb2b",
+  title: "FB2B",
+  tagline: "From Bedroom to Banger",
+  description: "From Bedroom to Banger.",
+  kind: "bootcamp",
+  access: "cohort",
+  priceCents: null,
+  billing: "monthly",
+  statusLabel: "Price not confirmed",
+  hubspotUrl: null,
+  panel: "ash",
+  sort: 5,
+  placement: "grid",
+  special: true,
+  presenter: "Ash F",
+  delivery: "live",
+  setting: "",
+  planCourseId: null,
+} satisfies Prisma.CourseUncheckedCreateInput;
+
+export const catalogCourses = [introPass, ...introCourses, djBootcamp, productionBootcamp, fb2b] satisfies Prisma.CourseUncheckedCreateInput[];
 
 export const djCohorts = [
   {

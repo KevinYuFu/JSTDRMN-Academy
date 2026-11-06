@@ -49,6 +49,16 @@ function upsellCopy(data: CourseData) {
       external: false,
     };
   }
+  if (data.course.access === "open") {
+    return {
+      kicker: "Free",
+      title: "Sign in to watch",
+      body: "This course is free for any signed-in student.",
+      cta: "Sign in",
+      href: "/login",
+      external: false,
+    };
+  }
   if (data.course.access === "purchase" || data.course.access === "subscription") {
     const price = programPriceLabel(data.course);
     const monthly = data.course.billing === "monthly";
@@ -138,7 +148,11 @@ export function CourseView({
               <h2>{copy.title}</h2>
               <p>{copy.body}</p>
               {copy.href && copy.cta ? (
-                signedIn || copy.external ? (
+                data.course.access === "open" ? (
+                  <Link className="pill pill-purple" href="/login">
+                    {copy.cta}
+                  </Link>
+                ) : signedIn || copy.external ? (
                   <a className="pill pill-purple" href={copy.href} target={copy.external ? "_blank" : undefined} rel={copy.external ? "noreferrer" : undefined}>
                     {copy.cta}
                   </a>
