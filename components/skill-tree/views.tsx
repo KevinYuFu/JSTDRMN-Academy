@@ -4,8 +4,9 @@ import {
   childById,
   countLabel,
   drillHref,
+  overviewColumns,
   panelItems,
-  skillTree,
+  unlinkedChildren,
   type SkillBlock,
   type SkillCard,
   type SkillCardsBlock,
@@ -210,20 +211,22 @@ function Block({ node, stack, block }: { node: SkillNode; stack: readonly SkillN
 }
 
 function Overview({ stack }: { stack: readonly SkillNode[] }) {
+  const root = stack[0];
+  if (!root) return null;
   return (
     <section className="stree-view" aria-label="Academy overview">
-      <div className="stree-tree">
+      <div className="stree-tree" style={{ "--stree-columns": overviewColumns(root) } as CSSProperties}>
         <div className="stree-root-wrap">
-          <h1 className="stree-root-heading">{skillTree.card.title}</h1>
+          <h1 className="stree-root-heading">{root.card.title}</h1>
         </div>
         <div className="stree-stem" aria-hidden="true" />
         <div className="stree-rail" aria-hidden="true">
-          {skillTree.children.map((branch) => (
+          {root.children.map((branch) => (
             <span key={branch.id} />
           ))}
         </div>
         <div className="stree-primary">
-          {skillTree.children.map((branch, index) => (
+          {root.children.map((branch, index) => (
             <div key={branch.id} className={branch.mapFlow ? "stree-col stree-col-dj" : "stree-col"}>
               <Card node={branch} stack={stack} place="map" index={index} />
               {branch.mapFlow ? <Flow node={branch} stack={stack} place="map" /> : null}
@@ -231,7 +234,7 @@ function Overview({ stack }: { stack: readonly SkillNode[] }) {
           ))}
         </div>
       </div>
-      {skillTree.hint ? <p className="stree-hint">{skillTree.hint}</p> : null}
+      {root.hint ? <p className="stree-hint">{root.hint}</p> : null}
     </section>
   );
 }
@@ -239,6 +242,7 @@ function Overview({ stack }: { stack: readonly SkillNode[] }) {
 function Detail({ node, stack }: { node: SkillNode; stack: readonly SkillNode[] }) {
   const page = node.page;
   if (!page) return <Overview stack={stack} />;
+  const extra = unlinkedChildren(node);
   return (
     <section className="stree-view" aria-label={page.title}>
       <div className="stree-section-head">
@@ -249,12 +253,24 @@ function Detail({ node, stack }: { node: SkillNode; stack: readonly SkillNode[] 
       {page.sections.map((section, index) => (
         <Block key={`${section.type}-${index}`} node={node} stack={stack} block={section} />
       ))}
+      {extra.length > 0 ? (
+        <div className="stree-lane">
+          <p className="stree-lane-label">Also on this branch</p>
+          <div className="stree-stack">
+            {extra.map((child) => (
+              <Card key={child.id} node={child} stack={stack} />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
 
 export function SkillTreeView({ stack }: { stack: readonly SkillNode[] }) {
-  const node = stack[stack.length - 1] ?? skillTree;
-  if (node.id === skillTree.id) return <Overview stack={stack} />;
+  const root = stack[0];
+  const node = stack[stack.length - 1];
+  if (!root || !node) return null;
+  if (node.id === root.id) return <Overview stack={stack} />;
   return <Detail node={node} stack={stack} />;
 }

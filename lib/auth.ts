@@ -3,7 +3,7 @@ import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "./db";
-import { homeForRole, isStaff } from "./roles";
+import { homeForRole, isLead, isStaff } from "./roles";
 
 const COOKIE = "jstdrmn_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -67,5 +67,15 @@ export async function requireUser() {
 export async function requireStaff() {
   const user = await requireUser();
   if (!isStaff(user.role)) redirect(homeForRole(user.role));
+  return user;
+}
+
+/** Lead only. Instructor and Mentor go back to the staff view. Students go home. */
+export async function requireLead() {
+  const user = await requireUser();
+  if (!isLead(user.role)) {
+    if (isStaff(user.role)) redirect("/teacher?skillTree=forbidden");
+    redirect(homeForRole(user.role));
+  }
   return user;
 }

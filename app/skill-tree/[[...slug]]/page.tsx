@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { SkillTreeShell } from "@/components/skill-tree/shell";
 import { SkillTreeView } from "@/components/skill-tree/views";
 import { skillTreeNav, stackFromSlug } from "@/lib/skill-tree";
+import { loadSkillTree } from "@/lib/skill-tree-store";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,9 @@ export const metadata: Metadata = {
  * Dashboard and checkout stay behind login. This map does not.
  */
 export default async function SkillTreePage({ params }: { params: Promise<{ slug?: string[] }> }) {
+  const tree = await loadSkillTree();
   const { slug } = await params;
-  const stack = stackFromSlug(slug);
+  const stack = stackFromSlug(slug, tree);
   if (!stack) notFound();
   return (
     <>

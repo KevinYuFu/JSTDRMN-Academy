@@ -277,3 +277,11 @@ model HubspotLog {
   payload   String
   createdAt DateTime @default(now())
 }
+
+/// Live skill tree. One row, id "current". The document matches the SkillNode tree.
+/// The app copies the built-in map in when this row is missing. Saves do not wipe other tables.
+model SkillTree {
+  id        String   @id
+  document  Json
+  updatedAt DateTime @updatedAt
+}

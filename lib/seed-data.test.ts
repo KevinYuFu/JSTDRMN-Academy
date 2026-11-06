@@ -83,6 +83,7 @@ describe("postgres migrations on deploy", () => {
       "20261021205041_init",
       "20261105200000_google_login",
       "20261105220000_map_staff_roles_to_lead",
+      "20261106120000_skill_tree",
     ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
@@ -99,6 +100,11 @@ describe("postgres migrations on deploy", () => {
     assert.match(roleSql, /'admin'/);
     assert.equal(/drop table/i.test(roleSql), false);
     assert.equal(/delete from/i.test(roleSql), false);
+    const skillSql = readFileSync(join(migrationRoot, "20261106120000_skill_tree", "migration.sql"), "utf8");
+    assert.match(skillSql, /CREATE TABLE "SkillTree"/);
+    assert.match(skillSql, /JSONB/);
+    assert.equal(/drop table/i.test(skillSql), false);
+    assert.equal(/delete from/i.test(skillSql), false);
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });

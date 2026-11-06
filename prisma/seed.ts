@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { isBuiltinLeadEmail, leadEmails, nameFromEmail } from "../lib/google";
+import { ensureSkillTree, type SkillTreeStore } from "../lib/skill-tree-store";
 import { djBootcamp, djCohorts, djLessons, sampleEventTypes, sampleEvents, seedAdmin } from "./seed-data";
 
 const prisma = new PrismaClient();
@@ -28,6 +29,7 @@ function withoutId<T extends { id: string }>(row: T) {
 }
 
 async function main() {
+  let skillTreeCreated = false;
   const email = adminEmail();
   const password = adminPassword();
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -113,9 +115,13 @@ async function main() {
         }
       }
     }
+
+    const skill = await ensureSkillTree(db as unknown as SkillTreeStore);
+    skillTreeCreated = skill.created;
   });
 
   console.log("Seeded DJ Bootcamp, sample events, and Yu.");
+  console.log(skillTreeCreated ? "Skill tree filled from the built-in map." : "Skill tree already saved. Left it alone.");
   if (passwordHash) console.log("Yu's password was set from SEED_ADMIN_PASSWORD.");
   else if (existing) console.log("Yu already existed. Password was left unchanged.");
   else console.log("Yu has no password. Sign in with Google, or set SEED_ADMIN_PASSWORD and seed again.");
