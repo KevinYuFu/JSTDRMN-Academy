@@ -5,8 +5,11 @@ import { createSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   GOOGLE_NEXT_COOKIE,
+  GOOGLE_RETURN_COOKIE,
   GOOGLE_STATE_COOKIE,
+  allowedReturnOrigin,
   authSecret,
+  authUrl,
   decideGoogleUser,
   googleClientId,
   googleClientSecret,
@@ -14,8 +17,10 @@ import {
   googleRedirectUri,
   loginRedirect,
   openOAuthState,
+  openTicket,
   parseGoogleUserInfo,
   roleAfterGoogleSignIn,
+  sealTicket,
   type GoogleProfile,
 } from "@/lib/google";
 import { applyPendingGrants, syncContact } from "@/lib/hubspot";
@@ -57,8 +62,10 @@ export async function GET(request: Request) {
   const jar = await cookies();
   const next = safeNext(jar.get(GOOGLE_NEXT_COOKIE)?.value, "");
   const sealed = jar.get(GOOGLE_STATE_COOKIE)?.value ?? "";
+  const returnTicket = openTicket<{ origin: string; exp: number }>(jar.get(GOOGLE_RETURN_COOKIE)?.value ?? "", authSecret());
   jar.delete(GOOGLE_STATE_COOKIE);
   jar.delete(GOOGLE_NEXT_COOKIE);
+  jar.delete(GOOGLE_RETURN_COOKIE);
 
   if (!googleOAuthConfigured()) redirect(loginRedirect("google_unconfigured", next));
   const code = url.searchParams.get("code");
@@ -129,7 +136,19 @@ export async function GET(request: Request) {
     await applyPendingGrants(linked);
   }
 
-  await createSession(userId);
+  const token = await createSession(userId);
+  const canonical = authUrl();
+  if (
+    returnTicket &&
+    returnTicket.origin !== canonical &&
+    allowedReturnOrigin(returnTicket.origin, canonical)
+  ) {
+    const ticket = sealTicket(
+      { token, role, next, origin: returnTicket.origin, exp: Date.now() + 60 * 1000 },
+      authSecret(),
+    );
+    redirect(`${returnTicket.origin}/api/auth/google/finish?ticket=${encodeURIComponent(ticket)}`);
+  }
   if (next) redirect(next);
   redirect(homeForRole(role));
 }

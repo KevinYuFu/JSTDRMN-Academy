@@ -5,6 +5,7 @@ const STATE_RE = /^[a-f0-9]{32}$/;
 
 export const GOOGLE_STATE_COOKIE = "google_oauth_state";
 export const GOOGLE_NEXT_COOKIE = "google_oauth_next";
+export const GOOGLE_RETURN_COOKIE = "google_oauth_return";
 
 export type GoogleProfile = {
   sub: string;
@@ -199,6 +200,79 @@ export function decideGoogleUser(
     name: profile.name,
     role: roleAfterGoogleSignIn(null, profile.email),
     googleSub: profile.sub,
+  };
+}
+
+const PREVIEW_HOST = /^jstdrmn-academy-.+-jstdrmn-academy\.vercel\.app$/;
+
+/**
+ * Where a finished Google sign-in may return.
+ * The registered callback stays on AUTH_URL. A preview is a different host,
+ * so the session cookie has to be set again there.
+ */
+export function allowedReturnOrigin(origin: string, canonical: string) {
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (url.origin !== origin || url.username || url.password) return false;
+  if (url.origin === canonical) return true;
+  if (url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1")) return true;
+  if (url.protocol !== "https:") return false;
+  return PREVIEW_HOST.test(url.hostname);
+}
+
+export type GoogleStartPlan = "same-host" | "bridge" | "reject";
+
+/** Same host keeps the current Google start. A preview bridges to the registered callback host. */
+export function googleStartPlan(requestOrigin: string, canonical = authUrl()): GoogleStartPlan {
+  if (requestOrigin === canonical) return "same-host";
+  if (allowedReturnOrigin(requestOrigin, canonical)) return "bridge";
+  return "reject";
+}
+
+export function isOAuthNonce(value: string) {
+  return STATE_RE.test(value);
+}
+
+export function isSessionToken(value: string) {
+  return /^[a-f0-9]{64}$/.test(value);
+}
+
+export function sealTicket<T extends { exp: number }>(payload: T, secret: string) {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const mac = createHmac("sha256", secret).update(body).digest("hex");
+  return `${body}.${mac}`;
+}
+
+export function openTicket<T extends { exp: number }>(ticket: string, secret: string): T | null {
+  const dot = ticket.lastIndexOf(".");
+  if (dot <= 0 || !secret) return null;
+  const body = ticket.slice(0, dot);
+  const mac = ticket.slice(dot + 1);
+  if (!/^[a-f0-9]{64}$/.test(mac)) return null;
+  const expected = createHmac("sha256", secret).update(body).digest("hex");
+  const left = Buffer.from(mac);
+  const right = Buffer.from(expected);
+  if (left.length !== right.length || !timingSafeEqual(left, right)) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as T;
+    if (!parsed || typeof parsed !== "object" || typeof parsed.exp !== "number" || parsed.exp < Date.now()) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function oauthCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 600,
   };
 }
 

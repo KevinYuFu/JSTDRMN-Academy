@@ -86,7 +86,7 @@ Set these on the Vercel project. Blank optional values keep the same fallbacks a
 | `AUTH_GOOGLE_ID` | With Google login | OAuth client id. `GOOGLE_CLIENT_ID` works too. |
 | `AUTH_GOOGLE_SECRET` | With Google login | OAuth client secret. `GOOGLE_CLIENT_SECRET` works too. |
 | `AUTH_SECRET` | With Google login | Signs the short-lived Google state cookie. At least 16 characters. `NEXTAUTH_SECRET` works too. |
-| `AUTH_URL` | With Google login | Public `https` origin, no trailing slash. The redirect is `{AUTH_URL}/api/auth/google/callback`. Falls back to `NEXTAUTH_URL`, then `APP_URL`. |
+| `AUTH_URL` | With Google login | Public `https` origin, no trailing slash. The Google callback stays `{AUTH_URL}/api/auth/google/callback`, including for a preview. A preview sign-in returns to that preview afterward. Falls back to `NEXTAUTH_URL`, then `APP_URL`. |
 | `LEAD_EMAILS` | No | Comma-separated Lead emails. `academy@jstdrmn.com` is always a Lead. Does not remove a Lead, Mentor, or Instructor. |
 | `TEACHER_EMAILS` | No | Old name for the same Lead list. Still works. Use `LEAD_EMAILS` when you add a new one. |
 | `APP_URL` | Yes | Public `https` origin, no trailing slash. Stripe return URLs, the Discord redirect, and HubSpot signature checks use it. |

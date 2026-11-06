@@ -7,7 +7,11 @@ import {
   googleAuthorizeUrl,
   googleOAuthConfigured,
   googleRedirectUri,
+  allowedReturnOrigin,
+  googleStartPlan,
   isLeadEmail,
+  openTicket,
+  sealTicket,
   isTeacherEmail,
   leadEmails,
   nameFromEmail,
@@ -239,6 +243,36 @@ describe("Google profile and OAuth state", () => {
     assert.equal(url.searchParams.get("scope"), "openid email profile");
     assert.equal(url.searchParams.get("state"), STATE);
     assert.equal(url.searchParams.get("response_type"), "code");
+  });
+
+  it("sends a preview back through the registered callback host", () => {
+    const canonical = "https://jstdrmn-academy.vercel.app";
+    const preview = "https://jstdrmn-academy-qx8fhxpu2-jstdrmn-academy.vercel.app";
+    const branch = "https://jstdrmn-academy-git-cursor-staff-nav-tab-3b1e-jstdrmn-academy.vercel.app";
+    assert.equal(allowedReturnOrigin(preview, canonical), true);
+    assert.equal(allowedReturnOrigin(branch, canonical), true);
+    assert.equal(allowedReturnOrigin(canonical, canonical), true);
+    assert.equal(allowedReturnOrigin("http://127.0.0.1:43231", canonical), true);
+    assert.equal(allowedReturnOrigin("https://evil.example", canonical), false);
+    assert.equal(allowedReturnOrigin("https://jstdrmn-academy.vercel.app.evil.com", canonical), false);
+    assert.equal(allowedReturnOrigin("https://jstdrmn-academy-evil.vercel.app", canonical), false);
+    assert.equal(allowedReturnOrigin("http://jstdrmn-academy-qx8fhxpu2-jstdrmn-academy.vercel.app", canonical), false);
+    assert.equal(googleStartPlan(canonical, canonical), "same-host");
+    assert.equal(googleStartPlan(preview, canonical), "bridge");
+    assert.equal(googleStartPlan("https://evil.example", canonical), "reject");
+    process.env.AUTH_URL = canonical;
+    assert.equal(googleRedirectUri(), "https://jstdrmn-academy.vercel.app/api/auth/google/callback");
+    assert.equal(googleStartPlan(preview), "bridge");
+  });
+
+  it("seals a short-lived return ticket and rejects a tampered one", () => {
+    const ticket = sealTicket({ origin: "https://jstdrmn-academy-qx8fhxpu2-jstdrmn-academy.vercel.app", exp: Date.now() + 60_000 }, SECRET);
+    const opened = openTicket<{ origin: string; exp: number }>(ticket, SECRET);
+    assert.equal(opened?.origin, "https://jstdrmn-academy-qx8fhxpu2-jstdrmn-academy.vercel.app");
+    assert.equal(openTicket(ticket, "another-secret-value"), null);
+    const flipped = `${ticket.slice(0, -1)}${ticket.endsWith("0") ? "1" : "0"}`;
+    assert.equal(openTicket(flipped, SECRET), null);
+    assert.equal(openTicket(sealTicket({ origin: "https://evil.example", exp: Date.now() - 1000 }, SECRET), SECRET), null);
   });
 
   it("accepts the NEXTAUTH_ and GOOGLE_CLIENT_ names", () => {

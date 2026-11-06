@@ -17,6 +17,21 @@ export async function checkPassword(password: string, passwordHash: string | nul
   return compare(password, passwordHash);
 }
 
+function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: MAX_AGE,
+  };
+}
+
+export async function setSessionCookie(token: string) {
+  const jar = await cookies();
+  jar.set(COOKIE, token, sessionCookieOptions());
+}
+
 export async function createSession(userId: string) {
   const token = randomBytes(32).toString("hex");
   await prisma.session.create({
@@ -26,14 +41,8 @@ export async function createSession(userId: string) {
       expiresAt: new Date(Date.now() + MAX_AGE * 1000),
     },
   });
-  const jar = await cookies();
-  jar.set(COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: MAX_AGE,
-  });
+  await setSessionCookie(token);
+  return token;
 }
 
 export async function destroySession() {
