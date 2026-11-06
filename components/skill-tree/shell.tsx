@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Space_Mono, Unbounded } from "next/font/google";
 import type { ReactNode } from "react";
-import { parentHref, skillTreeHref, skillTreeNav, type SkillTreeStep } from "@/lib/skill-tree";
+import { parentHref, skillTreeHref, skillTreeNav, type SkillNode } from "@/lib/skill-tree";
 import { SkillTreeHotkeys } from "./hotkeys";
 import "./skill-tree.css";
 
@@ -17,7 +17,7 @@ const display = Unbounded({
   variable: "--font-stree-display",
 });
 
-function Breadcrumb({ stack }: { stack: SkillTreeStep[] }) {
+function Breadcrumb({ stack }: { stack: readonly SkillNode[] }) {
   const back = parentHref(stack);
   return (
     <nav className="stree-crumb" aria-label="Breadcrumb">
@@ -30,7 +30,7 @@ function Breadcrumb({ stack }: { stack: SkillTreeStep[] }) {
         {stack.map((step, index) => {
           const last = index === stack.length - 1;
           return (
-            <li key={`${step.view}-${step.payload ?? "root"}-${index}`}>
+            <li key={`${step.id}-${index}`}>
               {index > 0 ? (
                 <span className="stree-sep" aria-hidden="true">
                   /
@@ -38,10 +38,10 @@ function Breadcrumb({ stack }: { stack: SkillTreeStep[] }) {
               ) : null}
               {last ? (
                 <span className="stree-here" aria-current="page">
-                  {step.name}
+                  {step.crumb}
                 </span>
               ) : (
-                <Link href={skillTreeHref(stack.slice(0, index + 1))}>{step.name}</Link>
+                <Link href={skillTreeHref(stack.slice(0, index + 1))}>{step.crumb}</Link>
               )}
             </li>
           );
@@ -51,7 +51,7 @@ function Breadcrumb({ stack }: { stack: SkillTreeStep[] }) {
   );
 }
 
-export function SkillTreeShell({ stack, children }: { stack: SkillTreeStep[]; children: ReactNode }) {
+export function SkillTreeShell({ stack, children }: { stack: readonly SkillNode[]; children: ReactNode }) {
   return (
     <div className={`${mono.variable} ${display.variable} stree`}>
       <div className="stree-field" aria-hidden="true" />

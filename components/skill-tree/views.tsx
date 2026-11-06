@@ -1,53 +1,94 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
-  advancedDj,
-  copy,
-  djBootcamp,
-  djHubCards,
-  djPath,
-  djSkillStep,
+  cardsFor,
+  childById,
+  countLabel,
   drillHref,
-  mashup,
-  mixMaster,
-  mixMasterStep,
-  overviewBranches,
-  pendingBranches,
-  production,
-  productionCourseStep,
-  productionSkillStep,
-  skillCount,
-  topicCount,
-  type FlowNode,
-  type OverviewBranch,
-  type SkillTreeStep,
+  panelItems,
+  skillTree,
+  type SkillBlock,
+  type SkillCard,
+  type SkillCardsBlock,
+  type SkillChipBlock,
+  type SkillGroupBlock,
+  type SkillNode,
+  type SkillNoteBlock,
+  type SkillPanelBlock,
 } from "@/lib/skill-tree";
 import { SkillPanel } from "./panel";
 
-function Bob({ index, children, className = "" }: { index: number; children: ReactNode; className?: string }) {
+function widthClass(width?: "narrow" | "core" | "hub") {
+  if (width === "narrow") return "stree-narrow";
+  if (width === "core") return "stree-core";
+  if (width === "hub") return "stree-hub-width";
+  return "";
+}
+
+function Bob({ index, children }: { index: number; children: ReactNode }) {
   return (
-    <div className={`stree-bob ${className}`.trim()} style={{ "--i": index } as CSSProperties}>
+    <div className="stree-bob" style={{ "--i": index } as CSSProperties}>
       {children}
     </div>
   );
 }
 
-function FlowCard({ stack, node, index }: { stack: SkillTreeStep[]; node: FlowNode; index: number }) {
-  return (
-    <Bob index={index}>
-      <SkillPanel
-        title={node.title}
-        sub={node.sub}
-        foot={copy.open}
-        href={drillHref(stack, node.step)}
-        accent={node.accent}
-        label={node.label}
-      />
-    </Bob>
-  );
+function face(node: SkillNode, place: "map" | "card"): SkillCard {
+  if (place === "map" && node.map) return { ...node.card, ...node.map };
+  return node.card;
 }
 
-function DjFlow({ stack, flow }: { stack: SkillTreeStep[]; flow: NonNullable<OverviewBranch["flow"]> }) {
-  const child = flow.right.child;
+function Card({
+  node,
+  stack,
+  place = "card",
+  sub,
+  foot,
+  index,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  place?: "map" | "card";
+  sub?: string;
+  foot?: string;
+  index?: number;
+}) {
+  const card = face(node, place);
+  const panel = (
+    <SkillPanel
+      title={card.title}
+      sub={sub ?? card.sub}
+      foot={foot ?? card.foot}
+      href={drillHref(stack, node)}
+      accent={card.accent}
+      label={card.label}
+    />
+  );
+  return index == null ? panel : <Bob index={index}>{panel}</Bob>;
+}
+
+function Flow({ node, stack, place }: { node: SkillNode; stack: readonly SkillNode[]; place: "map" | "hub" }) {
+  const flow = node.mapFlow;
+  if (!flow) return null;
+  const left = childById(node, flow.left);
+  const right = childById(node, flow.right);
+  const hang = flow.hang ? childById(node, flow.hang) : undefined;
+  if (!left || !right) return null;
+  if (place === "hub") {
+    return (
+      <div className="stree-dj-hub">
+        <Card node={left} stack={stack} />
+        <div className="stree-hub-mashup">
+          <Card node={right} stack={stack} />
+          {hang ? (
+            <>
+              <div className="stree-flow-stem" aria-hidden="true" />
+              <Card node={hang} stack={stack} />
+            </>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="stree-dj-local" aria-label="DJ course flowchart">
       <div className="stree-dj-stem" aria-hidden="true" />
@@ -56,14 +97,14 @@ function DjFlow({ stack, flow }: { stack: SkillTreeStep[]; flow: NonNullable<Ove
         <span />
       </div>
       <div className="stree-dj-pair">
-        <FlowCard stack={stack} node={flow.left} index={4} />
+        <Card node={left} stack={stack} place="map" index={4} />
         <div className="stree-mashup-stack">
-          <FlowCard stack={stack} node={flow.right} index={5} />
-          {child ? (
+          <Card node={right} stack={stack} place="map" index={5} />
+          {hang ? (
             <>
               <div className="stree-prod-stem" aria-hidden="true" />
               <div className="stree-prod">
-                <FlowCard stack={stack} node={child} index={6} />
+                <Card node={hang} stack={stack} place="map" index={6} />
               </div>
             </>
           ) : null}
@@ -73,365 +114,147 @@ function DjFlow({ stack, flow }: { stack: SkillTreeStep[]; flow: NonNullable<Ove
   );
 }
 
-function Overview({ stack }: { stack: SkillTreeStep[] }) {
+function PanelBlock({ block }: { block: SkillPanelBlock }) {
+  return (
+    <SkillPanel title={block.title} sub={block.sub} foot={block.foot} accent={block.accent}>
+      {block.items ? (
+        <ul className="stree-details">
+          {block.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : null}
+    </SkillPanel>
+  );
+}
+
+function NoteBlock({ block }: { block: SkillNoteBlock }) {
+  return (
+    <div className="stree-note">
+      <strong>{block.strong}</strong> {block.text}
+    </div>
+  );
+}
+
+function ChipBlock({ block }: { block: SkillChipBlock }) {
+  return (
+    <div className={widthClass(block.width)}>
+      <SkillPanel title={block.title} sub={block.sub} foot={block.foot} accent={block.accent}>
+        <div className="stree-chips">
+          {block.chips.map((chip) => (
+            <span key={chip.label} className={chip.hot ? "stree-chip is-hot" : "stree-chip"}>
+              {chip.label}
+            </span>
+          ))}
+        </div>
+      </SkillPanel>
+    </div>
+  );
+}
+
+function CardsBlock({ node, stack, block }: { node: SkillNode; stack: readonly SkillNode[]; block: SkillCardsBlock }) {
+  const cards = cardsFor(node, block);
+  const listClass = block.layout === "grid" ? "stree-grid-cats" : block.layout === "grid-3" ? "stree-grid-3" : "stree-stack";
+  return (
+    <div className={["stree-lane", widthClass(block.width)].filter(Boolean).join(" ")}>
+      {block.label ? <p className="stree-lane-label">{block.label}</p> : null}
+      <div className={listClass}>
+        {cards.map((child) => {
+          const count = block.count ? panelItems(child).length : undefined;
+          return (
+            <Card
+              key={child.id}
+              node={child}
+              stack={stack}
+              sub={block.count ? countLabel(block.count, count ?? 0) : undefined}
+              foot={block.foot}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GroupBlock({ node, stack, block }: { node: SkillNode; stack: readonly SkillNode[]; block: SkillGroupBlock }) {
+  const className = [block.label ? "stree-lane" : "stree-stack", widthClass(block.width)].filter(Boolean).join(" ");
+  return (
+    <div className={className}>
+      {block.label ? <p className="stree-lane-label">{block.label}</p> : null}
+      {block.sections.map((section, index) => (
+        <Block key={`${section.type}-${index}`} node={node} stack={stack} block={section} />
+      ))}
+    </div>
+  );
+}
+
+function Block({ node, stack, block }: { node: SkillNode; stack: readonly SkillNode[]; block: SkillBlock }) {
+  switch (block.type) {
+    case "panel":
+      return <PanelBlock block={block} />;
+    case "note":
+      return <NoteBlock block={block} />;
+    case "chips":
+      return <ChipBlock block={block} />;
+    case "cards":
+      return <CardsBlock node={node} stack={stack} block={block} />;
+    case "flow":
+      return <Flow node={node} stack={stack} place="hub" />;
+    case "group":
+      return <GroupBlock node={node} stack={stack} block={block} />;
+    default: {
+      const unused: never = block;
+      return unused;
+    }
+  }
+}
+
+function Overview({ stack }: { stack: readonly SkillNode[] }) {
   return (
     <section className="stree-view" aria-label="Academy overview">
       <div className="stree-tree">
         <div className="stree-root-wrap">
-          <h1 className="stree-root-heading">{copy.academyTitle}</h1>
+          <h1 className="stree-root-heading">{skillTree.card.title}</h1>
         </div>
         <div className="stree-stem" aria-hidden="true" />
         <div className="stree-rail" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
+          {skillTree.children.map((branch) => (
+            <span key={branch.id} />
+          ))}
         </div>
         <div className="stree-primary">
-          {overviewBranches.map((branch, index) => (
-            <div key={branch.id} className={branch.flow ? "stree-col stree-col-dj" : "stree-col"}>
-              <Bob index={index}>
-                <SkillPanel
-                  title={branch.title}
-                  sub={branch.sub}
-                  foot={copy.open}
-                  href={drillHref(stack, branch.step)}
-                  accent={branch.accent}
-                  label={branch.label}
-                />
-              </Bob>
-              {branch.flow ? <DjFlow stack={stack} flow={branch.flow} /> : null}
+          {skillTree.children.map((branch, index) => (
+            <div key={branch.id} className={branch.mapFlow ? "stree-col stree-col-dj" : "stree-col"}>
+              <Card node={branch} stack={stack} place="map" index={index} />
+              {branch.mapFlow ? <Flow node={branch} stack={stack} place="map" /> : null}
             </div>
           ))}
         </div>
       </div>
-      <p className="stree-hint">{copy.hint}</p>
+      {skillTree.hint ? <p className="stree-hint">{skillTree.hint}</p> : null}
     </section>
   );
 }
 
-function PurposeView({ id }: { id: "community" | "branding" | "education" }) {
-  const branch = pendingBranches[id];
+function Detail({ node, stack }: { node: SkillNode; stack: readonly SkillNode[] }) {
+  const page = node.page;
+  if (!page) return <Overview stack={stack} />;
   return (
-    <section className="stree-view" aria-label={branch.heading}>
+    <section className="stree-view" aria-label={page.title}>
       <div className="stree-section-head">
-        <p className="stree-eyebrow">{branch.eyebrow}</p>
-        <h1>{branch.heading}</h1>
-        <p>{branch.purpose}</p>
+        {page.eyebrow ? <p className="stree-eyebrow">{page.eyebrow}</p> : null}
+        <h1>{page.title}</h1>
+        {page.blurb ? <p>{page.blurb}</p> : null}
       </div>
-      <div className="stree-stack stree-narrow">
-        <SkillPanel title={branch.panelTitle} sub={branch.purpose} foot={branch.status} accent={branch.requiredForTeachers} />
-        <div className="stree-note">
-          <strong>{copy.noInventedCurriculum}</strong> {branch.status}
-        </div>
-      </div>
+      {page.sections.map((section, index) => (
+        <Block key={`${section.type}-${index}`} node={node} stack={stack} block={section} />
+      ))}
     </section>
   );
 }
 
-function DjHub({ stack }: { stack: SkillTreeStep[] }) {
-  return (
-    <section className="stree-view" aria-label="DJ branch">
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{djPath.eyebrow}</p>
-        <h1>{djPath.heading}</h1>
-        <p>{djPath.purpose}</p>
-      </div>
-      <div className="stree-stack stree-hub-width">
-        <SkillPanel
-          title={djHubCards.bootcamp.title}
-          sub={djHubCards.bootcamp.sub}
-          foot={copy.open}
-          href={drillHref(stack, djHubCards.bootcamp.step)}
-          label={djHubCards.bootcamp.label}
-        />
-        <div className="stree-dj-hub">
-          <SkillPanel
-            title={djHubCards.advanced.title}
-            sub={djHubCards.advanced.sub}
-            foot={copy.open}
-            href={drillHref(stack, djHubCards.advanced.step)}
-            accent
-            label={djHubCards.advanced.label}
-          />
-          <div className="stree-hub-mashup">
-            <SkillPanel
-              title={djHubCards.mashup.title}
-              sub={djHubCards.mashup.sub}
-              foot={copy.open}
-              href={drillHref(stack, djHubCards.mashup.step)}
-              label={djHubCards.mashup.label}
-            />
-            <div className="stree-flow-stem" aria-hidden="true" />
-            <SkillPanel
-              title={djHubCards.production.title}
-              sub={djHubCards.production.sub}
-              foot={copy.open}
-              href={drillHref(stack, djHubCards.production.step)}
-              label={djHubCards.production.label}
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AdvancedDjView() {
-  return (
-    <section className="stree-view" aria-label="Advanced DJ">
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">DJ</p>
-        <h1>{advancedDj.title}</h1>
-        <p>{advancedDj.purpose}</p>
-      </div>
-      <div className="stree-stack stree-narrow">
-        <SkillPanel title={advancedDj.title} sub={copy.workingTitleSub} foot={advancedDj.status} accent />
-        <div className="stree-note">
-          <strong>{copy.workingTitleLead}</strong> {advancedDj.status} {copy.noInventedCurriculum}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function DjBootcampView({ stack }: { stack: SkillTreeStep[] }) {
-  return (
-    <section className="stree-view" aria-label="DJ Bootcamp">
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{djBootcamp.title}</p>
-        <h1>{djBootcamp.title}</h1>
-        <p>{djBootcamp.blurb}</p>
-      </div>
-      <div className="stree-lane stree-core">
-        <p className="stree-lane-label">{copy.coreFoundations}</p>
-        <SkillPanel title={copy.coreDjSkills} foot={copy.taughtInBootcamp}>
-          <ul className="stree-details">
-            {djBootcamp.core.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </SkillPanel>
-      </div>
-      <div className="stree-lane">
-        <p className="stree-lane-label">{copy.skillCategories}</p>
-        <div className="stree-grid-cats">
-          {djBootcamp.categories.map((category) => {
-            const step = djSkillStep(category.id);
-            if (!step) return null;
-            return (
-              <SkillPanel
-                key={category.id}
-                title={category.title}
-                sub={skillCount(category.items.length)}
-                foot={copy.openDetails}
-                href={drillHref(stack, step)}
-                label={`Open ${category.title}`}
-              />
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function DjSkillView({ id }: { id: string }) {
-  const category = djBootcamp.categories.find((item) => item.id === id);
-  if (!category) return null;
-  return (
-    <section className="stree-view" aria-label={category.title}>
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{djBootcamp.title}</p>
-        <h1>{category.title}</h1>
-        <p>{copy.djSkillIntro}</p>
-      </div>
-      <div className="stree-narrow">
-        <SkillPanel title={category.title} foot={djBootcamp.title}>
-          <ul className="stree-details">
-            {category.items.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </SkillPanel>
-      </div>
-    </section>
-  );
-}
-
-function MashupView() {
-  return (
-    <section className="stree-view" aria-label="Ableton Mashup Bootcamp">
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">Ableton / Mashup</p>
-        <h1>{mashup.title}</h1>
-        <p>{mashup.blurb}</p>
-      </div>
-      <div className="stree-narrow">
-        <SkillPanel title={copy.mashupFocus} sub={copy.mashupCovers} foot={copy.leadsToProduction} accent>
-          <div className="stree-chips">
-            {mashup.items.map((item) => (
-              <span key={item.label} className={item.hot ? "stree-chip is-hot" : "stree-chip"}>
-                {item.label}
-              </span>
-            ))}
-          </div>
-        </SkillPanel>
-      </div>
-    </section>
-  );
-}
-
-function ProductionView({ stack }: { stack: SkillTreeStep[] }) {
-  return (
-    <section className="stree-view" aria-label="Music Production">
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{production.eyebrow}</p>
-        <h1>{production.title}</h1>
-        <p>{production.blurb}</p>
-      </div>
-      <div className="stree-lane">
-        <p className="stree-lane-label">{copy.courseLanes}</p>
-        <div className="stree-grid-3">
-          {production.courses.map((course) => {
-            const step = productionCourseStep(course.id);
-            if (!step) return null;
-            return (
-              <SkillPanel
-                key={course.id}
-                title={course.title}
-                sub={course.note ?? copy.courseLaneSub}
-                foot={course.foot}
-                accent={course.accent}
-                href={drillHref(stack, step)}
-                label={`Open ${course.title}`}
-              />
-            );
-          })}
-        </div>
-      </div>
-      <div className="stree-lane stree-narrow">
-        <p className="stree-lane-label">{copy.underProduction}</p>
-        <SkillPanel
-          title={mixMaster.title}
-          sub={mixMaster.status}
-          foot={copy.curriculumLater}
-          href={drillHref(stack, mixMasterStep)}
-          label="Open Mixing and Mastering"
-        />
-      </div>
-      <div className="stree-lane">
-        <p className="stree-lane-label">{copy.sharedSkills}</p>
-        <div className="stree-grid-cats">
-          {production.skills.map((skill) => {
-            const step = productionSkillStep(skill.id);
-            if (!step) return null;
-            return (
-              <SkillPanel
-                key={skill.id}
-                title={skill.title}
-                sub={topicCount(skill.items.length)}
-                foot={copy.openDetails}
-                href={drillHref(stack, step)}
-                label={`Open ${skill.title}`}
-              />
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProductionCourseView({ id }: { id: string }) {
-  const course = production.courses.find((item) => item.id === id);
-  if (!course) return null;
-  return (
-    <section className="stree-view" aria-label={course.title}>
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{production.eyebrow}</p>
-        <h1>{course.title}</h1>
-        <p>{course.note ?? copy.courseLaneIntro}</p>
-      </div>
-      <div className="stree-stack stree-narrow">
-        <SkillPanel title={course.title} sub={course.note ?? copy.knownCourseLane} foot={course.foot} accent={course.accent} />
-        <div className="stree-note">
-          <strong>{copy.skillPlacementLead}</strong> {copy.skillPlacementBody}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProductionSkillView({ id }: { id: string }) {
-  const skill = production.skills.find((item) => item.id === id);
-  if (!skill) return null;
-  return (
-    <section className="stree-view" aria-label={skill.title}>
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{production.eyebrow}</p>
-        <h1>{skill.title}</h1>
-        <p>{copy.prodSkillIntro}</p>
-      </div>
-      <div className="stree-narrow">
-        <SkillPanel title={skill.title} foot={copy.sharedSkillTree}>
-          <ul className="stree-details">
-            {skill.items.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </SkillPanel>
-      </div>
-    </section>
-  );
-}
-
-function MixMasterView() {
-  return (
-    <section className="stree-view" aria-label="Mixing and Mastering">
-      <div className="stree-section-head">
-        <p className="stree-eyebrow">{production.eyebrow}</p>
-        <h1>{mixMaster.title}</h1>
-        <p>{mixMaster.status}</p>
-      </div>
-      <div className="stree-stack stree-narrow">
-        <SkillPanel title={mixMaster.title} sub={copy.mixLivesUnder} foot={copy.curriculumNotSupplied} />
-        <div className="stree-note">
-          <strong>{copy.noInventedModules}</strong> {copy.mixPlacementBody}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function SkillTreeView({ stack }: { stack: SkillTreeStep[] }) {
-  const step = stack[stack.length - 1] ?? { name: "Overview", view: "overview" as const };
-  switch (step.view) {
-    case "overview":
-      return <Overview stack={stack} />;
-    case "community":
-    case "branding":
-    case "education":
-      return <PurposeView id={step.view} />;
-    case "dj":
-      return <DjHub stack={stack} />;
-    case "advanced-dj":
-      return <AdvancedDjView />;
-    case "dj-bootcamp":
-      return <DjBootcampView stack={stack} />;
-    case "dj-skill":
-      return <DjSkillView id={step.payload ?? ""} />;
-    case "mashup":
-      return <MashupView />;
-    case "production":
-      return <ProductionView stack={stack} />;
-    case "prod-course":
-      return <ProductionCourseView id={step.payload ?? ""} />;
-    case "prod-skill":
-      return <ProductionSkillView id={step.payload ?? ""} />;
-    case "mix-master":
-      return <MixMasterView />;
-    default:
-      return <Overview stack={stack} />;
-  }
+export function SkillTreeView({ stack }: { stack: readonly SkillNode[] }) {
+  const node = stack[stack.length - 1] ?? skillTree;
+  if (node.id === skillTree.id) return <Overview stack={stack} />;
+  return <Detail node={node} stack={stack} />;
 }

@@ -1,21 +1,23 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { academyNav } from "./nav";
 import {
-  advancedDj,
-  djBootcamp,
-  djHubCards,
-  mashup,
-  mixMaster,
-  overviewBranches,
-  overviewStep,
-  pendingBranches,
-  production,
+  findNode,
+  panelItems,
+  skillTree,
   skillTreeHref,
   skillTreeNav,
   slugFromStack,
   stackFromSlug,
+  type SkillChipBlock,
+  type SkillNode,
 } from "./skill-tree";
+
+function chips(node: SkillNode): SkillChipBlock["chips"] {
+  const block = node.page?.sections.find((section) => section.type === "chips");
+  return block?.type === "chips" ? block.chips : [];
+}
 
 describe("skill tree map", () => {
   it("uses one temporary name in the nav", () => {
@@ -31,40 +33,43 @@ describe("skill tree map", () => {
 
   it("spreads four top branches and does not put a category above DJ", () => {
     assert.deepEqual(
-      overviewBranches.map((branch) => branch.id),
+      skillTree.children.map((branch) => branch.id),
       ["community", "dj", "branding", "education"],
     );
-    const dj = overviewBranches[1];
-    assert.equal(dj.flow?.left.id, "advanced-dj");
-    assert.equal(dj.flow?.left.child, undefined);
-    assert.equal(dj.flow?.right.id, "mashup");
-    assert.equal(dj.flow?.right.child?.id, "production");
-    assert.equal(dj.flow?.right.child?.child, undefined);
+    const dj = findNode("dj");
+    assert.ok(dj);
+    assert.equal(dj.mapFlow?.left, "advanced-dj");
+    assert.equal(dj.mapFlow?.right, "mashup");
+    assert.equal(dj.mapFlow?.hang, "production");
     assert.deepEqual(
-      [djHubCards.advanced.step.view, djHubCards.mashup.step.view, djHubCards.production.step.view],
-      ["advanced-dj", "mashup", "production"],
+      dj.children.map((child) => child.id),
+      ["dj-bootcamp", "advanced-dj", "mashup", "production"],
     );
-    assert.equal(djHubCards.bootcamp.step.view, "dj-bootcamp");
+    assert.equal(findNode("production")?.group, undefined);
+    assert.equal(skillTree.children.some((branch) => branch.children.some((child) => child.id === "dj")), false);
   });
 
-  it("does not invent curriculum for education, branding, community, or advanced DJ", () => {
-    assert.equal(pendingBranches.education.requiredForTeachers, true);
-    assert.equal(pendingBranches.education.curriculum, null);
-    assert.equal(pendingBranches.education.heading, "Instructor Training");
-    assert.match(pendingBranches.education.status, /not invented/i);
-    assert.equal(pendingBranches.community.curriculum, null);
-    assert.equal(pendingBranches.branding.curriculum, null);
-    assert.equal(pendingBranches.community.requiredForTeachers, false);
-    assert.equal(advancedDj.curriculum, null);
-    assert.match(advancedDj.status, /Working title/i);
-    assert.equal(mixMaster.curriculum, null);
-    assert.equal("items" in pendingBranches.education, false);
-    assert.equal("items" in advancedDj, false);
+  it("does not invent curriculum for education, branding, community, advanced DJ, or mixing", () => {
+    for (const id of ["education", "branding", "community", "advanced-dj", "mixing"]) {
+      const node = findNode(id);
+      assert.ok(node, id);
+      assert.equal(node.curriculum, null);
+      assert.equal(panelItems(node).length, 0, id);
+    }
+    assert.equal(findNode("education")?.page?.title, "Instructor Training");
+    assert.match(findNode("education")?.page?.blurb ?? "", /teach at JSTDRMN Academy/);
+    const advanced = findNode("advanced-dj");
+    const advancedGroup = advanced?.page?.sections.find((section) => section.type === "group");
+    const advancedNote = advancedGroup?.type === "group" ? advancedGroup.sections.find((section) => section.type === "note") : undefined;
+    assert.equal(advancedNote?.type, "note");
+    if (advancedNote?.type === "note") assert.match(advancedNote.strong, /Working title/);
   });
 
-  it("keeps the supplied DJ and production lists from the handoff", () => {
+  it("keeps the supplied DJ and production lists on the tree", () => {
+    const bootcamp = findNode("dj-bootcamp");
+    assert.ok(bootcamp);
     assert.deepEqual(
-      djBootcamp.categories.map((category) => [category.id, category.items.length]),
+      bootcamp.children.map((category) => [category.id, panelItems(category).length]),
       [
         ["library", 2],
         ["transitions", 7],
@@ -74,15 +79,23 @@ describe("skill tree map", () => {
         ["career", 2],
       ],
     );
-    assert.equal(djBootcamp.core.length, 3);
-    assert.equal(mashup.items.at(-1)?.label, "SoundCloud release");
-    assert.equal(mashup.items.at(-1)?.hot, true);
+    assert.deepEqual(panelItems(bootcamp), [
+      "Crate building & basics",
+      "Genre mixing styles & culture",
+      "AV equipment connections & clean cabling",
+    ]);
+    const mashup = findNode("mashup");
+    assert.ok(mashup);
+    assert.equal(chips(mashup).at(-1)?.label, "SoundCloud release");
+    assert.equal(chips(mashup).at(-1)?.hot, true);
+    const production = findNode("production");
+    assert.ok(production);
     assert.deepEqual(
-      production.courses.map((course) => course.title),
+      production.children.filter((child) => child.group === "course").map((child) => child.card.title),
       ["Production Beginner", "Production Intermediate", "Track Finishing Group"],
     );
     assert.deepEqual(
-      production.skills.map((skill) => skill.id),
+      production.children.filter((child) => child.group === "skill").map((child) => child.id),
       ["daw", "theory", "cinema", "audio-fx", "instruments", "drums"],
     );
   });
@@ -112,12 +125,18 @@ describe("skill tree map", () => {
     ];
     for (const slug of slugs) {
       const stack = stackFromSlug(slug);
-      assert.ok(stack, slug.join("/"));
-      assert.equal(stack[0], overviewStep);
+      assert.ok(stack, slug.join("/") || "(overview)");
+      assert.equal(stack[0], skillTree);
       assert.deepEqual(slugFromStack(stack), slug);
       const href = skillTreeHref(stack);
       assert.equal(href, slug.length === 0 ? "/skill-tree" : `/skill-tree/${slug.join("/")}`);
     }
+    assert.deepEqual(stackFromSlug(["dj", "bootcamp", "transitions"])?.map((node) => node.crumb), [
+      "Overview",
+      "DJ",
+      "DJ Bootcamp",
+      "Transitions",
+    ]);
   });
 
   it("rejects paths that are not in the handoff", () => {
@@ -130,8 +149,16 @@ describe("skill tree map", () => {
       ["production", "skill", "nope"],
       ["production", "course"],
       ["mixing"],
+      ["advanced"],
     ]) {
       assert.equal(stackFromSlug(slug), null, slug.join("/"));
+    }
+  });
+
+  it("keeps the screen copy in the tree, not in the view", () => {
+    const source = readFileSync(new URL("../components/skill-tree/views.tsx", import.meta.url), "utf8");
+    for (const phrase of ["Instructor Training", "Crate building", "SoundCloud", "Advanced DJ", "Community Events"]) {
+      assert.equal(source.includes(phrase), false, phrase);
     }
   });
 });
