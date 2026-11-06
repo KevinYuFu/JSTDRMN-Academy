@@ -1,10 +1,11 @@
 /**
  * Skill Tree content and routes.
  *
- * `skillTree` is the only copy source. The page walks this object.
- * It does not keep a separate screen for each node.
+ * `skillTree` is the built-in map. Neon stores the live map in one JSON row.
+ * When that row is missing, the app copies this object in once.
+ * A Lead edits the live map at /teacher/skill-tree. The public page reads the database.
  *
- * To add or edit a node, change it here:
+ * Shape:
  * - `children` is the drill path and the URL (`slug` segments).
  * - `page.sections` is what the drill-in shows (panel, note, chips, cards, flow).
  * - `mapFlow` on DJ draws the tight overview: left, right, and `hang` under the right card.
@@ -644,7 +645,7 @@ function flowTargets(node: SkillNode): SkillNode[] {
   return ids.map((id) => childById(node, id)).filter((item): item is SkillNode => Boolean(item));
 }
 
-function matchShortcut(parts: readonly string[], node: SkillNode = skillTree): SkillNode[] | null {
+function matchShortcut(parts: readonly string[], node: SkillNode): SkillNode[] | null {
   for (const target of flowTargets(node)) {
     const segments = target.fromOverview ?? target.slug;
     if (!startsWith(parts, segments)) continue;
@@ -661,26 +662,26 @@ function matchShortcut(parts: readonly string[], node: SkillNode = skillTree): S
 }
 
 /** Turns a URL slug into the breadcrumb. Unknown paths return null. */
-export function stackFromSlug(slug: readonly string[] | undefined): SkillNode[] | null {
+export function stackFromSlug(slug: readonly string[] | undefined, tree: SkillNode = skillTree): SkillNode[] | null {
   const parts = slug ?? [];
   if (parts.some((part) => part.length === 0)) return null;
-  if (parts.length === 0) return [skillTree];
-  const nested = matchChildren(skillTree, parts);
-  if (nested) return [skillTree, ...nested];
-  const shortcut = matchShortcut(parts);
-  if (shortcut) return [skillTree, ...shortcut];
+  if (parts.length === 0) return [tree];
+  const nested = matchChildren(tree, parts);
+  if (nested) return [tree, ...nested];
+  const shortcut = matchShortcut(parts, tree);
+  if (shortcut) return [tree, ...shortcut];
   return null;
 }
 
 /** Inverse of stackFromSlug. The overview is an empty slug. */
-export function slugFromStack(stack: readonly SkillNode[]): string[] | null {
-  if (stack.length === 0 || stack[0]?.id !== skillTree.id) return null;
+export function slugFromStack(stack: readonly SkillNode[], tree: SkillNode = skillTree): string[] | null {
+  if (stack.length === 0 || stack[0]?.id !== tree.id) return null;
   const slug: string[] = [];
   for (let index = 1; index < stack.length; index += 1) {
     const node = stack[index];
     const previous = stack[index - 1];
     if (!node) return null;
-    const segments = previous?.id === skillTree.id && node.fromOverview ? node.fromOverview : node.slug;
+    const segments = previous?.id === tree.id && node.fromOverview ? node.fromOverview : node.slug;
     if (segments.length === 0) return null;
     slug.push(...segments);
   }
@@ -700,4 +701,57 @@ export function drillHref(stack: readonly SkillNode[], node: SkillNode): string 
 export function parentHref(stack: readonly SkillNode[]): string | null {
   if (stack.length < 2) return null;
   return skillTreeHref(stack.slice(0, -1));
+}
+
+/** Path from the overview down to one node. */
+export function stackForNode(tree: SkillNode, id: string): SkillNode[] | null {
+  function walk(current: SkillNode, chain: SkillNode[]): SkillNode[] | null {
+    const next = [...chain, current];
+    if (current.id === id) return next;
+    for (const child of current.children) {
+      const found = walk(child, next);
+      if (found) return found;
+    }
+    return null;
+  }
+  return walk(tree, []);
+}
+
+/**
+ * Column tracks for the overview.
+ * The built-in four branches keep the original widths: DJ is the wide one.
+ */
+export function overviewColumns(root: SkillNode) {
+  if (root.children.length === 0) return "1fr";
+  return root.children.map((branch) => (branch.mapFlow ? "minmax(220px, 360px)" : "minmax(0, 210px)")).join(" ");
+}
+
+function markShown(node: SkillNode, sections: readonly SkillBlock[], shown: Set<string>): boolean {
+  for (const section of sections) {
+    if (section.type === "cards") {
+      if (!section.ids && !section.group) return true;
+      if (section.ids) {
+        for (const id of section.ids) shown.add(id);
+      }
+      if (section.group) {
+        for (const child of node.children) {
+          if (child.group === section.group) shown.add(child.id);
+        }
+      }
+    }
+    if (section.type === "flow" && node.mapFlow) {
+      shown.add(node.mapFlow.left);
+      shown.add(node.mapFlow.right);
+      if (node.mapFlow.hang) shown.add(node.mapFlow.hang);
+    }
+    if (section.type === "group" && markShown(node, section.sections, shown)) return true;
+  }
+  return false;
+}
+
+/** Children the page design does not already link. The public page still lists these. */
+export function unlinkedChildren(node: SkillNode): SkillNode[] {
+  const shown = new Set<string>();
+  if (markShown(node, node.page?.sections ?? [], shown)) return [];
+  return node.children.filter((child) => !shown.has(child.id));
 }

@@ -25,7 +25,7 @@ const roleErrors: Record<string, string> = {
 export default async function TeacherPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; roleError?: string }>;
+  searchParams: Promise<{ saved?: string; roleError?: string; skillTree?: string }>;
 }) {
   const staff = await requireStaff();
   const query = await searchParams;
@@ -71,9 +71,11 @@ export default async function TeacherPage({
         </p>
         {query.saved === "role" ? <div className="banner">Role saved.</div> : null}
         {roleError ? <div className="error">{roleError}</div> : null}
+        {query.skillTree === "forbidden" ? <div className="error">Only a Lead can edit the skill tree.</div> : null}
         <div className="detail-actions" style={{ marginBottom: 16 }}>
           <Link className="pill pill-purple" href="/teacher/events">Events</Link>
           <Link className="pill pill-purple" href="/teacher/announcements">Announcements</Link>
+          {lead ? <Link className="pill pill-purple" href="/teacher/skill-tree">Skill tree</Link> : null}
           <Link className="pill pill-black" href="/teacher/access">Grant or revoke</Link>
         </div>
         <div className="stat-row">
