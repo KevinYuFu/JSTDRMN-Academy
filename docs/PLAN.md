@@ -1,6 +1,6 @@
 # JSTDRMN Academy — plan
 
-A standalone website for JSTDRMN Academy (“Just Dreamin’”), the Toronto EDM collective. The marketing site stays on HubSpot CMS. This app does not reuse that site’s menu (About, Community, Showcases, Label, Management). The academy menu is Programs, Skill Tree, Private Sessions, Events, and My Courses, plus the logo and log in / sign up or the avatar. Lead, Instructor, and Mentor also see Staff at the far right. It opens the shared staff view and is hidden from students. It does not grant Lead-only actions to an Instructor or a Mentor. Another menu item is another entry in `lib/nav.ts`.
+A standalone website for JSTDRMN Academy (“Just Dreamin’”), the Toronto EDM collective. The marketing site stays on HubSpot CMS. This app does not reuse that site’s menu (About, Community, Showcases, Label, Management). The academy menu is Programs, Skill Tree, Private Sessions, Events, and My Courses, plus the logo and log in / sign up or the avatar. Lead, Instructor, and Mentor also see Dashboard in that menu, with a purple highlight. It opens the shared staff view and is hidden from students. It does not grant Lead-only actions to an Instructor or a Mentor. Another menu item is another entry in `lib/nav.ts`.
 
 The Academy lead view is the CRM for the site; HubSpot stays for marketing leads and applications.
 
