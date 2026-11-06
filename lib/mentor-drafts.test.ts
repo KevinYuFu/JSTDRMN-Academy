@@ -113,4 +113,23 @@ describe("mentor draft profiles", () => {
     const privateSessions = readFileSync(path.join(root, "app/private-sessions/page.tsx"), "utf8");
     assert.equal(privateSessions.includes("mentor-drafts"), false);
   });
+
+  it("keeps the review page read-only and the portraits compact", () => {
+    const page = readFileSync(path.join(root, "app/mentor-drafts/page.tsx"), "utf8");
+    const view = readFileSync(path.join(root, "components/mentor-draft-review.tsx"), "utf8");
+    assert.equal(page.includes("prisma"), false);
+    assert.equal(view.includes("prisma"), false);
+    assert.equal(view.includes("requestSession"), false);
+    assert.equal(view.includes("saveMentor"), false);
+    assert.equal(view.includes("Yu Fu"), false);
+    assert.equal(page.includes("MentorDraftReview"), true);
+    assert.equal(view.includes("MENTOR_DRAFT_RATE_LABEL"), true);
+    const css = readFileSync(path.join(root, "components/mentor-draft-review.module.css"), "utf8");
+    assert.match(css, /width:\s*96px/);
+    assert.match(css, /height:\s*96px/);
+    assert.match(css, /max-width:\s*420px/);
+    assert.match(css, /width:\s*88px/);
+    assert.match(css, /height:\s*88px/);
+    assert.match(css, /border:\s*1px solid #4c1d95/);
+  });
 });
