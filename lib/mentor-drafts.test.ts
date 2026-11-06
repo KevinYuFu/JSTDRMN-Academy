@@ -132,4 +132,22 @@ describe("mentor draft profiles", () => {
     assert.match(css, /height:\s*88px/);
     assert.match(css, /border:\s*1px solid #4c1d95/);
   });
+
+  it("keeps bios, topics, and genres as read-only text", () => {
+    const files = [
+      "app/mentor-drafts/page.tsx",
+      "components/mentor-draft-review.tsx",
+      "components/mentor-draft-review.module.css",
+    ];
+    for (const file of files) {
+      const source = readFileSync(path.join(root, file), "utf8");
+      assert.equal(/contenteditable/i.test(source), false, file);
+      assert.equal(/<(input|textarea|select)\b/i.test(source), false, file);
+      assert.equal(/suppressContentEditableWarning/.test(source), false, file);
+      assert.equal(source.includes("Editable for review"), false, file);
+    }
+    const view = readFileSync(path.join(root, "components/mentor-draft-review.tsx"), "utf8");
+    assert.match(view, /<p className=\{styles\.bio\}>\{mentor\.bio\}<\/p>/);
+    assert.equal(view.includes("MentorForm"), false);
+  });
 });
