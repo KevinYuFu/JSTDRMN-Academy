@@ -19,7 +19,7 @@ import {
 
 describe("skill tree map", () => {
   it("uses one temporary name in the nav", () => {
-    for (const role of [null, "student", "teacher", "admin"]) {
+    for (const role of [null, "student", "mentor", "instructor", "lead", "teacher", "admin"]) {
       const item = academyNav(role).find((link) => link.key === skillTreeNav.key);
       assert.ok(item);
       assert.equal(item.label, skillTreeNav.label);

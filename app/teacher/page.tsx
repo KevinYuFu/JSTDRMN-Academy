@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { setMentorActive } from "@/app/actions";
 import { AppHeader } from "@/components/app-header";
+import { RoleControls } from "@/components/role-controls";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isStaff } from "@/lib/entitlements";
+import { canonicalRole, isLeadActor, roleLabel } from "@/lib/promote";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +13,24 @@ function when(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default async function TeacherPage() {
-  const teacher = await requireStaff();
-  const [courses, comments, students, logs, cohorts, requests, mentors] = await Promise.all([
+const roleErrors: Record<string, string> = {
+  forbidden: "Only a Lead can change roles.",
+  self: "You can't change your own role.",
+  last_lead: "Keep at least one Lead.",
+  same: "They already have that role.",
+  invalid: "Pick Student, Mentor, Instructor, or Lead.",
+  missing: "That person is not in the academy.",
+};
+
+export default async function TeacherPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string; roleError?: string }>;
+}) {
+  const staff = await requireStaff();
+  const query = await searchParams;
+  const lead = isLeadActor(staff.role);
+  const [courses, comments, people, logs, cohorts, requests, mentors] = await Promise.all([
     prisma.course.findMany({
       where: { access: { not: "request" } },
       orderBy: { sort: "asc" },
@@ -26,9 +43,8 @@ export default async function TeacherPage() {
       include: { user: true, lesson: { include: { course: true, cohort: true } }, replies: { include: { user: true } } },
     }),
     prisma.user.findMany({
-      where: { role: "student" },
       orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true, discordId: true, discordUsername: true },
+      select: { id: true, name: true, email: true, role: true, discordId: true, discordUsername: true },
     }),
     prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
     prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
@@ -40,20 +56,28 @@ export default async function TeacherPage() {
     prisma.mentor.findMany({ orderBy: { sort: "asc" } }),
   ]);
   const waiting = comments.filter((comment) => !comment.replies.some((reply) => isStaff(reply.user.role))).length;
+  const studentCount = people.filter((person) => canonicalRole(person.role) === "student").length;
+  const roleError = query.roleError ? roleErrors[query.roleError] ?? "That role change did not save." : null;
 
   return (
     <>
       <AppHeader active="teacher" />
       <main className="shell">
-        <h1 className="page-title" style={{ marginBottom: 6 }}>Academy lead</h1>
-        <p className="note" style={{ marginBottom: 12 }}>{teacher.name}, this is the management view: students, Discord links, events, announcements, session requests, and mentors.</p>
+        <h1 className="page-title" style={{ marginBottom: 6 }}>{roleLabel(staff.role)}</h1>
+        <p className="note" style={{ marginBottom: 12 }}>
+          {lead
+            ? `${staff.name}, this is the staff view. You can make someone a Mentor, an Instructor, or a Lead. You can set them back to Student. You cannot change your own role.`
+            : `${staff.name}, this is the staff view. Only a Lead can change roles.`}
+        </p>
+        {query.saved === "role" ? <div className="banner">Role saved.</div> : null}
+        {roleError ? <div className="error">{roleError}</div> : null}
         <div className="detail-actions" style={{ marginBottom: 16 }}>
           <Link className="pill pill-purple" href="/teacher/events">Events</Link>
           <Link className="pill pill-purple" href="/teacher/announcements">Announcements</Link>
           <Link className="pill pill-black" href="/teacher/access">Grant or revoke</Link>
         </div>
         <div className="stat-row">
-          <div className="stat"><b>{students.length}</b><span>Students</span></div>
+          <div className="stat"><b>{studentCount}</b><span>Students</span></div>
           <div className="stat"><b>{courses.length}</b><span>Courses</span></div>
           <div className="stat"><b>{cohorts.length}</b><span>Bootcamp cohorts</span></div>
           <div className="stat"><b>{waiting}</b><span>Notes waiting</span></div>
@@ -133,16 +157,24 @@ export default async function TeacherPage() {
                 </article>
               );
             })}
-            <h2 className="section-label">Students</h2>
-            {students.map((student) => (
-              <div key={student.id} className="list-row">
-                <div>
-                  <b>{student.name}</b>
-                  <div className="note">{student.email}</div>
+            <h2 className="section-label">People</h2>
+            <p className="note">Mentor means one-on-ones. Instructor means classes. Lead can change these roles.</p>
+            {people.map((person) => {
+              const you = person.id === staff.id;
+              return (
+                <div key={person.id} className="list-row" style={{ alignItems: "flex-start" }}>
+                  <div>
+                    <b>{person.name}</b>
+                    <div className="note">
+                      {person.email} · {roleLabel(person.role)}
+                      {you ? " · You" : ""}
+                    </div>
+                    <div className="note">{person.discordId ? `Discord ${person.discordUsername ?? "linked"}` : "Discord not linked"}</div>
+                  </div>
+                  {lead && !you ? <RoleControls userId={person.id} name={person.name} role={person.role} /> : null}
                 </div>
-                <span className="note">{student.discordId ? `Discord ${student.discordUsername ?? "linked"}` : "Discord not linked"}</span>
-              </div>
-            ))}
+              );
+            })}
             <h2 className="section-label" style={{ marginTop: 18 }}>Private session requests</h2>
             {requests.length === 0 ? <p className="note">No session requests yet.</p> : null}
             {requests.map((request) => (

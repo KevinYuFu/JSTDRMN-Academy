@@ -4,13 +4,14 @@ import { googleCalendarUrl, parseToronto } from "../lib/events";
 /**
  * Placeholder curriculum for DJ Bootcamp.
  * Each lesson is one module from the current mock catalog. Videos stay on mock:// until a real file is added.
- * Teacher and admin have the same staff access. This account uses role "teacher".
+ * Yu is a Lead. Lead is the role that can promote other people.
+ * Older databases stored this account as teacher. The roles migration maps that to lead.
  */
 export const seedAdmin = {
   id: "usr_yu",
   email: "yu@jstdrmn.com",
   name: "Yu",
-  role: "teacher",
+  role: "lead",
 };
 
 export const djBootcamp = {

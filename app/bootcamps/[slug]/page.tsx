@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { getUser } from "@/lib/auth";
 import { hubspotApplyUrl } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { containerAccess } from "@/lib/entitlements";
+import { containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +54,7 @@ export default async function BootcampPage({
         </div>
         <h1 className="page-title" style={{ marginBottom: 8 }}>{course.title}</h1>
         <p className="note" style={{ maxWidth: 640, marginBottom: 18 }}>{course.description}</p>
-        {query.added ? <div className="banner">Cohort added. Put lessons on it from the teacher course page.</div> : null}
+        {query.added ? <div className="banner">Cohort added. Put lessons on it from the course page.</div> : null}
         {query.error ? <div className="error">Check the cohort name and slug. Slugs have to be unique.</div> : null}
         <div className="shelf">
           {course.cohorts.map((cohort) => {
@@ -81,7 +81,7 @@ export default async function BootcampPage({
             <a className="pill pill-purple" href={applyHref} target="_blank" rel="noreferrer">Apply</a>
           </p>
         ) : null}
-        {user && (user.role === "teacher" || user.role === "admin") ? (
+        {user && isStaff(user.role) ? (
           <form action={addCohort} className="card stack" style={{ padding: 18, marginTop: 22, maxWidth: 520 }}>
             <h2 className="section-label">Add a cohort</h2>
             <input type="hidden" name="courseId" value={course.id} />

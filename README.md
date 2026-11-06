@@ -28,13 +28,20 @@ Access rules live in `lib/entitlements.ts`.
 
 ## Yu's login
 
-The seed creates one teacher: `yu@jstdrmn.com` (or `SEED_ADMIN_EMAIL`). A teacher can open every program.
+People have one of four roles.
+
+- **Student** — new Google or password signups. They land on Programs.
+- **Mentor** — one-on-ones (Private Sessions).
+- **Instructor** — classes and group programs.
+- **Lead** — can open the staff view, and is the only role that can change someone else's role.
+
+The seed creates Yu as a Lead: `yu@jstdrmn.com` (or `SEED_ADMIN_EMAIL`).
 
 Sign in with Google, or with a password. The password is `SEED_ADMIN_PASSWORD`. It is not in the repo. Leave that unset and the seed creates Yu with no password. Then use Continue with Google.
 
-`TEACHER_EMAILS` is a comma list of extra teacher emails, such as Yu's personal Gmail and `academy@jstdrmn.com`. A new Google sign-in for one of those emails creates a teacher. A student already on the list becomes a teacher the next time they use Google. Teacher and admin are never removed by the list. Add the email before the first Google sign-in, or sign in again after you add it.
+`academy@jstdrmn.com` is always a Lead. `LEAD_EMAILS` is the comma list for more Lead emails, such as Yu's personal Gmail. `TEACHER_EMAILS` still works and means the same thing. A new Google sign-in for one of those emails creates a Lead. A student already on the list becomes a Lead the next time they use Google. The list does not remove a Lead. It does not change a Mentor or an Instructor. Add the email before the first Google sign-in, or sign in again after you add it.
 
-Student accounts come from Google sign-in or the sign-up form. The seed does not add other logins unless they are in `TEACHER_EMAILS`.
+Student accounts come from Google sign-in or the sign-up form. After login, a student opens Programs. A Lead, Instructor, or Mentor opens the staff view.
 
 ## Products
 
@@ -42,7 +49,7 @@ Prices are CAD. A new program is a course record: title, blurb, status, price, b
 
 - **Headliner** — the banner. Monthly, price not set (`$X/month`) until `HEADLINER_PRICE_CENTS` is set. Access lasts while the subscription is paid. The path is a track tree: Welcome to JSTDRMN Academy, Introduction to EDM, The Progression Tree, then Branding, DJing, Producing (Beginner and Advanced), and Mashups & Remixes.
 - **Programs** — the grid. Foundations of Club Mixing is $50 once. FB2B is a special offering Ash F presents, $50/month, with a placeholder instead of a made-up curriculum. Bootcamps show a status tag and hide the price until `priceCents` is set. Learn More opens that program. Bootcamps apply through the HubSpot link on the record.
-- **Private Sessions** — its own tab. Mentor cards open in the page. Request a session stores the chosen mentor for the Academy lead. Scheduling and payment are not built yet. The lead adds, edits, and hides mentors.
+- **Private Sessions** — its own tab. Mentor cards open in the page. Request a session stores the chosen mentor for staff. Scheduling and payment are not built yet. Staff add, edit, and hide mentor cards. A Mentor is also a person role for one-on-ones. The card and the login role are different things.
 - **Events** — academy events, separate from showcase nights. Four seeded types (Community Connect, Green Room, Sync, Production Feedback). Each type and event has a join action: a link, or Add to calendar. Connect Discord shows up only for a Discord destination.
 - **Headliner perks** — Join Headliner Discord. Headliner only.
 
@@ -80,7 +87,8 @@ Set these on the Vercel project. Blank optional values keep the same fallbacks a
 | `AUTH_GOOGLE_SECRET` | With Google login | OAuth client secret. `GOOGLE_CLIENT_SECRET` works too. |
 | `AUTH_SECRET` | With Google login | Signs the short-lived Google state cookie. At least 16 characters. `NEXTAUTH_SECRET` works too. |
 | `AUTH_URL` | With Google login | Public `https` origin, no trailing slash. The redirect is `{AUTH_URL}/api/auth/google/callback`. Falls back to `NEXTAUTH_URL`, then `APP_URL`. |
-| `TEACHER_EMAILS` | No | Comma-separated teacher emails. Does not remove teacher or admin. |
+| `LEAD_EMAILS` | No | Comma-separated Lead emails. `academy@jstdrmn.com` is always a Lead. Does not remove a Lead, Mentor, or Instructor. |
+| `TEACHER_EMAILS` | No | Old name for the same Lead list. Still works. Use `LEAD_EMAILS` when you add a new one. |
 | `APP_URL` | Yes | Public `https` origin, no trailing slash. Stripe return URLs, the Discord redirect, and HubSpot signature checks use it. |
 | `HEADLINER_PRICE_CENTS` | No | CAD cents for Headliner. Leave blank to keep showing `$X/month`. Other prices live on each program row. |
 | `STRIPE_SECRET_KEY` | No | Empty keeps mock checkout, which still grants access. |
@@ -102,7 +110,7 @@ Session cookies are `Secure` when `NODE_ENV` is `production`, which is how Verce
 
 ### Scheduled announcements
 
-Hobby accounts can schedule a cron only once per day. `vercel.json` calls `/api/cron/announcements` at `0 19 * * *` (19:00 UTC). Announcements post daily at about 3pm Toronto (3pm during EDT, 2pm during EST). Each run posts every announcement whose send time has already passed, so teachers should set send times before then. For a precise clock time later, use Vercel Pro, or a free external pinger such as [cron-job.org](https://cron-job.org) that requests the route with `Authorization: Bearer` set to `CRON_SECRET`.
+Hobby accounts can schedule a cron only once per day. `vercel.json` calls `/api/cron/announcements` at `0 19 * * *` (19:00 UTC). Announcements post daily at about 3pm Toronto (3pm during EDT, 2pm during EST). Each run posts every announcement whose send time has already passed, so set the send time before then. For a precise clock time later, use Vercel Pro, or a free external pinger such as [cron-job.org](https://cron-job.org) that requests the route with `Authorization: Bearer` set to `CRON_SECRET`.
 
 ### Seed once
 
@@ -116,13 +124,14 @@ What that writes:
 
 - DJ Bootcamp, Cohort 5, Cohort 6, and the placeholder lessons
 - Four sample events (Community Connect, Green Room, Sync, Production Feedback) and their event types
-- Yu, role `teacher`
+- Yu, role `lead`
+- `academy@jstdrmn.com` as a Lead, plus anyone else in `LEAD_EMAILS` or `TEACHER_EMAILS`
 
 Running it again updates those same rows. It does not delete students, other courses, or events you added. If you already replaced a placeholder video on one of those lessons, a second seed puts the placeholder back.
 
 Leave `SEED_ADMIN_PASSWORD` unset on a later run if Yu already exists and you want to keep the current password. The first seed can also omit it. Yu then has no password and signs in with Google.
 
-Log in as `yu@jstdrmn.com`. Use Google, or the password you set.
+Log in as `yu@jstdrmn.com`. Use Google, or the password you set. Yu lands on the staff view. A student lands on Programs.
 
 ## Google sign-in
 
@@ -135,7 +144,7 @@ Google writes the same `jstdrmn_session` cookie as a password login. Route check
 3. The app accepts the email only when Google says it is verified.
 4. The same email links to the existing user. A new email creates a user.
 5. A session row is saved. The cookie is the same one password login uses.
-6. Role stays as it is for a teacher or admin. `TEACHER_EMAILS` makes that email a teacher. Other new people are students.
+6. A new person is a Student, unless the email is `academy@jstdrmn.com` or is listed in `LEAD_EMAILS` or `TEACHER_EMAILS`. Those become a Lead. A stored Lead stays a Lead. Old `teacher` and `admin` become Lead. Mentor and Instructor stay as they are.
 
 Google stays off until `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `AUTH_SECRET` are set. The button then says it is not set up. Password login still works. Do not put the real secrets in git. Create the Google client and set the Vercel env vars by hand. The pull request has those steps.
 

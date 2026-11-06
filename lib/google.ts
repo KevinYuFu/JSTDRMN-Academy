@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { isStaff } from "./entitlements";
+import type { Role } from "./roles";
 
 const STATE_RE = /^[a-f0-9]{32}$/;
 
@@ -56,18 +56,45 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export function teacherEmails() {
-  const seen = new Set<string>();
-  for (const part of (process.env.TEACHER_EMAILS ?? "").split(",")) {
+/** This mailbox is a Lead even when the env list is empty. */
+export const BUILTIN_LEAD_EMAILS = ["academy@jstdrmn.com"] as const;
+
+function collectEmails(raw: string, into: Set<string>) {
+  for (const part of raw.split(",")) {
     const email = normalizeEmail(part);
     if (!email.includes("@") || email.startsWith("@") || email.endsWith("@")) continue;
-    seen.add(email);
+    into.add(email);
   }
+}
+
+/**
+ * Emails that sign in as Lead.
+ * academy@jstdrmn.com is always included.
+ * LEAD_EMAILS is the name to use. TEACHER_EMAILS still works and means the same thing.
+ */
+export function leadEmails() {
+  const seen = new Set<string>();
+  collectEmails(BUILTIN_LEAD_EMAILS.join(","), seen);
+  collectEmails(process.env.LEAD_EMAILS ?? "", seen);
+  collectEmails(process.env.TEACHER_EMAILS ?? "", seen);
   return [...seen];
 }
 
+/** Same list as leadEmails. Kept so older imports keep working. */
+export function teacherEmails() {
+  return leadEmails();
+}
+
+export function isBuiltinLeadEmail(email: string) {
+  return (BUILTIN_LEAD_EMAILS as readonly string[]).includes(normalizeEmail(email));
+}
+
+export function isLeadEmail(email: string) {
+  return leadEmails().includes(normalizeEmail(email));
+}
+
 export function isTeacherEmail(email: string) {
-  return teacherEmails().includes(normalizeEmail(email));
+  return isLeadEmail(email);
 }
 
 export function nameFromEmail(email: string) {
@@ -83,15 +110,18 @@ export function displayName(name: string | undefined, email: string) {
 }
 
 /**
- * Teacher and admin stay as they are.
- * An email on TEACHER_EMAILS becomes teacher.
- * Everyone else stays a student, or keeps the role they already have.
+ * academy@jstdrmn.com is always a Lead.
+ * A stored Lead stays a Lead. Old teacher and admin become Lead.
+ * Instructor and Mentor stay. The list does not overwrite them.
+ * LEAD_EMAILS and TEACHER_EMAILS make a new person, or a student, into a Lead.
  * The list never removes a role.
  */
-export function roleAfterGoogleSignIn(existingRole: string | null | undefined, email: string) {
-  if (existingRole && isStaff(existingRole)) return existingRole;
-  if (isTeacherEmail(email)) return "teacher";
-  if (existingRole && existingRole.trim()) return existingRole.trim();
+export function roleAfterGoogleSignIn(existingRole: string | null | undefined, email: string): Role {
+  if (isBuiltinLeadEmail(email)) return "lead";
+  const raw = (existingRole ?? "").trim().toLowerCase();
+  if (raw === "lead" || raw === "teacher" || raw === "admin") return "lead";
+  if (raw === "instructor" || raw === "mentor") return raw;
+  if (isLeadEmail(email)) return "lead";
   return "student";
 }
 

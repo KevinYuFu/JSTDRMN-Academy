@@ -35,9 +35,9 @@ function grant(overrides: Partial<EntitlementRecord> = {}): EntitlementRecord {
 }
 
 describe("lessonAccess", () => {
-  it("lets teachers and admins into every lesson, including dripped ones", () => {
+  it("lets Lead, Instructor, Mentor, and the old staff roles into every lesson, including dripped ones", () => {
     const gated = lesson({ drip: true });
-    for (const role of ["teacher", "admin"]) {
+    for (const role of ["lead", "instructor", "mentor", "teacher", "admin"]) {
       const decision = lessonAccess({ role, lesson: gated, entitlements: [], earlierComplete: false, now });
       assert.equal(decision.allowed, true);
       assert.equal(decision.reason, "role");

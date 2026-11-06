@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { roleLabel } from "@/lib/roles";
 import { formatToronto } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
 export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const query = await searchParams;
   const [announcements, events] = await Promise.all([
     prisma.announcement.findMany({ include: { event: true }, orderBy: { sendAt: "asc" } }),
@@ -24,7 +25,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Academy lead</Link> › <b>Announcements</b>
+          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Announcements</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 8 }}>Announcements</h1>
         <p className="note" style={{ marginBottom: 16 }}>

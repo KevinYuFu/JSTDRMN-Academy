@@ -9,7 +9,7 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
-    "test": "tsx --test lib/entitlements.test.ts lib/hubspot.test.ts lib/video.test.ts lib/discord.test.ts lib/mentors.test.ts lib/events.test.ts lib/seed-data.test.ts lib/google.test.ts lib/skill-tree.test.ts"
+    "test": "tsx --test lib/*.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
