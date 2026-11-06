@@ -226,6 +226,11 @@ export function allowedReturnOrigin(origin: string, canonical: string) {
 
 export type GoogleStartPlan = "same-host" | "bridge" | "reject";
 
+/** The production host can finish a preview sign-in only after it has this route. A 404 means it does not. */
+export function bridgeStatusAllowsHandoff(status: number) {
+  return status !== 404;
+}
+
 /** Same host keeps the current Google start. A preview bridges to the registered callback host. */
 export function googleStartPlan(requestOrigin: string, canonical = authUrl()): GoogleStartPlan {
   if (requestOrigin === canonical) return "same-host";

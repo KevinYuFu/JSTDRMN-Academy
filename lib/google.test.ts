@@ -8,6 +8,7 @@ import {
   googleOAuthConfigured,
   googleRedirectUri,
   allowedReturnOrigin,
+  bridgeStatusAllowsHandoff,
   googleStartPlan,
   isLeadEmail,
   openTicket,
@@ -263,6 +264,8 @@ describe("Google profile and OAuth state", () => {
     process.env.AUTH_URL = canonical;
     assert.equal(googleRedirectUri(), "https://jstdrmn-academy.vercel.app/api/auth/google/callback");
     assert.equal(googleStartPlan(preview), "bridge");
+    assert.equal(bridgeStatusAllowsHandoff(404), false);
+    assert.equal(bridgeStatusAllowsHandoff(307), true);
   });
 
   it("seals a short-lived return ticket and rejects a tampered one", () => {

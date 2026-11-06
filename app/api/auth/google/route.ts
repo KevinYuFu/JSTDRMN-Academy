@@ -6,6 +6,7 @@ import {
   GOOGLE_STATE_COOKIE,
   authSecret,
   authUrl,
+  bridgeStatusAllowsHandoff,
   googleAuthorizeUrl,
   googleOAuthConfigured,
   googleStartPlan,
@@ -18,6 +19,18 @@ import { safeNext } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+async function canonicalBridgeReady(canonical: string) {
+  try {
+    const response = await fetch(`${canonical}/api/auth/google/bridge`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(4000),
+    });
+    return bridgeStatusAllowsHandoff(response.status);
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   const current = new URL(request.url);
   const next = safeNext(current.searchParams.get("next"), "");
@@ -28,7 +41,7 @@ export async function GET(request: Request) {
   if (!url || !secret) redirect(loginRedirect("google_unconfigured", next));
   const plan = googleStartPlan(current.origin);
   if (plan === "reject") redirect(loginRedirect("google", next));
-  if (plan === "bridge") {
+  if (plan === "bridge" && (await canonicalBridgeReady(authUrl()))) {
     const ticket = sealTicket({ nonce: state, origin: current.origin, next, exp: Date.now() + 10 * 60 * 1000 }, secret);
     redirect(`${authUrl()}/api/auth/google/bridge?ticket=${encodeURIComponent(ticket)}`);
   }
