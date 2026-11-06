@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { MentorForm } from "@/components/mentor-form";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { roleLabel } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function EditMentorPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const { slug } = await params;
   const query = await searchParams;
   const mentor = await prisma.mentor.findUnique({ where: { slug } });
@@ -24,7 +25,7 @@ export default async function EditMentorPage({
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Academy lead</Link> › <b>{mentor.name}</b>
+          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>{mentor.name}</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 12 }}>{mentor.name}</h1>
         {query.error ? <div className="error">Name, role line, and bio are required. Photo URL, if you add one, starts with http.</div> : null}

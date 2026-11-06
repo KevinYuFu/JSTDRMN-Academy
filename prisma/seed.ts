@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
-import { nameFromEmail, teacherEmails } from "../lib/google";
+import { isBuiltinLeadEmail, leadEmails, nameFromEmail } from "../lib/google";
 import { djBootcamp, djCohorts, djLessons, sampleEventTypes, sampleEvents, seedAdmin } from "./seed-data";
 
 const prisma = new PrismaClient();
@@ -32,7 +32,7 @@ async function main() {
   const password = adminPassword();
   const existing = await prisma.user.findUnique({ where: { email } });
   const passwordHash = password ? await hash(password, 10) : null;
-  const allowList = teacherEmails().filter((item) => item !== email);
+  const allowList = leadEmails().filter((item) => item !== email);
 
   await prisma.$transaction(async (db) => {
     await db.course.upsert({
@@ -94,20 +94,23 @@ async function main() {
       });
     }
 
-    for (const teacherEmail of allowList) {
-      const row = await db.user.findUnique({ where: { email: teacherEmail } });
+    for (const leadEmail of allowList) {
+      const row = await db.user.findUnique({ where: { email: leadEmail } });
+      const forceLead = isBuiltinLeadEmail(leadEmail);
       if (!row) {
         await db.user.create({
           data: {
             id: `usr_${randomBytes(6).toString("hex")}`,
-            email: teacherEmail,
-            name: nameFromEmail(teacherEmail),
-            role: "teacher",
+            email: leadEmail,
+            name: nameFromEmail(leadEmail),
+            role: "lead",
             passwordHash: null,
           },
         });
-      } else if (row.role !== "teacher" && row.role !== "admin") {
-        await db.user.update({ where: { id: row.id }, data: { role: "teacher" } });
+      } else if (forceLead || row.role === "student" || row.role === "teacher" || row.role === "admin") {
+        if (row.role !== "lead") {
+          await db.user.update({ where: { id: row.id }, data: { role: "lead" } });
+        }
       }
     }
   });
@@ -116,7 +119,7 @@ async function main() {
   if (passwordHash) console.log("Yu's password was set from SEED_ADMIN_PASSWORD.");
   else if (existing) console.log("Yu already existed. Password was left unchanged.");
   else console.log("Yu has no password. Sign in with Google, or set SEED_ADMIN_PASSWORD and seed again.");
-  if (allowList.length) console.log(`Teacher allow-list: ${allowList.join(", ")}`);
+  if (allowList.length) console.log(`Lead emails: ${allowList.join(", ")}`);
 }
 
 main()

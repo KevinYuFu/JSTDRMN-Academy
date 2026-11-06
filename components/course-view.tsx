@@ -3,6 +3,7 @@ import { completeLesson, postComment } from "@/app/actions";
 import { formatCad, hubspotApplyUrl, prices, programPriceLabel } from "@/lib/config";
 import type { openCourse } from "@/lib/learn";
 import { isStaff } from "@/lib/entitlements";
+import { roleLabel } from "@/lib/roles";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Icon } from "./icons";
@@ -170,7 +171,7 @@ export function CourseView({
                 <article key={comment.id} className="thread">
                   <div className="who">
                     <b>{comment.user.name}</b>
-                    {isStaff(comment.user.role) ? <span className="staff">Teacher</span> : null}
+                    {isStaff(comment.user.role) ? <span className="staff">{roleLabel(comment.user.role)}</span> : null}
                     <span> · {when(comment.createdAt)}</span>
                   </div>
                   <p>{comment.body}</p>
@@ -178,7 +179,7 @@ export function CourseView({
                     <div key={reply.id} className="reply thread">
                       <div className="who">
                         <b>{reply.user.name}</b>
-                        {isStaff(reply.user.role) ? <span className="staff">Teacher</span> : null}
+                        {isStaff(reply.user.role) ? <span className="staff">{roleLabel(reply.user.role)}</span> : null}
                         <span> · {when(reply.createdAt)}</span>
                       </div>
                       <p>{reply.body}</p>
@@ -198,7 +199,7 @@ export function CourseView({
               <form action={postComment} className="stack" style={{ marginTop: 16 }}>
                 <input type="hidden" name="lessonId" value={current.id} />
                 <input type="hidden" name="next" value={`${basePath}?lesson=${current.id}`} />
-                <Textarea name="body" required placeholder="Ask the teacher about this lesson" />
+                <Textarea name="body" required placeholder="Ask about this lesson" />
                 <Button type="submit" className="self-start">Post note</Button>
               </form>
             </div>

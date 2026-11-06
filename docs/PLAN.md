@@ -12,7 +12,7 @@ Adding a program is a course row. The landing grid, the detail page, checkout, a
 
 Next.js (App Router) and TypeScript. The database is Postgres. On Vercel that is Neon. The app connects with `DATABASE_URL` (pooled). Migrations connect with `DATABASE_URL_UNPOOLED` (direct). Every Vercel build runs `prisma migrate deploy`. The seed does not run on deploy. See the README.
 
-Email and password, session row, httpOnly cookie. Roles are `student`, `teacher`, and `admin`. The Academy lead (teacher or admin) sees every course and cohort, edits lessons, manages mentors, events, and the announcement queue, reads session requests, and grants or revokes seats. Students see Discord link status on My Courses. Students see titles for locked work and can open only what an entitlement allows.
+Email and password, session row, httpOnly cookie. Roles are `student`, `mentor`, `instructor`, and `lead`. Older rows used `teacher` and `admin`. Those mapped to `lead` because they already had full staff access (Yu, and the allow-list). A Lead, Instructor, or Mentor sees every course and cohort, edits lessons, manages mentors, events, and the announcement queue, reads session requests, and grants or revokes seats. Students see Discord link status on My Courses. Students see titles for locked work and can open only what an entitlement allows. After login, a student opens Programs. A Lead, Instructor, or Mentor opens the staff view.
 
 Headliner’s price is CAD cents in `HEADLINER_PRICE_CENTS`. Leave it unset and the banner shows `$X/month`. Every other program stores `priceCents` on its own row. A null price is hidden. Billing is `monthly`, `once`, `application`, or `request`.
 
@@ -42,7 +42,7 @@ HubSpot is described in [HUBSPOT.md](./HUBSPOT.md). Discord is described in [DIS
 - **Event** — title, type, description, start and end in America/Toronto, weekly or one-off, audience (`all`, `headliners`, `cohort`, `producers`), and optional overrides of the type’s join action. Connect Discord is required only when that destination is a Discord URL.
 - **Announcement** — a queued Discord message: body, channel id, optional role mention, send time, or “minutes before” an event. Status is `scheduled`, `sent`, or `failed`. `GET /api/cron/announcements` posts due rows, or logs them when `DISCORD_BOT_TOKEN` is unset.
 - **Progress** — `in_progress` or `completed` per student per lesson.
-- **Comment** — a lesson note, with optional parent for a teacher reply.
+- **Comment** — a lesson note, with optional parent for a staff reply.
 - **Checkout** — pending or paid, mock or stripe.
 - **PendingGrant** — a seat for an email that has no account yet.
 - **HubspotLog** — local trace of syncs and webhooks when a token is set.
@@ -65,10 +65,10 @@ Implemented in `lib/entitlements.ts` and covered by `npm test`.
 Run once with `npx prisma db seed`. The steps are in the README. The seed upserts rows. It does not delete students or other courses.
 
 - DJ Bootcamp, Cohort 5, Cohort 6, and the placeholder lessons from the mock curriculum
-- Yu at `yu@jstdrmn.com`, role `teacher` (staff, same access as `admin`). Sign in with Google, or with `SEED_ADMIN_PASSWORD` if you set one. The password is not stored in the repo. `TEACHER_EMAILS` can add more teacher emails, such as a personal Gmail. The list does not remove teacher or admin.
+- Yu at `yu@jstdrmn.com`, role `lead`. Sign in with Google, or with `SEED_ADMIN_PASSWORD` if you set one. The password is not stored in the repo. `academy@jstdrmn.com` is always a Lead. `LEAD_EMAILS` and `TEACHER_EMAILS` add more Lead emails, such as a personal Gmail. The list does not remove a Lead, and it does not change a Mentor or an Instructor.
 - Sample events: Community Connect, Green Room, Sync, and Production Feedback
 
-Headliner, the other programs, mentors, and student logins are not part of this seed. Add those in the teacher view.
+Headliner, the other programs, mentors, and student logins are not part of this seed. Add those in the staff view.
 
 ## Next steps
 
@@ -87,6 +87,6 @@ Headliner, the other programs, mentors, and student logins are not part of this 
 - **Which Headliner lessons stay flagged?** The flag is per lesson. The seeded path is all inside the membership.
 - **Bootcamp payment.** Does “accepted” mean a HubSpot deal is won, a form is reviewed, or both? The app will not grant from a form submission alone.
 - **Cohort 5 and older.** How far back should Yu’s list go, and should alumni keep access after the cohort ends?
-- **FB2B.** $50/month CAD is on the program row. Lessons are not written yet. Does Ash F need a teacher login, or only Yu?
+- **FB2B.** $50/month CAD is on the program row. Lessons are not written yet. Does Ash F need an Instructor login, or only Yu as Lead?
 - **Bootcamp card prices.** Each bootcamp can carry its own `priceCents`. They are hidden until set.
 - **Domain.** This app’s public URL (Stripe return URLs, HubSpot, Discord redirect) is `APP_URL`, defaulting to localhost.

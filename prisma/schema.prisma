@@ -20,6 +20,8 @@ model User {
   name               String
   /// Null when this person signs in with Google only.
   passwordHash       String?
+  /// student, mentor, instructor, or lead.
+  /// Older rows used teacher and admin. The roles migration maps both to lead.
   role               String
   /// Google account id (the sub claim). Set by Continue with Google.
   googleSub          String?             @unique

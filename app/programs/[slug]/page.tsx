@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { hubspotApplyUrl, programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { isStaff } from "@/lib/entitlements";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ export default async function ProgramPage({
               Applications stay on the JSTDRMN site. After you’re accepted, this account opens only your cohort.
             </p>
           ) : null}
-          {program.cohorts.length > 0 && user && (user.role === "teacher" || user.role === "admin") ? (
+          {program.cohorts.length > 0 && user && isStaff(user.role) ? (
             <ul className="cohort-list">
               {program.cohorts.map((cohort) => (
                 <li key={cohort.id}>

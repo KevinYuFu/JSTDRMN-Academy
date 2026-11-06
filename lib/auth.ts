@@ -3,7 +3,7 @@ import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "./db";
-import { isStaff } from "./entitlements";
+import { homeForRole, isStaff } from "./roles";
 
 const COOKIE = "jstdrmn_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -66,6 +66,6 @@ export async function requireUser() {
 
 export async function requireStaff() {
   const user = await requireUser();
-  if (!isStaff(user.role)) redirect("/dashboard");
+  if (!isStaff(user.role)) redirect(homeForRole(user.role));
   return user;
 }

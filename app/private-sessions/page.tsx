@@ -26,7 +26,7 @@ export default async function PrivateSessionsPage({
           <h1>Private Sessions</h1>
           <p>1-on-1 mentorship. Your music, your goals, a mentor in your corner.</p>
         </section>
-        {query.sent ? <div className="banner shell-note">Request received. The Academy lead can see it. Nothing is booked yet.</div> : null}
+        {query.sent ? <div className="banner shell-note">Request received. Staff can see it. Nothing is booked yet.</div> : null}
         {query.error ? <div className="error shell-note">Name, email, topic, and preferred times are all required.</div> : null}
         <MentorRoster
           courseId={course?.id ?? ""}

@@ -1,3 +1,5 @@
+import { isStaff } from "./roles";
+
 export type Product = "headliner" | "program" | "cohort";
 
 export type CourseAccess = "headliner" | "purchase" | "subscription" | "cohort";
@@ -38,9 +40,7 @@ export type AccessDecision = {
   reason: AccessReason;
 };
 
-export function isStaff(role: string) {
-  return role === "teacher" || role === "admin";
-}
+export { isStaff };
 
 /** Maps stored product strings, including the old course/ash labels, onto the current set. */
 export function normalizeProduct(value: string): Product | null {

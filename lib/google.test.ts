@@ -7,7 +7,9 @@ import {
   googleAuthorizeUrl,
   googleOAuthConfigured,
   googleRedirectUri,
+  isLeadEmail,
   isTeacherEmail,
+  leadEmails,
   nameFromEmail,
   openOAuthState,
   parseGoogleUserInfo,
@@ -32,6 +34,7 @@ const envKeys = [
   "NEXTAUTH_URL",
   "APP_URL",
   "TEACHER_EMAILS",
+  "LEAD_EMAILS",
 ] as const;
 
 const previous: Partial<Record<(typeof envKeys)[number], string | undefined>> = {};
@@ -72,31 +75,48 @@ function account(overrides: Partial<GoogleAccount> = {}): GoogleAccount {
   };
 }
 
-describe("Google teacher allow-list", () => {
-  it("parses a comma list and ignores blanks", () => {
+describe("Lead emails", () => {
+  it("always includes academy@ and reads LEAD_EMAILS and TEACHER_EMAILS", () => {
     clearAuthEnv();
+    assert.deepEqual(leadEmails(), ["academy@jstdrmn.com"]);
+    assert.equal(isLeadEmail("Academy@JSTDRMN.com"), true);
+    assert.equal(teacherEmails().includes("academy@jstdrmn.com"), true);
+
     process.env.TEACHER_EMAILS = " Yu@Gmail.com, academy@jstdrmn.com, , not-an-email, Yu@Gmail.com ";
-    assert.deepEqual(teacherEmails(), ["yu@gmail.com", "academy@jstdrmn.com"]);
+    assert.deepEqual(leadEmails(), ["academy@jstdrmn.com", "yu@gmail.com"]);
+    assert.deepEqual(teacherEmails(), ["academy@jstdrmn.com", "yu@gmail.com"]);
     assert.equal(isTeacherEmail("YU@gmail.com"), true);
-    assert.equal(isTeacherEmail("student@example.com"), false);
+    assert.equal(isLeadEmail("student@example.com"), false);
+
+    clearAuthEnv();
+    process.env.LEAD_EMAILS = "lead@example.com";
+    process.env.TEACHER_EMAILS = "teacher@example.com, lead@example.com";
+    assert.deepEqual(leadEmails(), ["academy@jstdrmn.com", "lead@example.com", "teacher@example.com"]);
   });
 
-  it("keeps staff, promotes a listed email, and leaves other students", () => {
+  it("makes a listed email a Lead and does not overwrite Mentor or Instructor", () => {
     clearAuthEnv();
     process.env.TEACHER_EMAILS = "yu.personal@gmail.com";
+    process.env.LEAD_EMAILS = "other.lead@example.com";
     assert.equal(roleAfterGoogleSignIn(null, "new@example.com"), "student");
-    assert.equal(roleAfterGoogleSignIn(null, "yu.personal@gmail.com"), "teacher");
+    assert.equal(roleAfterGoogleSignIn(null, "academy@jstdrmn.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn(null, "yu.personal@gmail.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn(null, "other.lead@example.com"), "lead");
     assert.equal(roleAfterGoogleSignIn("student", "student@example.com"), "student");
-    assert.equal(roleAfterGoogleSignIn("student", "yu.personal@gmail.com"), "teacher");
-    assert.equal(roleAfterGoogleSignIn("teacher", "student@example.com"), "teacher");
-    assert.equal(roleAfterGoogleSignIn("admin", "yu.personal@gmail.com"), "admin");
+    assert.equal(roleAfterGoogleSignIn("student", "yu.personal@gmail.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn("teacher", "student@example.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn("admin", "student@example.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn("lead", "student@example.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn("instructor", "yu.personal@gmail.com"), "instructor");
+    assert.equal(roleAfterGoogleSignIn("mentor", "academy@jstdrmn.com"), "lead");
+    assert.equal(roleAfterGoogleSignIn("mentor", "yu.personal@gmail.com"), "mentor");
   });
 });
 
 describe("Google account link", () => {
-  it("creates a student, or a teacher when the email is listed", () => {
+  it("creates a student, or a Lead when the email is listed", () => {
     clearAuthEnv();
-    process.env.TEACHER_EMAILS = "academy@jstdrmn.com";
+    process.env.LEAD_EMAILS = "academy@jstdrmn.com";
     assert.deepEqual(decideGoogleUser(profile(), null, null), {
       ok: true,
       mode: "create",
@@ -110,12 +130,12 @@ describe("Google account link", () => {
       mode: "create",
       email: "academy@jstdrmn.com",
       name: "Academy",
-      role: "teacher",
+      role: "lead",
       googleSub: "google-sub-1",
     });
   });
 
-  it("links an existing email and keeps the stored role unless the allow-list says teacher", () => {
+  it("links an existing email and keeps Mentor or Instructor unless the mailbox is academy@", () => {
     clearAuthEnv();
     process.env.TEACHER_EMAILS = "yu.personal@gmail.com";
     const student = account();
@@ -131,7 +151,7 @@ describe("Google account link", () => {
       ok: true,
       mode: "link",
       userId: "usr_yu",
-      role: "teacher",
+      role: "lead",
       googleSub: "google-sub-1",
     });
     const listed = account({ email: "yu.personal@gmail.com", role: "student" });
@@ -139,9 +159,13 @@ describe("Google account link", () => {
       ok: true,
       mode: "link",
       userId: "usr_1",
-      role: "teacher",
+      role: "lead",
       googleSub: "google-sub-1",
     });
+    const mentor = account({ id: "usr_mentor", email: "yu.personal@gmail.com", role: "mentor" });
+    const kept = decideGoogleUser(profile({ email: "yu.personal@gmail.com" }), null, mentor);
+    assert.equal(kept.ok, true);
+    if (kept.ok) assert.equal(kept.role, "mentor");
   });
 
   it("rejects an unverified email and a Google account already linked elsewhere", () => {
@@ -161,7 +185,7 @@ describe("Google account link", () => {
       ok: true,
       mode: "link",
       userId: "usr_1",
-      role: "teacher",
+      role: "lead",
       googleSub: "google-sub-1",
     });
   });

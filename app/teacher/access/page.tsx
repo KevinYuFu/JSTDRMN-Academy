@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { roleLabel } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccessPage({ searchParams }: { searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }> }) {
-  await requireStaff();
+  const staff = await requireStaff();
   const query = await searchParams;
   const [courses, cohorts, entitlements, pending, students] = await Promise.all([
     prisma.course.findMany({ orderBy: { sort: "asc" } }),
@@ -38,7 +39,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
       <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/teacher">Academy lead</Link> › <b>Access</b>
+          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Access</b>
         </div>
         <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
         <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>
