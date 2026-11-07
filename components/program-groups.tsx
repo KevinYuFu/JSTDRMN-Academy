@@ -5,7 +5,7 @@ export function ProgramGroup({ title, children }: { title: string; children: Rea
   return (
     <div className={styles.group}>
       <h2 className={styles.heading}>{title}</h2>
-      <div className={styles.grid}>{children}</div>
+      <div className="program-grid">{children}</div>
     </div>
   );
 }
