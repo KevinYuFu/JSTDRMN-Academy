@@ -33,9 +33,9 @@ describe("staff tab", () => {
       assert.equal(items.filter((item) => item.variant === "staff").length, 1);
       assert.equal(courses.label, "My Courses");
       assert.equal(courses.href, "/dashboard");
-      assert.ok(items.indexOf(dashboard) < items.indexOf(courses));
-      assert.equal(items[items.indexOf(dashboard) - 1]?.label, "Events");
-      assert.equal(items.at(-1), courses);
+      assert.ok(items.indexOf(courses) < items.indexOf(dashboard));
+      assert.equal(items[items.indexOf(dashboard) - 1], courses);
+      assert.equal(items.at(-1), dashboard);
     }
   });
 });
