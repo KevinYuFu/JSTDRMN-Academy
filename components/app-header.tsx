@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { academyNav, type AcademyNavItem } from "@/lib/nav";
-import { homeForRole } from "@/lib/roles";
 import { MobileNav } from "./mobile-nav";
 import { UserMenu } from "./user-menu";
 
@@ -16,7 +15,7 @@ export async function AppHeader({ active }: { active?: string | null }) {
   const links = academyNav(user?.role ?? null);
   return (
     <header className="site-header">
-      <Link href={user ? homeForRole(user.role) : "/"} className="brand">
+      <Link href="/" className="brand">
         <Image src="/logo.png" alt="JSTDRMN" width={156} height={34} priority className="logo" />
         <span className="tag">Academy</span>
       </Link>
