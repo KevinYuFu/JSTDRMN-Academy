@@ -1,13 +1,14 @@
 /**
  * Explicit Lead edit for the words on the Programs pages.
  *
- * Saved on the current Course row: title, tagline, statusLabel, presenter,
- * description (program page only), and priceCents when that program stores
- * its own price (monthly or once, and not the Headliner banner price).
+ * Saved on the current Course row: title, tagline, presenter, description
+ * (program page only), and priceCents on the program page when that program
+ * stores its own monthly or once price.
  *
- * Not written: slug, access, billing, placement, kind, panel, sort, special,
- * hubspotUrl, lessons, cohorts, delivery, setting, planCourseId, badges,
- * or a price borrowed from another plan. The public page stays read-only until Edit.
+ * Not written: statusLabel, listing prices, slug, access, billing, placement,
+ * kind, panel, sort, special, hubspotUrl, lessons, cohorts, delivery, setting,
+ * planCourseId, badges, the Headliner banner amount, or a price borrowed from
+ * another plan. The public page stays read-only until Edit.
  */
 
 import { isLead } from "./roles";
@@ -21,7 +22,6 @@ const MAX_PROGRAMS = 40;
 const LIMITS = {
   title: 80,
   tagline: 180,
-  statusLabel: 40,
   presenter: 60,
   description: 2000,
 } as const;
@@ -33,7 +33,6 @@ export const programEditCopy = {
   failed: "Could not save. Try again.",
   title: "Add a title.",
   tagline: "Add a short line.",
-  statusLabel: "Use a shorter label.",
   presenter: "Use a shorter name.",
   description: "Add the about text.",
   price: "Use a price like 20 or 20.50.",
@@ -68,7 +67,6 @@ export type ProgramContentRow = {
 export type ProgramContentWrite = {
   title: string;
   tagline: string;
-  statusLabel: string;
   presenter: string | null;
   description?: string;
   priceCents?: number | null;
@@ -80,7 +78,6 @@ export type ProgramEditItem = {
   kind: "banner" | "card" | "detail";
   title: string;
   tagline: string;
-  statusLabel: string;
   presenter: string;
   description: string;
   price: string;
@@ -93,7 +90,6 @@ export type ProgramEditInput = {
   id: string;
   title: string;
   tagline: string;
-  statusLabel: string;
   presenter: string | null;
   description?: string;
   price?: string;
@@ -128,7 +124,7 @@ export type ProgramEditorState = {
   saving: boolean;
 };
 
-export type ProgramTextField = "title" | "tagline" | "statusLabel" | "presenter" | "description" | "price";
+export type ProgramTextField = "title" | "tagline" | "presenter" | "description" | "price";
 
 export type ProgramEditorEvent =
   | { type: "edit" }
@@ -164,7 +160,8 @@ export type PriceEditMode = "course" | "external" | "hidden";
 /**
  * course: this row shows its own monthly or once price.
  * external: Headliner amount, or the top banner, which always shows that amount.
- * hidden: no own price. A plan price and an unpublished price stay as read-only text.
+ * hidden: no own price on the program page. The list never shows or edits a price.
+ * A shared intro plan price is not a course price.
  */
 export function priceEditMode(course: {
   access: string;
@@ -227,7 +224,6 @@ export function submissionFromItems(scope: ProgramEditScope, items: ProgramEditI
         id: item.id,
         title: item.title,
         tagline: item.tagline,
-        statusLabel: item.statusLabel,
         presenter: item.presenter,
       };
       if (scope === "detail") program.description = item.description;
@@ -348,21 +344,25 @@ export async function commitProgramEdits(args: {
     const data: ProgramContentWrite = {
       title: program.title,
       tagline: program.tagline,
-      statusLabel: program.statusLabel,
       presenter: program.presenter,
     };
     if (parsed.scope === "detail") data.description = program.description ?? "";
-    const mode = priceEditMode(row);
-    if (mode === "course") {
-      if (typeof program.price !== "string") {
-        fieldErrors[`${program.id}.price`] = programEditCopy.price;
-      } else {
-        const price = parsePriceDollars(program.price);
-        if (!price.ok) fieldErrors[`${program.id}.price`] = programEditCopy.price;
-        else data.priceCents = price.cents;
+    const postedPrice = typeof program.price === "string" && program.price.trim() !== "";
+    if (parsed.scope === "listing") {
+      if (postedPrice) fieldErrors[`${program.id}.price`] = programEditCopy.priceLocked;
+    } else {
+      const mode = priceEditMode(row);
+      if (mode === "course") {
+        if (typeof program.price !== "string") {
+          fieldErrors[`${program.id}.price`] = programEditCopy.price;
+        } else {
+          const price = parsePriceDollars(program.price);
+          if (!price.ok) fieldErrors[`${program.id}.price`] = programEditCopy.price;
+          else data.priceCents = price.cents;
+        }
+      } else if (postedPrice) {
+        fieldErrors[`${program.id}.price`] = programEditCopy.priceLocked;
       }
-    } else if (typeof program.price === "string" && program.price.trim() !== "") {
-      fieldErrors[`${program.id}.price`] = programEditCopy.priceLocked;
     }
     writes.push({ id: program.id, data, row });
   }
@@ -389,21 +389,24 @@ export async function persistProgramEdits(args: {
 }
 
 function toEditItem(row: ProgramContentRow, kind: ProgramEditItem["kind"]): ProgramEditItem {
-  const mode = kind === "banner" ? "external" : priceEditMode(row);
+  const mode = kind === "detail" ? priceEditMode(row) : "hidden";
   return {
     id: row.id,
     slug: row.slug,
     kind,
     title: row.title,
     tagline: row.tagline,
-    statusLabel: row.statusLabel,
     presenter: row.presenter ?? "",
     description: kind === "detail" ? row.description : "",
     price: mode === "course" ? formatPriceInput(row.priceCents) : "",
     priceEditable: mode === "course",
     priceCadence: mode === "course" && row.billing === "monthly" ? "month" : mode === "course" ? "once" : null,
     priceNote:
-      mode === "external" ? programEditCopy.bannerPrice : mode === "hidden" ? programEditCopy.hiddenPrice : null,
+      kind === "banner"
+        ? programEditCopy.bannerPrice
+        : kind === "detail" && mode === "hidden"
+          ? programEditCopy.hiddenPrice
+          : null,
   };
 }
 
@@ -432,17 +435,14 @@ function parseSubmission(input: unknown): ParsedSubmission {
     seen.add(id);
     const title = readText(record.title, LIMITS.title);
     const tagline = readText(record.tagline, LIMITS.tagline);
-    const statusLabel = readStatus(record.statusLabel);
     const presenter = readPresenter(record.presenter);
     if (!title) fieldErrors[`${id}.title`] = programEditCopy.title;
     if (!tagline) fieldErrors[`${id}.tagline`] = programEditCopy.tagline;
-    if (statusLabel === undefined) fieldErrors[`${id}.statusLabel`] = programEditCopy.statusLabel;
     if (presenter === undefined) fieldErrors[`${id}.presenter`] = programEditCopy.presenter;
     const program: ProgramEditInput = {
       id,
       title: title ?? "",
       tagline: tagline ?? "",
-      statusLabel: statusLabel ?? "",
       presenter: presenter ?? null,
     };
     if (scope === "detail") {
@@ -457,13 +457,6 @@ function parseSubmission(input: unknown): ParsedSubmission {
     return { ok: false, message: programEditCopy.invalid, fieldErrors };
   }
   return { ok: true, scope, programs: parsed };
-}
-
-function readStatus(value: unknown) {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  if (trimmed.length > LIMITS.statusLabel) return undefined;
-  return trimmed;
 }
 
 function readText(value: unknown, max: number) {
@@ -483,7 +476,6 @@ function readPresenter(value: unknown) {
 function sameContent(row: ProgramContentRow, data: ProgramContentWrite) {
   if (row.title !== data.title) return false;
   if (row.tagline !== data.tagline) return false;
-  if (row.statusLabel !== data.statusLabel) return false;
   if ((row.presenter ?? null) !== data.presenter) return false;
   if (data.description !== undefined && row.description !== data.description) return false;
   if (data.priceCents !== undefined && row.priceCents !== data.priceCents) return false;
@@ -495,7 +487,6 @@ function sameItemText(left: ProgramEditItem, right: ProgramEditItem | undefined)
   return (
     left.title === right.title &&
     left.tagline === right.tagline &&
-    left.statusLabel === right.statusLabel &&
     left.presenter === right.presenter &&
     left.description === right.description &&
     left.price === right.price

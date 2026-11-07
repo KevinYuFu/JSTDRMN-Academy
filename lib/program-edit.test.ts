@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   canEditPrograms,
@@ -164,11 +165,21 @@ describe("field boundaries", () => {
     const banner = row({ id: "crs_head", placement: "banner", access: "headliner", billing: "monthly", priceCents: 2000 });
     const hidden = row({ id: "crs_dj" });
     const priced = row({ id: "crs_lab", billing: "once", priceCents: 4000, access: "purchase" });
-    const items = listingEditItems(banner, [hidden, priced]);
-    assert.equal(items[0]?.priceEditable, false);
+    const fb2b = row({ id: "crs_fb", billing: "once", priceCents: 50000, access: "cohort" });
+    const intro = row({ id: "crs_intro", access: "subscription", billing: "monthly", priceCents: null });
+    const items = listingEditItems(banner, [hidden, priced, fb2b, intro]);
+    assert.equal(items.every((item) => item.priceEditable === false), true);
+    assert.equal(items.every((item) => item.price === ""), true);
     assert.equal(items[0]?.priceNote, programEditCopy.bannerPrice);
-    assert.equal(items[1]?.priceNote, programEditCopy.hiddenPrice);
-    assert.equal(items[2]?.price, "40");
+    assert.equal(items[2]?.priceNote, null);
+    const ownPrice = detailEditItem(priced);
+    assert.equal(ownPrice.priceEditable, true);
+    assert.equal(ownPrice.price, "40");
+    const fb2bDetail = detailEditItem(fb2b);
+    assert.equal(fb2bDetail.priceEditable, true);
+    assert.equal(fb2bDetail.price, "500");
+    assert.equal(detailEditItem(intro).priceEditable, false);
+    assert.equal(detailEditItem(intro).price, "");
     assert.equal(detailEditItem(hidden).description, "A longer about section.");
     assert.equal(detailEditItem(hidden).priceEditable, false);
   });
@@ -209,7 +220,10 @@ describe("save", () => {
     const priced = memory([row({ id: "crs_lab", billing: "monthly", priceCents: 2000 })]);
     const badPrice = await commitProgramEdits({
       role: "teacher",
-      input: listingInput([text("crs_lab", { price: "20.555" })]),
+      input: {
+        scope: "detail",
+        programs: [text("crs_lab", { description: "About the lab.", price: "20.555" })],
+      },
       store: priced.store,
     });
     assert.equal(badPrice.ok, false);
@@ -231,6 +245,7 @@ describe("save", () => {
           title: " Decks ",
           tagline: "New line",
           statusLabel: "Open",
+          price: "",
           presenter: "  ",
           description: "Should not save from the list",
           delivery: "live",
@@ -243,14 +258,14 @@ describe("save", () => {
     assert.deepEqual(result, { ok: true });
     assert.equal(db.rows[0]?.title, "Decks");
     assert.equal(db.rows[0]?.tagline, "New line");
-    assert.equal(db.rows[0]?.statusLabel, "Open");
+    assert.equal(db.rows[0]?.statusLabel, "Waitlist Open");
     assert.equal(db.rows[0]?.presenter, null);
     assert.equal(db.rows[0]?.description, "Keep this about text.");
     assert.equal(db.rows[0]?.priceCents, null);
     assert.equal(db.rows[0]?.access, "cohort");
     assert.equal(db.rows[0]?.billing, "application");
     assert.equal(db.rows[0]?.placement, "grid");
-    assert.deepEqual(Object.keys(db.updates[0]?.data ?? {}).sort(), ["presenter", "statusLabel", "tagline", "title"]);
+    assert.deepEqual(Object.keys(db.updates[0]?.data ?? {}).sort(), ["presenter", "tagline", "title"]);
     assert.deepEqual(paths, ["/", "/programs/crs_dj"]);
     assert.equal(db.rows[1]?.title, "DJ Bootcamp");
   });
@@ -323,16 +338,62 @@ describe("save", () => {
     assert.deepEqual(paths, ["/", "/programs/studio-lab"]);
   });
 
-  it("clears a stored price when the price field is emptied", async () => {
+  it("clears a stored price on the program page when the price field is emptied", async () => {
     const db = memory([row({ id: "crs_lab", billing: "once", access: "purchase", priceCents: 5000 })]);
     const result = await commitProgramEdits({
       role: "lead",
-      input: listingInput([text("crs_lab", { price: " " })]),
+      input: {
+        scope: "detail",
+        programs: [text("crs_lab", { description: "About the lab.", price: " " })],
+      },
       store: db.store,
     });
     assert.equal(result.ok, true);
     if (result.ok) assert.deepEqual(result.paths, ["/", "/programs/crs_lab"]);
     assert.equal(db.rows[0]?.priceCents, null);
+  });
+
+  it("does not let the list save a price or a status label", async () => {
+    const db = memory([
+      row({ id: "crs_fb", title: "FB2B", statusLabel: "", billing: "once", access: "cohort", priceCents: 50000 }),
+    ]);
+    const blocked = await commitProgramEdits({
+      role: "lead",
+      input: listingInput([text("crs_fb", { title: "FB2B", statusLabel: "Live", price: "20" })]),
+      store: db.store,
+    });
+    assert.equal(blocked.ok, false);
+    if (!blocked.ok) assert.equal(blocked.fieldErrors["crs_fb.price"], programEditCopy.priceLocked);
+    assert.deepEqual(db.updates, []);
+    assert.equal(db.rows[0]?.priceCents, 50000);
+    assert.equal(db.rows[0]?.statusLabel, "");
+    assert.equal(db.rows[0]?.title, "FB2B");
+  });
+
+  it("does not copy the shared intro price onto a course", async () => {
+    const db = memory([
+      row({
+        id: "crs_intro",
+        slug: "intro-to-sound-design",
+        access: "subscription",
+        billing: "monthly",
+        priceCents: null,
+        statusLabel: "Subscription",
+      }),
+    ]);
+    const blocked = await commitProgramEdits({
+      role: "lead",
+      input: {
+        scope: "detail",
+        programs: [text("crs_intro", { description: "Placeholder. No description yet.", price: "20", statusLabel: "Subscription" })],
+      },
+      store: db.store,
+    });
+    assert.equal(blocked.ok, false);
+    if (!blocked.ok) assert.equal(blocked.fieldErrors["crs_intro.price"], programEditCopy.priceLocked);
+    assert.deepEqual(db.updates, []);
+    assert.equal(db.rows[0]?.priceCents, null);
+    assert.equal(db.rows[0]?.statusLabel, "Subscription");
   });
 
   it("does not write or revalidate when the Lead did not change anything", async () => {
@@ -385,16 +446,17 @@ describe("save", () => {
     assert.equal(db.rows[0]?.title, "DJ Bootcamp");
   });
 
-  it("keeps a blank label and still saves the title", async () => {
+  it("saves a title and leaves a posted status label stored as it was", async () => {
     const db = memory([row({ id: "crs_fb", statusLabel: "", title: "FB2B" })]);
     const result = await commitProgramEdits({
       role: "lead",
-      input: listingInput([text("crs_fb", { title: "FB2B Live", statusLabel: "" })]),
+      input: listingInput([text("crs_fb", { title: "FB2B Live", statusLabel: "Live" })]),
       store: db.store,
     });
     assert.equal(result.ok, true);
     assert.equal(db.rows[0]?.title, "FB2B Live");
     assert.equal(db.rows[0]?.statusLabel, "");
+    assert.equal(Object.hasOwn(db.updates[0]?.data ?? {}, "statusLabel"), false);
   });
 
   it("refuses a hidden plan row on the list and the program page", async () => {
@@ -446,5 +508,35 @@ describe("save", () => {
     if (result.ok) assert.deepEqual(result.paths, ["/", "/headliner"]);
     assert.equal(db.rows[0]?.title, "Headliner Club");
     assert.equal(db.rows[0]?.priceCents, null);
+  });
+});
+
+describe("programs editor does not restore catalog chrome", () => {
+  const listing = readFileSync("app/page.tsx", "utf8");
+  const detail = readFileSync("app/programs/[slug]/page.tsx", "utf8");
+  const editor = readFileSync("components/program-editor.tsx", "utf8");
+  const edit = readFileSync("lib/program-edit.ts", "utf8");
+
+  it("keeps badges, status labels, listing prices, and the subscription line out of read and edit", () => {
+    for (const source of [listing, detail, editor]) {
+      assert.equal(source.includes("ProgramBadges"), false);
+      assert.equal(source.includes("SubscriptionNote"), false);
+      assert.equal(source.includes("programBadges"), false);
+      assert.equal(source.includes("showStatusLabel"), false);
+      assert.equal(source.includes("displayPrice"), false);
+      assert.equal(source.includes("statusLabel"), false);
+      assert.equal(source.includes("One subscription includes"), false);
+    }
+    assert.equal(existsSync("components/program-badges.tsx"), false);
+    assert.equal(listing.includes('field="price"'), false);
+    assert.equal(listing.includes("enrollmentPrice"), false);
+    assert.match(listing, /localReviewEntryDecision/);
+    assert.match(listing, /programGroups/);
+    assert.match(detail, /enrollmentPrice/);
+    assert.match(detail, /planCourseId/);
+    assert.equal(detail.includes("program.plan?"), false);
+    assert.equal(detail.includes("program.plan."), false);
+    assert.match(edit, /export type ProgramTextField = "title" \| "tagline" \| "presenter" \| "description" \| "price"/);
+    assert.equal(edit.includes("statusLabel: program.statusLabel"), false);
   });
 });
