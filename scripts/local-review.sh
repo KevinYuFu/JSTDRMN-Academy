@@ -60,4 +60,14 @@ else
   echo "Using Node $(node -v) from .local-review/cache."
 fi
 
+case " $* " in
+  *" --label "*|*" --stop "*|*" --status "*)
+    if [ ! -f node_modules/tsx/dist/cli.mjs ]; then
+      echo "Install dependencies with npm install before starting a named preview."
+      exit 1
+    fi
+    exec node node_modules/tsx/dist/cli.mjs scripts/local-preview.mjs "$@"
+    ;;
+esac
+
 exec node scripts/local-review.mjs "$@"

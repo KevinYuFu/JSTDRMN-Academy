@@ -76,3 +76,39 @@ Delete the `.local-review` folder to remove the local database, the downloaded N
 The app listens on `127.0.0.1` only. The session cookie is not marked Secure, because this is a local `http` site. Production on Vercel marks the cookie Secure.
 
 The first start seeds the local catalog. After the local Lead exists, later starts do not seed again, so a saved title remains. Deleting `.local-review` starts over.
+
+## One preview per feature
+
+The command above is the original single review. It stays on `127.0.0.1:43123` and database port `55432`. Leave it alone if someone is already using it.
+
+A named preview is a second copy, with its own checkout, app process, and database. It does not use ports `43123`, `43124`, or `55432`. Run it from this branch. You do not add this script to the feature branch.
+
+```bash
+sh scripts/local-review.sh --label editor --branch cursor/program-lead-edit-9d9b
+```
+
+The label is a short name you choose, such as `editor` or `cleanup`. The branch is the feature you want to look at. The first start checks out that commit in `.local-review/previews/editor/src` and creates a database in `.local-review/previews/editor/pgdata`. A later start of the same label keeps that database and does not seed again. It will not switch the label onto a different branch.
+
+When it is ready, the terminal prints a URL like:
+
+`http://editor.preview.localhost:43210/`
+
+That name is the cookie boundary. A browser treats `editor.preview.localhost` and `cleanup.preview.localhost` as different sites, so a session on one is not sent to the other. Different ports on `127.0.0.1` do not do that, so named previews do not use `127.0.0.1` as their page address. You do not need a separate browser profile.
+
+The page shows a bar with the label, branch, and commit. Opening the URL signs in the synthetic Lead for that database only. The feature branch does not have to contain this sign-in code.
+
+Stop one preview without deleting its data:
+
+```bash
+sh scripts/local-review.sh --label editor --stop
+```
+
+Start the same command again to open the same URL and the same database. Control-C in that preview's terminal stops only that preview.
+
+See what is recorded:
+
+```bash
+sh scripts/local-review.sh --status
+```
+
+This was checked on Linux, where `something.preview.localhost` resolves to loopback. macOS is expected to do the same for names that end in `.localhost`, and that still has to be confirmed on a Mac. If the name does not resolve to loopback, the command stops. It does not fall back to `127.0.0.1`.

@@ -5,6 +5,8 @@ import {
   LOCAL_DB_NAME,
   LOCAL_LEAD_EMAIL,
   assertLocalReviewDatabaseUrl,
+  assertPreviewDatabaseUrl,
+  parsePreviewHost,
 } from "../scripts/local-review-guard.mjs";
 
 export const LOCAL_REVIEW_ORIGIN = `http://127.0.0.1:${LOCAL_APP_PORT}`;
@@ -30,6 +32,10 @@ export type LocalReviewEntryInput = {
   secFetchSite: string | null;
   secFetchMode: string | null;
   secFetchDest: string | null;
+  /** Host this process is willing to trust. Omitted means the legacy loopback app. */
+  reviewHost?: string;
+  /** Database name this process owns. Omitted means the legacy review database. */
+  expectedDatabase?: string;
 };
 
 export type LocalReviewEntryDecision = { ok: true } | { ok: false; reason: string };
@@ -42,22 +48,34 @@ export function localReviewEntryDecision(input: LocalReviewEntryInput): LocalRev
   }
   if (input.localReview !== "1") return { ok: false, reason: "flag" };
   if (!isToken(input.localReviewToken)) return { ok: false, reason: "token" };
+  const reviewHost = (input.reviewHost ?? LOCAL_REVIEW_HOST).trim().toLowerCase();
+  const preview = reviewHost === LOCAL_REVIEW_HOST ? null : parsePreviewHost(reviewHost);
+  if (reviewHost !== LOCAL_REVIEW_HOST && !preview) return { ok: false, reason: "host" };
   try {
-    assertLocalReviewDatabaseUrl(input.databaseUrl, "DATABASE_URL");
+    if (preview) assertPreviewDatabaseUrl(input.databaseUrl, preview.label);
+    else assertLocalReviewDatabaseUrl(input.databaseUrl, "DATABASE_URL");
   } catch {
     return { ok: false, reason: "database" };
   }
-  if (!isLocalPgData(input.pgData)) return { ok: false, reason: "pgdata" };
-  if ((input.host ?? "").trim().toLowerCase() !== LOCAL_REVIEW_HOST) return { ok: false, reason: "host" };
-  if (proxyHeader(input.forwardedHost) && input.forwardedHost?.trim().toLowerCase() !== LOCAL_REVIEW_HOST) {
+  if (preview) {
+    if (!isOwnedPreviewPgData(input.pgData, preview.label)) return { ok: false, reason: "pgdata" };
+    if (input.expectedDatabase && input.expectedDatabase !== previewDatabaseNameSafe(preview.label)) {
+      return { ok: false, reason: "database" };
+    }
+  } else if (!isLocalPgData(input.pgData)) {
+    return { ok: false, reason: "pgdata" };
+  }
+  if ((input.host ?? "").trim().toLowerCase() !== reviewHost) return { ok: false, reason: "host" };
+  if (proxyHeader(input.forwardedHost) && input.forwardedHost?.trim().toLowerCase() !== reviewHost) {
     return { ok: false, reason: "forwarded" };
   }
   if (proxyHeader(input.forwardedFor) && !forwardedForIsLoopback(input.forwardedFor)) {
     return { ok: false, reason: "forwarded" };
   }
   if (proxyHeader(input.forwarded) || proxyHeader(input.realIp)) return { ok: false, reason: "forwarded" };
-  if (input.origin && input.origin !== LOCAL_REVIEW_ORIGIN) return { ok: false, reason: "origin" };
-  if (input.referer && !refererIsLocal(input.referer)) return { ok: false, reason: "referer" };
+  const origin = `http://${reviewHost}`;
+  if (input.origin && input.origin !== origin) return { ok: false, reason: "origin" };
+  if (input.referer && !refererMatches(input.referer, origin)) return { ok: false, reason: "referer" };
   if (input.secFetchSite !== "none" && input.secFetchSite !== "same-origin") return { ok: false, reason: "fetch" };
   if (input.secFetchMode !== "navigate") return { ok: false, reason: "fetch" };
   if (input.secFetchDest !== "document") return { ok: false, reason: "fetch" };
@@ -74,6 +92,7 @@ export function localReviewEntryFrom(
     VERCEL?: string;
     VERCEL_ENV?: string;
     VERCEL_URL?: string;
+    LOCAL_REVIEW_HOST?: string;
   },
   headerList: { get(name: string): string | null },
 ): LocalReviewEntryInput {
@@ -96,6 +115,7 @@ export function localReviewEntryFrom(
     secFetchSite: headerList.get("sec-fetch-site"),
     secFetchMode: headerList.get("sec-fetch-mode"),
     secFetchDest: headerList.get("sec-fetch-dest"),
+    reviewHost: env.LOCAL_REVIEW_HOST,
   };
 }
 
@@ -112,8 +132,9 @@ export function localReviewClusterMatches(input: {
   expectedDataDirectory: string;
   metaToken: string | null;
   envToken: string;
+  expectedDatabase?: string;
 }) {
-  if (input.currentDatabase !== LOCAL_DB_NAME) return false;
+  if (input.currentDatabase !== (input.expectedDatabase ?? LOCAL_DB_NAME)) return false;
   const addr = (input.serverAddr ?? "").split("/")[0].trim();
   if (addr !== "127.0.0.1") return false;
   if (!input.dataDirectory) return false;
@@ -136,7 +157,18 @@ function isToken(value: string | undefined | null): value is string {
 function isLocalPgData(value: string | undefined) {
   if (!value || !path.isAbsolute(value)) return false;
   const resolved = path.resolve(value);
-  return resolved.endsWith(path.join(".local-review", "pgdata"));
+  const legacy = path.join(".local-review", "pgdata");
+  return resolved.endsWith(legacy) && !resolved.includes(`${path.sep}previews${path.sep}`);
+}
+
+function isOwnedPreviewPgData(value: string | undefined, label: string) {
+  if (!value || !path.isAbsolute(value)) return false;
+  const resolved = path.resolve(value);
+  return resolved.endsWith(path.join(".local-review", "previews", label, "pgdata"));
+}
+
+function previewDatabaseNameSafe(label: string) {
+  return `jstdrmn_preview_${label.replaceAll("-", "_")}`;
 }
 
 function present(value: string | undefined) {
@@ -152,10 +184,9 @@ function forwardedForIsLoopback(value: string | null) {
   return parts.length > 0 && parts.every((part) => part === "127.0.0.1" || part === "::1");
 }
 
-function refererIsLocal(referer: string) {
+function refererMatches(referer: string, origin: string) {
   try {
-    const url = new URL(referer);
-    return url.origin === LOCAL_REVIEW_ORIGIN;
+    return new URL(referer).origin === origin;
   } catch {
     return false;
   }

@@ -7,7 +7,7 @@ import {
   localReviewEntryDecision,
   type LocalReviewEntryInput,
 } from "./local-review-entry";
-import { LOCAL_LEAD_EMAIL, localDatabaseUrl } from "../scripts/local-review-guard.mjs";
+import { LOCAL_LEAD_EMAIL, localDatabaseUrl, previewDatabaseUrl } from "../scripts/local-review-guard.mjs";
 
 const token = "a".repeat(64);
 const pgData = "/Users/reviewer/JSTDRMN-Academy/.local-review/pgdata";
@@ -113,10 +113,36 @@ describe("local review entry", () => {
     const auth = readFileSync("lib/auth.ts", "utf8");
     assert.equal(auth.includes("LOCAL_REVIEW"), false);
     assert.equal(auth.includes("local-lead@example.com"), false);
+    assert.match(auth, /const COOKIE = "jstdrmn_session"/);
     const listing = readFileSync("app/page.tsx", "utf8");
     assert.match(listing, /localReviewEntryDecision/);
     assert.equal(listing.includes("ProgramEditor"), false);
     assert.equal(listing.includes("program-edit"), false);
     assert.equal(existsSync("lib/program-edit.ts"), false);
+  });
+
+  it("allows one named preview host and refuses another preview's database or a shared 127.0.0.1 port", () => {
+    const preview = allowed({
+      reviewHost: "alpha.preview.localhost:43210",
+      host: "alpha.preview.localhost:43210",
+      databaseUrl: previewDatabaseUrl("db-secret-not-logged", "alpha", 56010),
+      pgData: "/Users/reviewer/JSTDRMN-Academy/.local-review/previews/alpha/pgdata",
+      expectedDatabase: "jstdrmn_preview_alpha",
+    });
+    assert.deepEqual(localReviewEntryDecision(preview), { ok: true });
+    assert.equal(localReviewEntryDecision({ ...preview, host: "beta.preview.localhost:43211" }).ok, false);
+    assert.equal(localReviewEntryDecision({ ...preview, host: "127.0.0.1:43210" }).ok, false);
+    assert.equal(localReviewEntryDecision({ ...preview, reviewHost: "alpha.preview.localhost:43123" }).ok, false);
+    assert.equal(
+      localReviewEntryDecision({
+        ...preview,
+        databaseUrl: previewDatabaseUrl("db-secret-not-logged", "beta", 56011),
+      }).ok,
+      false,
+    );
+    assert.equal(localReviewEntryDecision({ ...preview, databaseUrl: localDatabaseUrl("db-secret-not-logged") }).ok, false);
+    assert.equal(localReviewEntryDecision({ ...preview, forwardedHost: "evil.example" }).ok, false);
+    assert.equal(localReviewEntryDecision({ ...preview, nodeEnv: "production" }).ok, false);
+    assert.equal(localReviewEntryDecision(allowed({ pgData: preview.pgData })).ok, false);
   });
 });
