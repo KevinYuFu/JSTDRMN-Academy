@@ -13,10 +13,12 @@
   font-weight: 700;
   line-height: 1.15;
   margin: 0 0 8px;
+  padding-top: 20px;
 }
 
 @media (min-width: 768px) {
   :global(.program-section) .heading {
     font-size: 34px;
+    padding-top: 32px;
   }
 }
