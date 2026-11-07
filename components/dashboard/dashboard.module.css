@@ -1,0 +1,305 @@
+.shell {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.picker {
+  display: none;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.tab {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tab[aria-selected="true"] {
+  color: #fff;
+  font-weight: 600;
+  background: rgba(168, 55, 230, 0.28);
+  box-shadow: inset 0 0 0 1px #a837e6;
+}
+
+.tab:focus-visible {
+  outline: 2px solid #fff2cc;
+  outline-offset: 2px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #1e1e1e;
+}
+
+.table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: top;
+}
+
+.table th {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.future {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+}
+
+.modalFields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.modalFields label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.readonly {
+  color: #fff;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.checkHit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileTools {
+  display: none;
+}
+
+.dialogHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialogTitleWrap {
+  min-width: 0;
+  outline: none;
+}
+
+.close {
+  display: none;
+}
+
+.value {
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 720px) {
+  .tabs {
+    display: none;
+  }
+
+  .picker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .picker select {
+    min-height: 44px;
+    width: 100%;
+    font: inherit;
+    font-size: 16px;
+    color: #fff;
+    background: #1e1e1e;
+    border: 1px solid rgba(168, 55, 230, 0.7);
+    border-radius: 10px;
+    padding: 0 12px;
+  }
+
+  .picker select:focus-visible {
+    outline: 2px solid #fff2cc;
+    outline-offset: 2px;
+  }
+
+  .tableWrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .table {
+    min-width: 0;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    display: block;
+    margin: 0 0 12px;
+    padding: 4px 12px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 3px solid #a837e6;
+    border-radius: 8px;
+    background: #1e1e1e;
+  }
+
+  .table td {
+    display: block;
+    width: auto;
+    padding: 8px 0;
+    border: 0;
+  }
+
+  .table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .table td.links {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .links a,
+  .edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  .checkHit {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .mobileTools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+  }
+
+  .personDialog.personDialog {
+    position: fixed !important;
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    transform: none !important;
+    translate: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+  }
+
+  .close:focus-visible,
+  .edit:focus-visible {
+    outline: 2px solid #fff2cc;
+    outline-offset: 2px;
+  }
+
+  .dialogBody {
+    overflow-wrap: anywhere;
+  }
+
+  .actions {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 0 4px;
+    background: #1e1e1e;
+  }
+
+  .actions :global(button),
+  .personDialog :global(.pill) {
+    min-height: 44px;
+  }
+
+  .modalFields input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
