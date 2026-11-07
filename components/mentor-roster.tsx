@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { requestSession } from "@/app/actions";
 import { mentorInitial } from "@/lib/mentors";
+import { MentorCardFace } from "./mentor-card-face";
+import styles from "./mentor-draft-review.module.css";
 import { Icon } from "./icons";
 import { Button } from "./ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
@@ -54,19 +56,23 @@ export function MentorRoster({
   return (
     <>
       {mentors.length === 0 ? <p className="note">Mentors will be listed here.</p> : null}
-      <div className="mentor-grid">
+      <div className={`${styles.grid} ${styles.liveGrid}`}>
         {mentors.map((mentor) => (
-          <button key={mentor.id} type="button" className="mentor-card" onClick={() => openMentor(mentor)}>
-            <Avatar mentor={mentor} />
-            <span className="mentor-name">{mentor.name}</span>
-            {mentor.roleLine ? <span className="mentor-role">{mentor.roleLine}</span> : null}
-            <span className="mentor-tags">
-              {mentor.placeholder ? <span className="tag">Coming soon</span> : null}
-              {mentor.genres.map((genre) => (
-                <span key={genre} className="tag">{genre}</span>
-              ))}
-            </span>
-          </button>
+          <article key={mentor.id} className={`${styles.card} ${styles.liveCard}`} data-mentor={mentor.slug}>
+            <button type="button" className={styles.cardButton} onClick={() => openMentor(mentor)}>
+              <span className="sr-only">Open {mentor.name}&apos;s profile</span>
+            </button>
+            <MentorCardFace
+              name={mentor.name}
+              photoSrc={mentor.photoUrl}
+              photoAlt=""
+              bio={mentor.bio}
+              specialties={mentor.specialties}
+              genres={mentor.genres}
+              roleLine={mentor.roleLine}
+              placeholder={mentor.placeholder}
+            />
+          </article>
         ))}
       </div>
       <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) close(); }}>

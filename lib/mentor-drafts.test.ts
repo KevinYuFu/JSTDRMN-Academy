@@ -115,11 +115,15 @@ describe("mentor draft profiles", () => {
     assert.equal(view.includes("Yu Fu"), false);
     assert.equal(page.includes("MentorDraftReview"), true);
     assert.equal(view.includes("MENTOR_DRAFT_RATE_LABEL"), true);
-    assert.equal(view.includes("Teaching topics"), true);
-    assert.equal(view.includes("Genres"), true);
+    assert.equal(view.includes('rateNote="provisional"'), true);
+    const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
+    assert.equal(face.includes("Teaching topics"), true);
+    assert.equal(face.includes("Genres"), true);
     assert.equal(view.includes("mentor.specialties"), true);
     assert.equal(view.includes("mentor.genres"), true);
+    assert.equal(view.includes("MentorCardFace"), true);
     assert.equal(view.includes("teachingTopics"), false);
+    assert.equal(face.includes("teachingTopics"), false);
     const schema = readFileSync(path.join(root, "prisma/schema.prisma"), "utf8");
     const mentorModel = schema.slice(schema.indexOf("model Mentor {"), schema.indexOf("model Track {"));
     assert.match(mentorModel, /specialties\s+String/);
@@ -137,6 +141,7 @@ describe("mentor draft profiles", () => {
     const files = [
       "app/mentor-drafts/page.tsx",
       "components/mentor-draft-review.tsx",
+      "components/mentor-card-face.tsx",
       "components/mentor-draft-review.module.css",
     ];
     for (const file of files) {
@@ -147,7 +152,29 @@ describe("mentor draft profiles", () => {
       assert.equal(source.includes("Editable for review"), false, file);
     }
     const view = readFileSync(path.join(root, "components/mentor-draft-review.tsx"), "utf8");
-    assert.match(view, /<p className=\{styles\.bio\}>\{mentor\.bio\}<\/p>/);
+    const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
+    assert.match(view, /bio=\{mentor\.bio\}/);
+    assert.match(face, /<p className=\{styles\.bio\}>\{bio\}<\/p>/);
     assert.equal(view.includes("MentorForm"), false);
+    assert.equal(face.includes("MentorForm"), false);
+  });
+
+  it("keeps draft-only chrome off the live mentor cards", () => {
+    const roster = readFileSync(path.join(root, "components/mentor-roster.tsx"), "utf8");
+    const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
+    assert.equal(roster.includes("MentorCardFace"), true);
+    assert.equal(roster.includes("mentor-draft-review.module.css"), true);
+    assert.equal(roster.includes("requestSession"), true);
+    assert.equal(roster.includes("Coming soon"), true);
+    assert.equal(roster.includes("placeholder"), true);
+    assert.equal(roster.includes("mentor-drafts"), false);
+    assert.equal(roster.includes("MENTOR_DRAFT"), false);
+    assert.equal(roster.includes("Instagram"), false);
+    assert.equal(roster.includes("provisional"), false);
+    assert.equal(roster.includes("rateLabel"), false);
+    assert.equal(roster.includes("CAD"), false);
+    assert.equal(face.includes("CAD"), false);
+    assert.equal(face.includes("Instagram"), false);
+    assert.match(face, /rateLabel \? <span className=\{styles\.price\}>/);
   });
 });

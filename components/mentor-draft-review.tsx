@@ -1,4 +1,5 @@
 import { MENTOR_DRAFT_RATE_LABEL, MENTOR_DRAFTS } from "@/lib/mentor-drafts";
+import { MentorCardFace } from "./mentor-card-face";
 import styles from "./mentor-draft-review.module.css";
 
 export function MentorDraftReview() {
@@ -22,27 +23,16 @@ export function MentorDraftReview() {
         <div className={styles.grid}>
           {MENTOR_DRAFTS.map((mentor) => (
             <article key={mentor.slug} className={styles.card} data-mentor={mentor.slug}>
-              <div className={styles.top}>
-                {/* Fixed 96px / 88px crop from the reviewed HTML. next/image wraps the box. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className={styles.photo}
-                  src={mentor.portraitSrc}
-                  alt={mentor.portraitAlt}
-                  width={96}
-                  height={96}
-                />
-                <div className={styles.head}>
-                  <h2 className={styles.name}>{mentor.name}</h2>
-                  <div>
-                    <span className={styles.price}>{MENTOR_DRAFT_RATE_LABEL}</span>
-                    <span className={styles.provisional}>provisional</span>
-                  </div>
-                </div>
-              </div>
-              <p className={styles.bio}>{mentor.bio}</p>
-              <TagGroup label="Teaching topics" items={mentor.specialties} tone="topic" />
-              <TagGroup label="Genres" items={mentor.genres} tone="genre" />
+              <MentorCardFace
+                name={mentor.name}
+                photoSrc={mentor.portraitSrc}
+                photoAlt={mentor.portraitAlt}
+                rateLabel={MENTOR_DRAFT_RATE_LABEL}
+                rateNote="provisional"
+                bio={mentor.bio}
+                specialties={mentor.specialties}
+                genres={mentor.genres}
+              />
               <p className={styles.meta}>
                 <strong>Instagram:</strong>{" "}
                 <a className={styles.link} href={mentor.instagramUrl} target="_blank" rel="noopener noreferrer">
@@ -59,28 +49,5 @@ export function MentorDraftReview() {
         </div>
       </div>
     </main>
-  );
-}
-
-function TagGroup({
-  label,
-  items,
-  tone,
-}: {
-  label: string;
-  items: readonly string[];
-  tone: "topic" | "genre";
-}) {
-  return (
-    <div className={styles.group}>
-      <h3 className={styles.groupLabel}>{label}</h3>
-      <ul className={styles.tags}>
-        {items.map((item) => (
-          <li key={item} className={tone === "topic" ? styles.topic : styles.genre}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
