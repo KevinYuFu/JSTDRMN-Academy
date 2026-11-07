@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
 import { academyNav, type AcademyNavItem } from "@/lib/nav";
+import { DesktopNav } from "./desktop-nav";
 import { MobileNav } from "./mobile-nav";
 import { UserMenu } from "./user-menu";
 
@@ -19,18 +20,15 @@ export async function AppHeader({ active }: { active?: string | null }) {
         <Image src="/logo.png" alt="JSTDRMN" width={156} height={34} priority className="logo" />
         <span className="tag">Academy</span>
       </Link>
-      <nav className="nav-desktop" aria-label="Academy">
-        {links.map((link) => (
-          <Link
-            key={link.key}
-            href={link.href}
-            className={itemClass(link, active)}
-            aria-current={link.key === active ? "page" : undefined}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+      <DesktopNav
+        links={links.map((link) => ({
+          key: link.key,
+          href: link.href,
+          label: link.label,
+          className: itemClass(link, active),
+          current: link.key === active,
+        }))}
+      />
       {user ? (
         <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} />
       ) : (

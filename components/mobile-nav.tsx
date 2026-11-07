@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { logout } from "@/app/actions";
 import { Icon } from "./icons";
+import { NavPending } from "./nav-pending";
 
 export function MobileNav({
   links,
@@ -12,6 +13,7 @@ export function MobileNav({
   signedIn: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
   return (
     <>
       <button
@@ -35,11 +37,19 @@ export function MobileNav({
               aria-current={link.current ? "page" : undefined}
               target={link.external ? "_blank" : undefined}
               rel={link.external ? "noreferrer" : undefined}
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+                if (link.external || link.href === window.location.pathname) return;
+                setPendingHref(link.href);
+              }}
             >
               {link.label}
             </a>
           );
         })}
+        {links
+          .filter((link) => link.href === pendingHref)
+          .map((link) => <NavPending key={link.href} label={link.label} />)}
         {signedIn ? (
           <form action={logout}>
             <button type="submit">Log out</button>
