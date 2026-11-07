@@ -25,25 +25,35 @@ sh scripts/local-review.sh
 
 The first run downloads Node if needed, then Postgres, then app packages. That needs the internet once. Later runs reuse `.local-review`.
 
-When it is ready it prints:
+When it is ready, open:
 
-- App: `http://127.0.0.1:43123`
-- Login: `http://127.0.0.1:43123/login`
-- Email: `local-lead@example.com`
+`http://127.0.0.1:43123/`
 
-Open `.local-review/lead-login.txt` for the password. That file stays on your computer. It is not in git. Do not paste it into chat.
+That page signs you in as the synthetic local Lead. You do not type a password. The session is the same cookie a password login creates. It is only for `local-lead@example.com` in this local database.
+
+Password login is still there if you want it: `http://127.0.0.1:43123/login`. The password is in `.local-review/lead-login.txt`. That file stays on your computer. It is not in git. Do not paste it into chat.
+
+## Update a copy that is already running
+
+Do not delete `.local-review`. Your saved programs stay in that folder.
+
+1. Press Control-C in the terminal that is running the app.
+2. In the repo:
+
+```bash
+git pull origin cursor/program-lead-edit-9d9b
+sh scripts/local-review.sh
+```
+
+3. Open `http://127.0.0.1:43123/` again.
 
 ## Sign in and edit
 
-1. Open `http://127.0.0.1:43123/login`.
-2. Skip Continue with Google. It is off for this command.
-3. Use **Log in with password**.
-4. Email `local-lead@example.com`. Password from `.local-review/lead-login.txt`.
-5. Open Programs at `http://127.0.0.1:43123/`.
-6. Click **Edit**. Change a title. Click **Save**.
-7. Reload the page. Open the same address in a new tab. The new title should still be there.
+1. Open `http://127.0.0.1:43123/`.
+2. Click **Edit**. Change a title. Click **Save**.
+3. Reload the page. Open the same address in a new tab. The new title should still be there.
 
-A Student signup on this same local app does not see Edit.
+A Student signup on this same local app does not see Edit. Log out first if you want to test that account. Opening `/` while logged out returns you to the synthetic Lead.
 
 ## Stop and remove
 

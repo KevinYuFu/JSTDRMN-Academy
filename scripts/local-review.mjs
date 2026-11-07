@@ -45,6 +45,11 @@ if (typeof process.getuid === "function" && process.getuid() === 0) {
   process.exit(1);
 }
 
+if (process.env.NODE_ENV && process.env.NODE_ENV !== "development") {
+  console.error("Local review only runs when NODE_ENV is unset or development.");
+  process.exit(1);
+}
+
 assertInheritedDatabaseEnv(process.env.DATABASE_URL, "DATABASE_URL");
 assertInheritedDatabaseEnv(process.env.DATABASE_URL_UNPOOLED, "DATABASE_URL_UNPOOLED");
 
@@ -58,9 +63,15 @@ assertLocalReviewDatabaseUrl(databaseUrl, "DATABASE_URL_UNPOOLED");
 process.env.DATABASE_URL = databaseUrl;
 process.env.DATABASE_URL_UNPOOLED = databaseUrl;
 process.env.PATH = `${path.join(root, "node_modules", ".bin")}${path.delimiter}${process.env.PATH ?? ""}`;
+process.env.NODE_ENV = "development";
 process.env.APP_URL = `http://127.0.0.1:${LOCAL_APP_PORT}`;
 process.env.SEED_ADMIN_EMAIL = lead.email;
 process.env.SEED_ADMIN_PASSWORD = lead.password;
+process.env.LOCAL_REVIEW = "1";
+process.env.LOCAL_REVIEW_PGDATA = pgDir;
+process.env.VERCEL = "";
+process.env.VERCEL_ENV = "";
+process.env.VERCEL_URL = "";
 for (const name of clearedForThisProcess) process.env[name] = "";
 
 await ensureAppDependencies();
@@ -118,15 +129,17 @@ if (await leadExists(postgres)) {
   console.log("Seeding the local database.");
   await run(process.execPath, [prismaCli(), "db", "seed"]);
 }
+const bootstrapToken = randomBytes(32).toString("hex");
+await bindLocalReview(postgres, bootstrapToken);
+process.env.LOCAL_REVIEW_TOKEN = bootstrapToken;
 
 console.log("");
 console.log("Local review is running. This is not production.");
-console.log(`App:   http://127.0.0.1:${LOCAL_APP_PORT}`);
-console.log(`Login: http://127.0.0.1:${LOCAL_APP_PORT}/login`);
-console.log(`Email: ${lead.email}`);
-console.log("Password: open .local-review/lead-login.txt on this computer.");
+console.log(`Open: http://127.0.0.1:${LOCAL_APP_PORT}/`);
+console.log("That page signs in the synthetic local Lead. No password to type.");
+console.log("Password login is still at /login. The password file is .local-review/lead-login.txt.");
 console.log("The database files are in .local-review/pgdata.");
-console.log("Stop with Control-C. Delete .local-review to remove this local copy.");
+console.log("Stop with Control-C. Do not delete .local-review if you want to keep edits.");
 console.log("");
 
 const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
@@ -146,6 +159,25 @@ async function leadExists(cluster) {
   try {
     const found = await client.query('SELECT id FROM "User" WHERE email = $1', [LOCAL_LEAD_EMAIL]);
     return found.rowCount > 0;
+  } finally {
+    await client.end();
+  }
+}
+
+async function bindLocalReview(cluster, token) {
+  const client = cluster.getPgClient(LOCAL_DB_NAME, "127.0.0.1");
+  await client.connect();
+  try {
+    const dir = await client.query("SHOW data_directory");
+    const actual = path.resolve(String(dir.rows[0]?.data_directory ?? ""));
+    if (actual !== path.resolve(pgDir)) {
+      throw new Error("Local Postgres data directory does not match .local-review/pgdata.");
+    }
+    await client.query(
+      `INSERT INTO "Meta" ("key", "value") VALUES ('localReviewBootstrap', $1)
+       ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value"`,
+      [token],
+    );
   } finally {
     await client.end();
   }
