@@ -28,5 +28,6 @@ describe("program badges", () => {
     assert.equal(displayPrice(paid, plan), "$20/month");
     assert.equal(displayPrice(free, plan), null);
     assert.equal(displayPrice(unpublished, plan), null);
+    assert.equal(displayPrice({ access: "cohort", priceCents: 50000, billing: "once" }, null), "$500");
   });
 });

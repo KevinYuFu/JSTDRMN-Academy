@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { ProgramBadges, SubscriptionNote } from "@/components/program-badges";
+import { VideoUnavailable } from "@/components/video-unavailable";
 import { hubspotApplyUrl } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
@@ -85,15 +86,12 @@ export default async function ProgramPage({
               </Link>
             ) : null}
           </div>
+          {hasLessons ? null : <VideoUnavailable />}
           {program.access === "open" ? (
-            <p className="note">
-              Free for any signed-in student.{hasLessons ? "" : " Lessons are not posted yet."}
-            </p>
+            <p className="note">Free for any signed-in student.</p>
           ) : null}
           {program.access === "subscription" && program.plan ? (
-            <p className="note">
-              {hasLessons ? "" : "Lessons are not posted yet. "}Checkout for this subscription is not open yet.
-            </p>
+            <p className="note">Checkout for this subscription is not open yet.</p>
           ) : null}
           {program.access === "cohort" && program.billing === "application" ? (
             <p className="note">

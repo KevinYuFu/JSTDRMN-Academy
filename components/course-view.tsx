@@ -9,6 +9,7 @@ import { Textarea } from "./ui/textarea";
 import { Icon } from "./icons";
 import { SlidesCard } from "./slides-card";
 import { VideoPlayer } from "./video-player";
+import { VideoUnavailable } from "./video-unavailable";
 
 type CourseData = Awaited<ReturnType<typeof openCourse>>;
 
@@ -101,7 +102,7 @@ export function CourseView({
           <Link href="/dashboard">My Courses</Link> › <b>{data.course.title}</b>
         </div>
         <h1 className="page-title">{data.course.title}</h1>
-        <p className="note" style={{ marginTop: 12 }}>No lessons in this portal yet.</p>
+        <VideoUnavailable />
       </main>
     );
   }

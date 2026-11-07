@@ -125,7 +125,6 @@ export const productionBootcamp = {
   planCourseId: null,
 } satisfies Prisma.CourseUncheckedCreateInput;
 
-// TODO: ASH FB2B price amount is 500 dollars, but per month vs one-time is not confirmed. Leave priceCents null and do not display 500.
 export const fb2b = {
   id: "crs_fb2b",
   slug: "fb2b",
@@ -134,9 +133,9 @@ export const fb2b = {
   description: "From Bedroom to Banger.",
   kind: "bootcamp",
   access: "cohort",
-  priceCents: null,
-  billing: "monthly",
-  statusLabel: "Price not confirmed",
+  priceCents: 50000,
+  billing: "once",
+  statusLabel: "",
   hubspotUrl: null,
   panel: "ash",
   sort: 5,

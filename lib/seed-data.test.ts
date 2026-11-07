@@ -96,8 +96,8 @@ describe("postgres seed catalog", () => {
     assert.equal(fb2b.tagline, "From Bedroom to Banger");
     assert.equal(fb2b.delivery, "live");
     assert.equal(fb2b.setting, "");
-    assert.equal(fb2b.priceCents, null);
-    assert.equal(fb2b.billing, "monthly");
+    assert.equal(fb2b.priceCents, 50000);
+    assert.equal(fb2b.billing, "once");
     assert.deepEqual(
       catalogCourses.map((course) => course.id),
       [introPass.id, ...introCourses.map((course) => course.id), djBootcamp.id, productionBootcamp.id, fb2b.id],
@@ -122,7 +122,7 @@ describe("postgres seed catalog", () => {
     assert.equal(source.includes("boothlights"), false);
     assert.equal(source.includes("cohort6"), false);
     assert.match(source, /SEED_ADMIN_PASSWORD/);
-    assert.match(source, /per month vs one-time is not confirmed/);
+    assert.equal(source.includes("per month vs one-time is not confirmed"), false);
     assert.equal(/course\.upsert|lesson\.upsert|cohort\.upsert|event\.upsert|eventType\.upsert/.test(source), false);
     assert.equal(/\.delete\(/.test(source), false);
     assert.match(source, /findUnique/);
@@ -158,6 +158,7 @@ describe("postgres migrations on deploy", () => {
       "20261105220000_map_staff_roles_to_lead",
       "20261106120000_skill_tree",
       "20261106233000_course_delivery",
+      "20261107003000_fb2b_once_price",
     ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
@@ -188,6 +189,12 @@ describe("postgres migrations on deploy", () => {
     assert.match(deliverySql, /'in_person'/);
     assert.equal(/drop table/i.test(deliverySql), false);
     assert.equal(/delete from/i.test(deliverySql), false);
+    const fb2bSql = readFileSync(join(migrationRoot, "20261107003000_fb2b_once_price", "migration.sql"), "utf8");
+    assert.match(fb2bSql, /"priceCents" = 50000/);
+    assert.match(fb2bSql, /'once'/);
+    assert.match(fb2bSql, /crs_fb2b/);
+    assert.equal(/drop table/i.test(fb2bSql), false);
+    assert.equal(/delete from/i.test(fb2bSql), false);
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });
