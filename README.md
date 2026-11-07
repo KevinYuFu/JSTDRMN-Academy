@@ -18,8 +18,6 @@ npm run dev
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-To try a change on your own computer without a hosted database, use [docs/LOCAL-REVIEW.md](docs/LOCAL-REVIEW.md). That command downloads Node and Postgres into `.local-review` when they are not already installed. It does not use `.env`.
-
 `npm run dev` applies committed migrations, then starts Next.js. It does not seed.
 
 ```bash
