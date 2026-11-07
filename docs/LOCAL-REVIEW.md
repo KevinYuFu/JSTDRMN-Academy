@@ -95,7 +95,7 @@ When it is ready, the terminal prints a URL like:
 
 That name is the cookie boundary. A browser treats `editor.preview.localhost` and `cleanup.preview.localhost` as different sites, so a session on one is not sent to the other. Different ports on `127.0.0.1` do not do that, so named previews do not use `127.0.0.1` as their page address. You do not need a separate browser profile.
 
-The page shows a bar with the label, branch, and commit. Opening the URL signs in the synthetic Lead for that database only. The feature branch does not have to contain this sign-in code.
+The page shows a bar with the label, branch, and commit. The bar is added after the window finishes loading, and it sits beside the page body rather than inside the React tree, so the first menu clicks stay client navigations. Opening the URL signs in the synthetic Lead for that database only. The feature branch does not have to contain this sign-in code.
 
 Stop one preview without deleting its data:
 

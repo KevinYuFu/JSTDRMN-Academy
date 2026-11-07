@@ -422,7 +422,7 @@ async function forward(req, res, options) {
       const chunks = [];
       up.on("data", (chunk) => chunks.push(chunk));
       up.on("end", () => {
-        const html = Buffer.concat(chunks).toString("utf8").replace(/<body([^>]*)>/i, `<body$1>${banner(options)}`);
+        const html = injectPreviewLabel(Buffer.concat(chunks).toString("utf8"), options);
         const responseHeaders = { ...up.headers };
         delete responseHeaders["content-length"];
         delete responseHeaders["content-encoding"];
@@ -437,11 +437,16 @@ async function forward(req, res, options) {
   req.pipe(upstream);
 }
 
-function banner(options) {
+export function previewLabelScript(options) {
   const label = JSON.stringify(String(options.label));
   const branch = JSON.stringify(String(options.branch));
   const commit = JSON.stringify(String(options.commit).slice(0, 7));
-  return `<script data-local-preview-script>(function(){function place(){if(document.querySelector("[data-local-preview]"))return;var bar=document.createElement("div");bar.setAttribute("data-local-preview","1");bar.textContent="Preview "+${label}+" · "+${branch}+" · "+${commit};bar.style.cssText="position:sticky;top:0;z-index:50;background:#241433;color:#fff2cc;font:14px/1.4 sans-serif;padding:8px 16px;border-bottom:1px solid rgba(255,242,204,.4)";document.body.prepend(bar);}place();new MutationObserver(place).observe(document.documentElement,{childList:true,subtree:true});})();</script>`;
+  return `<script data-local-preview-boot>(function(){var label=${label},branch=${branch},commit=${commit};function place(){if(!document.body||document.getElementById("local-preview-label"))return;var bar=document.createElement("div");bar.id="local-preview-label";bar.setAttribute("data-local-preview","1");bar.textContent="Preview "+label+" \\u00b7 "+branch+" \\u00b7 "+commit;bar.style.cssText="position:sticky;top:0;z-index:50;background:#241433;color:#fff2cc;font:14px/1.4 sans-serif;padding:8px 16px;border-bottom:1px solid rgba(255,242,204,.4)";document.documentElement.insertBefore(bar,document.body);}if(document.readyState==="complete")place();else window.addEventListener("load",place,{once:true});})();</script>`;
+}
+
+export function injectPreviewLabel(html, options) {
+  if (!/<\/head>/i.test(html)) return html;
+  return html.replace(/<\/head>/i, `${previewLabelScript(options)}</head>`);
 }
 
 function sessionCookie(token) {

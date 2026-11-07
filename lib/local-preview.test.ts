@@ -8,7 +8,9 @@ import {
   blockedPreviewPort,
   classifyLoopbackLookup,
   lookupFailureIsFatal,
+  injectPreviewLabel,
   parsePreviewArgs,
+  previewLabelScript,
   remoteBranchRequest,
   resolvePreviewCommit,
 } from "../scripts/local-preview.mjs";
@@ -52,7 +54,7 @@ describe("named preview addresses", () => {
     const remote = path.join(dir, "remote.git");
     const seed = path.join(dir, "seed");
     const clone = path.join(dir, "clone");
-    const git = (args, cwd) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    const git = (args: string[], cwd?: string) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
     try {
       git(["init", "--bare", remote]);
       git(["clone", remote, seed]);
@@ -80,6 +82,20 @@ describe("named preview addresses", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it("adds the preview label outside the React body and only after load", () => {
+    const html = "<html><head><title>Academy</title></head><body><h1>Programs</h1></body></html>";
+    const next = injectPreviewLabel(html, { label: "editor", branch: "cursor/program-lead-edit-9d9b", commit: "98bcc2386516" });
+    assert.match(next, /<\/head>/);
+    assert.match(next, /<body><h1>Programs<\/h1><\/body>/);
+    const script = previewLabelScript({ label: "editor", branch: "cursor/program-lead-edit-9d9b", commit: "98bcc2386516" });
+    assert.equal(script.includes("MutationObserver"), false);
+    assert.equal(script.includes("body.prepend"), false);
+    assert.match(script, /addEventListener\("load"/);
+    assert.match(script, /documentElement\.insertBefore/);
+    assert.match(script, /98bcc23/);
+    assert.equal(injectPreviewLabel("<html><body>x</body></html>", { label: "a", branch: "b", commit: "c" }).includes("local-preview"), false);
   });
 
   it("requires a label and a branch, and does not invent one", () => {
