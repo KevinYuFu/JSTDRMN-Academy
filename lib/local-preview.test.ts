@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { blockedPreviewPort, parsePreviewArgs } from "../scripts/local-preview.mjs";
+import { blockedPreviewPort, classifyLoopbackLookup, lookupFailureIsFatal, parsePreviewArgs } from "../scripts/local-preview.mjs";
 import {
   choosePort,
   isPreviewAppPort,
@@ -24,6 +24,16 @@ describe("named preview addresses", () => {
     assert.equal(previewDatabaseName("lead-edit"), "jstdrmn_preview_lead_edit");
     assert.equal(choosePort(43200, 43202, (port: number) => port === 43200), 43201);
     assert.equal(choosePort(43123, 43124, (port: number) => blockedPreviewPort(port)), null);
+  });
+
+  it("treats a missing OS name as non-fatal and a public address as fatal", () => {
+    assert.equal(lookupFailureIsFatal("ENOTFOUND"), false);
+    assert.equal(lookupFailureIsFatal("EAI_AGAIN"), false);
+    assert.equal(lookupFailureIsFatal("ENODATA"), false);
+    assert.equal(lookupFailureIsFatal("ECONNREFUSED"), true);
+    assert.equal(classifyLoopbackLookup([]), "absent");
+    assert.equal(classifyLoopbackLookup(["127.0.0.1", "::1"]), "loopback");
+    assert.equal(classifyLoopbackLookup(["203.0.113.5"]), "public");
   });
 
   it("requires a label and a branch, and does not invent one", () => {

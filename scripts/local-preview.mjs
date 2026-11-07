@@ -122,7 +122,7 @@ async function startPreview(dir, label, branch) {
 
   const host = previewPublicHost(label, appPort);
   const hostname = host.slice(0, host.lastIndexOf(":"));
-  await assertLoopbackName(hostname);
+  await noteOsResolver(hostname);
 
   const src = path.join(dir, "src");
   const commit = await ensureWorktree(src, branch);
@@ -694,13 +694,36 @@ export function portIsFree(port) {
   });
 }
 
-async function assertLoopbackName(hostname) {
-  const looked = await dns.lookup(hostname, { all: true });
-  const loopback = looked.some((item) => item.address === "127.0.0.1" || item.address === "::1");
-  if (!loopback) {
-    throw new Error(
-      `${hostname} did not resolve to loopback. Named previews do not fall back to 127.0.0.1, because that host shares cookies across ports.`,
-    );
+export function classifyLoopbackLookup(addresses) {
+  if (!addresses || addresses.length === 0) return "absent";
+  return addresses.every((address) => address === "127.0.0.1" || address === "::1") ? "loopback" : "public";
+}
+
+export function lookupFailureIsFatal(code) {
+  return code !== "ENOTFOUND" && code !== "EAI_AGAIN" && code !== "ENODATA";
+}
+
+async function noteOsResolver(hostname) {
+  try {
+    const looked = await dns.lookup(hostname, { all: true });
+    const kind = classifyLoopbackLookup(looked.map((item) => item.address));
+    if (kind === "public") {
+      throw new Error(
+        `${hostname} resolved outside loopback. Refusing so a browser that trusts the OS resolver cannot be sent off this computer.`,
+      );
+    }
+    if (kind === "loopback") console.log(`${hostname} resolves to loopback in the OS resolver.`);
+    return;
+  } catch (error) {
+    if (error instanceof Error && /outside loopback/.test(error.message)) throw error;
+    const code = error && typeof error === "object" ? error.code : "";
+    if (!lookupFailureIsFatal(code)) {
+      console.log(
+        `${hostname} is not in this computer's OS resolver (${code}). The preview still listens on 127.0.0.1 and ::1. Chrome and Firefox open names ending in .localhost without that lookup. The page address stays on that name so previews do not share 127.0.0.1 cookies.`,
+      );
+      return;
+    }
+    throw error;
   }
 }
 

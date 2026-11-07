@@ -111,4 +111,16 @@ See what is recorded:
 sh scripts/local-review.sh --status
 ```
 
-This was checked on Linux, where `something.preview.localhost` resolves to loopback. macOS is expected to do the same for names that end in `.localhost`, and that still has to be confirmed on a Mac. If the name does not resolve to loopback, the command stops. It does not fall back to `127.0.0.1`.
+The server listens on `127.0.0.1` and `::1`. The page address stays `http://editor.preview.localhost:<port>/`. A missing OS name is not a reason to stop, and the command does not switch that address to `127.0.0.1`.
+
+Node on macOS can report `getaddrinfo ENOTFOUND editor.preview.localhost`. That check uses the OS resolver. Chrome and Firefox treat a name that ends in `.localhost` as loopback themselves and do not need that OS result. Safari may still use the OS resolver. This has not been confirmed on a Mac.
+
+A read-only check, with no checkout and no app process:
+
+```bash
+node -e 'require("dns").lookup("editor.preview.localhost", {all:true}, (err, addrs) => console.log(err && err.code, addrs))'
+```
+
+`ENOTFOUND` there is expected on macOS. It does not mean the preview must fall back to `127.0.0.1`.
+
+If the OS lookup returns a public address, the preview command refuses to start. That is the check that stays. `ENOTFOUND` does not trip it.
