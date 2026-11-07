@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { savePrograms } from "@/app/program-edit-actions";
 import { AppHeader } from "@/components/app-header";
+import { ProgramEditor } from "@/components/program-editor";
 import { formatCad, prices, programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { canEditPrograms, listingEditItems } from "@/lib/program-edit";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +18,9 @@ export default async function HomePage() {
   const cards = programs.filter((program) => program.placement === "grid" && program.access !== "request");
   const subscribeHref = user ? "/checkout?product=headliner" : "/signup?next=/checkout?product=headliner";
   const headlinerPrice = formatCad(prices.headlinerMonthlyCents, "month");
-
-  return (
-    <div className="programs-page">
-      <AppHeader active="programs" />
+  const editItems = listingEditItems(banner ?? null, cards);
+  const programsBody = (
+    <>
       {banner ? (
         <section className="headliner-banner" aria-label={banner.title}>
           <div>
@@ -55,6 +57,19 @@ export default async function HomePage() {
           })}
         </div>
       </section>
+    </>
+  );
+
+  return (
+    <div className="programs-page">
+      <AppHeader active="programs" />
+      {editItems.length > 0 && canEditPrograms(user?.role) ? (
+        <ProgramEditor scope="listing" align="page" items={editItems} save={savePrograms}>
+          {programsBody}
+        </ProgramEditor>
+      ) : (
+        programsBody
+      )}
     </div>
   );
 }

@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { savePrograms } from "@/app/program-edit-actions";
 import { AppHeader } from "@/components/app-header";
+import { ProgramEditor } from "@/components/program-editor";
 import { hubspotApplyUrl, programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { isStaff } from "@/lib/entitlements";
+import { canEditPrograms, detailEditItem } from "@/lib/program-edit";
 
 export const dynamic = "force-dynamic";
 
@@ -33,15 +36,8 @@ export default async function ProgramPage({
     : `/signup?next=${encodeURIComponent(`/checkout?product=program&slug=${program.slug}`)}`;
   const applyHref = hubspotApplyUrl(program.hubspotUrl);
   const hasLessons = program.lessons.length > 0;
-
-  return (
-    <>
-      <AppHeader active="programs" />
-      <main className="shell">
-        <div className="crumbs">
-          <Link href="/">Programs</Link> › <b>{program.title}</b>
-        </div>
-        {query.unlocked ? <div className="banner">You’re in. This program is on your account.</div> : null}
+  const showEditor = canEditPrograms(user?.role);
+  const article = (
         <article className="program-detail">
           <div className="tag">{program.statusLabel}</div>
           {program.presenter ? <p className="presenter">{program.presenter} presents</p> : null}
@@ -83,6 +79,23 @@ export default async function ProgramPage({
             </ul>
           ) : null}
         </article>
+  );
+
+  return (
+    <>
+      <AppHeader active="programs" />
+      <main className="shell">
+        <div className="crumbs">
+          <Link href="/">Programs</Link> › <b>{program.title}</b>
+        </div>
+        {query.unlocked ? <div className="banner">You’re in. This program is on your account.</div> : null}
+        {showEditor ? (
+          <ProgramEditor scope="detail" align="shell" items={[detailEditItem(program)]} save={savePrograms}>
+            {article}
+          </ProgramEditor>
+        ) : (
+          article
+        )}
       </main>
     </>
   );
