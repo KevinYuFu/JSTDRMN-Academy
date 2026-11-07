@@ -1,10 +1,14 @@
+.group {
+  margin-top: 22px;
+}
+
 .group + .group {
-  margin-top: 28px;
+  margin-top: 36px;
 }
 
 .heading {
   font-family: var(--font-unbounded), sans-serif;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
-  margin: 18px 0 0;
+  margin: 0 0 6px;
 }

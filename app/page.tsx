@@ -38,8 +38,7 @@ export default async function HomePage() {
           </div>
         </section>
       ) : null}
-      <section className="program-section" aria-label="Programs">
-        <h2>Programs</h2>
+      <section id="programs" className="program-section" aria-label="Programs">
         <p className="note">Group classes and self-paced lessons. Price shows only when that program has one.</p>
         {programGroups(cards).map((group) => (
           <ProgramGroup key={group.title} title={group.title}>
