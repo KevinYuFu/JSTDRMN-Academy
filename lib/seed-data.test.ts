@@ -2,13 +2,29 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { djBootcamp, djCohorts, djLessons, sampleEvents, sampleEventTypes, seedAdmin } from "../prisma/seed-data";
+import {
+  catalogCourses,
+  djBootcamp,
+  djCohorts,
+  djLessons,
+  fb2b,
+  introCourses,
+  introPass,
+  productionBootcamp,
+  sampleEvents,
+  sampleEventTypes,
+  seedAdmin,
+} from "../prisma/seed-data";
 
 describe("postgres seed catalog", () => {
   it("matches the DJ Bootcamp mock modules", () => {
     assert.equal(djBootcamp.slug, "dj-bootcamp");
     assert.equal(djBootcamp.kind, "bootcamp");
     assert.equal(djBootcamp.access, "cohort");
+    assert.equal(djBootcamp.delivery, "live");
+    assert.equal(djBootcamp.setting, "in_person");
+    assert.equal(djBootcamp.billing, "monthly");
+    assert.equal(djBootcamp.priceCents, null);
     assert.deepEqual(
       djCohorts.map((cohort) => cohort.slug),
       ["cohort-5", "cohort-6"],
@@ -33,6 +49,59 @@ describe("postgres seed catalog", () => {
       ["les_set"],
     );
     assert.ok(djLessons.every((lesson) => lesson.videoProvider === "mock" && lesson.videoUrl === `mock://${lesson.id}`));
+    assert.deepEqual(
+      [...new Set(djLessons.map((lesson) => lesson.courseId))],
+      [djBootcamp.id],
+    );
+  });
+
+  it("adds the intro subscription and the live classes without inventing prices or lessons", () => {
+    assert.equal(introPass.priceCents, 2000);
+    assert.equal(introPass.billing, "monthly");
+    assert.equal(introPass.placement, "plan");
+    assert.equal(introPass.access, "subscription");
+    assert.deepEqual(
+      introCourses.map((course) => course.title),
+      [
+        "Intro to EDM",
+        "Intro to Ableton",
+        "Intro to Sound Design",
+        "Intro to Songwriting and Arrangement",
+        "Intro to Mixing and Mastering",
+        "Intro to AV",
+        "Live Setup",
+      ],
+    );
+    assert.deepEqual(
+      introCourses.filter((course) => course.access === "open").map((course) => course.slug),
+      ["intro-to-edm", "intro-to-ableton"],
+    );
+    assert.ok(
+      introCourses.every(
+        (course) =>
+          course.delivery === "on_demand" &&
+          course.planCourseId === introPass.id &&
+          course.priceCents == null &&
+          course.description === "Placeholder. No description yet.",
+      ),
+    );
+    assert.equal(productionBootcamp.slug, "production-bootcamp");
+    assert.equal(productionBootcamp.delivery, "live");
+    assert.equal(productionBootcamp.setting, "in_person");
+    assert.equal(productionBootcamp.priceCents, null);
+    assert.equal(productionBootcamp.billing, "monthly");
+    assert.match(productionBootcamp.description, /Lynx Music/);
+    assert.equal(fb2b.id, "crs_fb2b");
+    assert.equal(fb2b.presenter, "Ash F");
+    assert.equal(fb2b.tagline, "From Bedroom to Banger");
+    assert.equal(fb2b.delivery, "live");
+    assert.equal(fb2b.setting, "");
+    assert.equal(fb2b.priceCents, 50000);
+    assert.equal(fb2b.billing, "once");
+    assert.deepEqual(
+      catalogCourses.map((course) => course.id),
+      [introPass.id, ...introCourses.map((course) => course.id), djBootcamp.id, productionBootcamp.id, fb2b.id],
+    );
   });
 
   it("includes the sample events and Yu, with no password in source", () => {
@@ -53,6 +122,10 @@ describe("postgres seed catalog", () => {
     assert.equal(source.includes("boothlights"), false);
     assert.equal(source.includes("cohort6"), false);
     assert.match(source, /SEED_ADMIN_PASSWORD/);
+    assert.equal(source.includes("per month vs one-time is not confirmed"), false);
+    assert.equal(/course\.upsert|lesson\.upsert|cohort\.upsert|event\.upsert|eventType\.upsert/.test(source), false);
+    assert.equal(/\.delete\(/.test(source), false);
+    assert.match(source, /findUnique/);
   });
 });
 
@@ -84,6 +157,8 @@ describe("postgres migrations on deploy", () => {
       "20261105200000_google_login",
       "20261105220000_map_staff_roles_to_lead",
       "20261106120000_skill_tree",
+      "20261106233000_course_delivery",
+      "20261107003000_fb2b_once_price",
     ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
@@ -105,6 +180,21 @@ describe("postgres migrations on deploy", () => {
     assert.match(skillSql, /JSONB/);
     assert.equal(/drop table/i.test(skillSql), false);
     assert.equal(/delete from/i.test(skillSql), false);
+    const deliverySql = readFileSync(join(migrationRoot, "20261106233000_course_delivery", "migration.sql"), "utf8");
+    assert.match(deliverySql, /"delivery"/);
+    assert.match(deliverySql, /"setting"/);
+    assert.match(deliverySql, /"planCourseId"/);
+    assert.match(deliverySql, /'on_demand'/);
+    assert.match(deliverySql, /'live'/);
+    assert.match(deliverySql, /'in_person'/);
+    assert.equal(/drop table/i.test(deliverySql), false);
+    assert.equal(/delete from/i.test(deliverySql), false);
+    const fb2bSql = readFileSync(join(migrationRoot, "20261107003000_fb2b_once_price", "migration.sql"), "utf8");
+    assert.match(fb2bSql, /"priceCents" = 50000/);
+    assert.match(fb2bSql, /'once'/);
+    assert.match(fb2bSql, /crs_fb2b/);
+    assert.equal(/drop table/i.test(fb2bSql), false);
+    assert.equal(/delete from/i.test(fb2bSql), false);
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });

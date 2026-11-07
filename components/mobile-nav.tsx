@@ -8,21 +8,38 @@ export function MobileNav({
   links,
   signedIn,
 }: {
-  links: { href: string; label: string; external?: boolean }[];
+  links: { href: string; label: string; external?: boolean; variant?: "staff"; current?: boolean }[];
   signedIn: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button className="menu-btn" type="button" aria-label="Open menu" onClick={() => setOpen((value) => !value)}>
+      <button
+        className="menu-btn"
+        type="button"
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        aria-controls="academy-menu"
+        onClick={() => setOpen((value) => !value)}
+      >
         <Icon name={open ? "close" : "menu"} />
       </button>
-      <div className={open ? "mobile-panel open" : "mobile-panel"}>
-        {links.map((link) => (
-          <a key={link.href + link.label} href={link.href} target={link.external ? "_blank" : undefined} rel={link.external ? "noreferrer" : undefined}>
-            {link.label}
-          </a>
-        ))}
+      <nav id="academy-menu" className={open ? "mobile-panel open" : "mobile-panel"} aria-label="Academy" aria-hidden={open ? undefined : true}>
+        {links.map((link) => {
+          const names = [link.current ? "active" : "", link.variant === "staff" ? "nav-staff" : ""].filter(Boolean);
+          return (
+            <a
+              key={link.href + link.label}
+              href={link.href}
+              className={names.length > 0 ? names.join(" ") : undefined}
+              aria-current={link.current ? "page" : undefined}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noreferrer" : undefined}
+            >
+              {link.label}
+            </a>
+          );
+        })}
         {signedIn ? (
           <form action={logout}>
             <button type="submit">Log out</button>
@@ -33,7 +50,7 @@ export function MobileNav({
             <a href="/signup">Sign up</a>
           </>
         )}
-      </div>
+      </nav>
     </>
   );
 }

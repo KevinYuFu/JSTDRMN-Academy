@@ -1,0 +1,24 @@
+.group {
+  margin-top: 22px;
+}
+
+.group + .group {
+  margin-top: 36px;
+}
+
+/* Beats .program-section h2 (22px / 600) without editing globals.css. */
+:global(.program-section) .heading {
+  font-family: var(--font-unbounded), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 8px;
+  padding-top: 20px;
+}
+
+@media (min-width: 768px) {
+  :global(.program-section) .heading {
+    font-size: 34px;
+    padding-top: 32px;
+  }
+}
