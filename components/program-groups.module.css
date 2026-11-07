@@ -22,3 +22,22 @@
     padding-top: 32px;
   }
 }
+
+/* Ten pixels more than the shared 18px 18px 16px card padding. Grid and 240px height stay shared. */
+.group :global(.program-card) {
+  padding: 28px 28px 26px;
+}
+
+/* Smaller painted pill. Text stays 14px. The clear edge is the hit area, not a taller button. */
+.group :global(.program-card) :global(.pill) {
+  position: relative;
+  margin-top: 26px;
+  padding: 2px 8px;
+  font-size: 14px;
+}
+
+.group :global(.program-card) :global(.pill)::after {
+  content: "";
+  position: absolute;
+  inset: -8px -6px;
+}
