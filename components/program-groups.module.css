@@ -22,3 +22,29 @@
     padding-top: 32px;
   }
 }
+
+/* Wider than the shared 260px grid, and not locked to a 240px square. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.grid :global(.program-card) {
+  min-height: 0;
+  padding: 14px 18px 12px;
+}
+
+.grid :global(.program-card h3) {
+  margin-top: 0;
+}
+
+/* Learn More only. Shared .pill on nav and other pages stays 8px 20px. */
+.grid :global(.program-card) :global(.pill) {
+  margin-top: 10px;
+  padding: 4px 14px;
+  font-size: 14px;
+  line-height: 1.25;
+  min-height: 40px;
+}
