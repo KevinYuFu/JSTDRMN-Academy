@@ -9,8 +9,7 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
-    "test": "tsx --test lib/*.test.ts",
-    "review:local": "sh scripts/local-review.sh"
+    "test": "tsx --test lib/*.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

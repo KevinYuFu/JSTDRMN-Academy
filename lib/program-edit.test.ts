@@ -530,7 +530,9 @@ describe("programs editor does not restore catalog chrome", () => {
     assert.equal(existsSync("components/program-badges.tsx"), false);
     assert.equal(listing.includes('field="price"'), false);
     assert.equal(listing.includes("enrollmentPrice"), false);
-    assert.match(listing, /localReviewEntryDecision/);
+    assert.match(listing, /ProgramEditor/);
+    assert.equal(listing.includes("localReviewEntryDecision"), false);
+    assert.equal(listing.includes("local-review"), false);
     assert.match(listing, /programGroups/);
     assert.match(detail, /enrollmentPrice/);
     assert.match(detail, /planCourseId/);
