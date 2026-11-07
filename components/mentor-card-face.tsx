@@ -19,20 +19,28 @@ export function MentorCardFace({
   genres,
   roleLine,
   placeholder = false,
+  instagramUrl,
+  instagramLabel,
 }: {
   name: string;
   photoSrc: string | null;
   photoAlt: string;
   rateLabel?: string | null;
-  /** Short note beside a price, used by the draft review. */
+  /** Short note beside a price. The draft uses "provisional". */
   rateNote?: string | null;
   bio: string;
   specialties: readonly string[];
   genres: readonly string[];
   roleLine?: string | null;
   placeholder?: boolean;
+  instagramUrl?: string | null;
+  instagramLabel?: string | null;
 }) {
-  const showMeta = Boolean(rateLabel || rateNote || placeholder);
+  const price = textOrNull(rateLabel);
+  const note = textOrNull(rateNote);
+  const instagramHref = textOrNull(instagramUrl);
+  const instagramText = textOrNull(instagramLabel);
+  const showMeta = Boolean(price || note || placeholder);
   return (
     <>
       <div className={styles.top}>
@@ -50,8 +58,8 @@ export function MentorCardFace({
           {roleLine ? <p className={styles.role}>{roleLine}</p> : null}
           {showMeta ? (
             <div>
-              {rateLabel ? <span className={styles.price}>{rateLabel}</span> : null}
-              {rateNote ? <span className={styles.provisional}>{rateNote}</span> : null}
+              {price ? <span className={styles.price}>{price}</span> : null}
+              {note ? <span className={styles.provisional}>{note}</span> : null}
               {placeholder ? <span className={styles.soon}>Coming soon</span> : null}
             </div>
           ) : null}
@@ -60,8 +68,21 @@ export function MentorCardFace({
       <p className={styles.bio}>{bio}</p>
       <TagGroup label="Teaching topics" items={specialties} tone="topic" />
       <TagGroup label="Genres" items={genres} tone="genre" />
+      {instagramHref && instagramText ? (
+        <p className={styles.meta}>
+          <strong>Instagram:</strong>{" "}
+          <a className={styles.link} href={instagramHref} target="_blank" rel="noopener noreferrer">
+            {instagramText}
+          </a>
+        </p>
+      ) : null}
     </>
   );
+}
+
+function textOrNull(value: string | null | undefined) {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function TagGroup({

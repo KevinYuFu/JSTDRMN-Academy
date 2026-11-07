@@ -170,12 +170,23 @@
   font-weight: 700;
 }
 
-.liveGrid {
-  margin-top: 1.25rem;
+.grid.liveGrid {
+  margin-top: 1.5rem;
+  justify-content: center;
+  grid-template-columns: minmax(0, 438px);
+  gap: 1.5rem 2.5rem;
+}
+
+@media (min-width: 700px) {
+  .grid.liveGrid {
+    grid-template-columns: 438px 438px;
+  }
 }
 
 .liveCard {
   position: relative;
+  width: 100%;
+  max-width: 438px;
 }
 
 .cardButton {
@@ -190,10 +201,6 @@
   border-radius: 12px;
   background: transparent;
   cursor: pointer;
-}
-
-.liveCard:hover {
-  border-color: #4c1d95;
 }
 
 .cardButton:focus-visible {
@@ -262,6 +269,8 @@
 }
 
 .link {
+  position: relative;
+  z-index: 2;
   color: #c084fc;
   text-decoration: underline;
 }

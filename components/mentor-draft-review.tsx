@@ -32,13 +32,9 @@ export function MentorDraftReview() {
                 bio={mentor.bio}
                 specialties={mentor.specialties}
                 genres={mentor.genres}
+                instagramUrl={mentor.instagramUrl}
+                instagramLabel={mentor.instagramLabel}
               />
-              <p className={styles.meta}>
-                <strong>Instagram:</strong>{" "}
-                <a className={styles.link} href={mentor.instagramUrl} target="_blank" rel="noopener noreferrer">
-                  {mentor.instagramLabel}
-                </a>
-              </p>
             </article>
           ))}
         </div>

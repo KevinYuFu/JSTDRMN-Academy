@@ -23,6 +23,9 @@ export type MentorView = {
   specialties: string[];
   genres: string[];
   placeholder: boolean;
+  rateLabel: string | null;
+  instagramUrl: string | null;
+  instagramLabel: string | null;
 };
 
 export function MentorRoster({
@@ -71,6 +74,10 @@ export function MentorRoster({
               genres={mentor.genres}
               roleLine={mentor.roleLine}
               placeholder={mentor.placeholder}
+              rateLabel={mentor.rateLabel}
+              rateNote={mentor.rateLabel?.trim() ? "provisional" : null}
+              instagramUrl={mentor.instagramUrl}
+              instagramLabel={mentor.instagramLabel}
             />
           </article>
         ))}
