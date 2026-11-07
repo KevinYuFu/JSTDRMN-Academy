@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { savePersonName } from "@/app/people-actions";
 import { RoleControls } from "@/components/role-controls";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import styles from "./dashboard.module.css";
+
+function softWrap(value: string) {
+  return value.replace(/([@.])/g, "$1\u200b");
+}
 
 export type PersonRow = {
   id: string;
@@ -28,6 +32,7 @@ export function PeopleTable({
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
   const open = people.find((person) => person.id === openId) ?? null;
   const allSelected = people.length > 0 && selected.length === people.length;
 
@@ -43,17 +48,30 @@ export function PeopleTable({
           ? "Select rows for a later bulk export or bulk change. Those actions are not built, and nothing is sent."
           : `${selected.length} selected. Bulk export and bulk changes are not built, so this selection changes nothing.`}
       </p>
+      <div className={styles.mobileTools}>
+        <label className={styles.checkHit}>
+          <input
+            type="checkbox"
+            checked={allSelected}
+            aria-label="Select all accounts"
+            onChange={(event) => setSelected(event.target.checked ? people.map((person) => person.id) : [])}
+          />
+        </label>
+        <span className={styles.future}>Select all</span>
+      </div>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
               <th>
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  aria-label="Select all accounts"
-                  onChange={(event) => setSelected(event.target.checked ? people.map((person) => person.id) : [])}
-                />
+                <label className={styles.checkHit}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    aria-label="Select all accounts"
+                    onChange={(event) => setSelected(event.target.checked ? people.map((person) => person.id) : [])}
+                  />
+                </label>
               </th>
               <th>Name</th>
               <th>Email</th>
@@ -65,18 +83,20 @@ export function PeopleTable({
             {people.map((person) => (
               <tr key={person.id}>
                 <td>
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(person.id)}
-                    aria-label={`Select ${person.name}`}
-                    onChange={(event) => toggle(person.id, event.target.checked)}
-                  />
+                  <label className={styles.checkHit}>
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(person.id)}
+                      aria-label={`Select ${person.name}`}
+                      onChange={(event) => toggle(person.id, event.target.checked)}
+                    />
+                  </label>
                 </td>
-                <td>{person.name}</td>
-                <td>{person.email}</td>
-                <td>{person.roleLabel}</td>
+                <td data-label="Name"><span className={styles.value}>{person.name}</span></td>
+                <td data-label="Email"><span className={styles.value}>{softWrap(person.email)}</span></td>
+                <td data-label="Role"><span className={styles.value}>{person.roleLabel}</span></td>
                 <td>
-                  <button className="pill pill-black" type="button" onClick={() => setOpenId(person.id)}>
+                  <button className={`pill pill-black ${styles.edit}`} type="button" onClick={() => setOpenId(person.id)}>
                     Edit
                   </button>
                 </td>
@@ -86,15 +106,26 @@ export function PeopleTable({
         </table>
       </div>
       <Dialog open={open !== null} onOpenChange={(next) => { if (!next) setOpenId(null); }}>
-        <DialogContent>
+        <DialogContent
+          className={styles.personDialog}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            titleRef.current?.focus();
+          }}
+        >
           {open ? (
             <>
-              <DialogTitle>{open.name}</DialogTitle>
+              <div className={styles.dialogHead}>
+                <div ref={titleRef} tabIndex={-1} className={styles.dialogTitleWrap}>
+                  <DialogTitle>{open.name}</DialogTitle>
+                </div>
+                <DialogClose className={styles.close} aria-label="Close">Close</DialogClose>
+              </div>
               <DialogDescription>
                 The table stays read-only. Email, Discord, password, and sessions are not edited here.
                 {open.roleLabel === "Lead Instructor" ? " Lead Instructor is the label for the stored Lead role." : ""}
               </DialogDescription>
-              <p className="note" style={{ marginTop: 8 }}>{open.email}</p>
+              <p className={`note ${styles.value}`} style={{ marginTop: 8 }}>{softWrap(open.email)}</p>
               <p className="note">Discord: {open.discord}</p>
               <p className="note">Role: {open.roleLabel}</p>
               {lead ? (

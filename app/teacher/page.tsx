@@ -112,12 +112,12 @@ export default async function TeacherPage({
                     <tbody>
                       {courses.map((course) => (
                         <tr key={course.id}>
-                          <td>{course.title}</td>
-                          <td>{course.statusLabel}</td>
-                          <td>{course.access}</td>
-                          <td>{course.delivery || "—"}</td>
-                          <td>{course.lessons.length}</td>
-                          <td className={styles.links}>
+                          <td data-label="Title"><span className={styles.value}>{course.title}</span></td>
+                          <td data-label="Status"><span className={styles.value}>{course.statusLabel}</span></td>
+                          <td data-label="Access"><span className={styles.value}>{course.access}</span></td>
+                          <td data-label="Delivery"><span className={styles.value}>{course.delivery || "—"}</span></td>
+                          <td data-label="Lessons"><span className={styles.value}>{course.lessons.length}</span></td>
+                          <td className={styles.links} data-label="Links">
                             <Link className="pill pill-black" href={`/teacher/courses/${course.slug}`}>Lessons</Link>
                             <Link className="pill pill-purple" href={coursePageHref(course)}>Page</Link>
                           </td>
@@ -142,10 +142,10 @@ export default async function TeacherPage({
                     <tbody>
                       {cohorts.map((cohort) => (
                         <tr key={cohort.id}>
-                          <td>{cohort.course.title}</td>
-                          <td>{cohort.name}</td>
-                          <td>{cohort.startsLabel}</td>
-                          <td>
+                          <td data-label="Program"><span className={styles.value}>{cohort.course.title}</span></td>
+                          <td data-label="Cohort"><span className={styles.value}>{cohort.name}</span></td>
+                          <td data-label="When"><span className={styles.value}>{cohort.startsLabel}</span></td>
+                          <td className={styles.links} data-label="Portal">
                             <Link className="pill pill-purple" href={`/bootcamps/${cohort.course.slug}/${cohort.slug}`}>Open</Link>
                           </td>
                         </tr>
