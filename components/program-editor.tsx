@@ -19,7 +19,6 @@ import {
 import styles from "./program-editor.module.css";
 
 const FIELD_LABEL: Record<ProgramTextField, string> = {
-  statusLabel: "Label",
   presenter: "Presenter",
   title: "Title",
   tagline: "Short line",
@@ -28,7 +27,6 @@ const FIELD_LABEL: Record<ProgramTextField, string> = {
 };
 
 const FIELD_MAX: Record<Exclude<ProgramTextField, "price">, number> = {
-  statusLabel: 40,
   presenter: 60,
   title: 80,
   tagline: 180,
@@ -302,7 +300,7 @@ function InPlaceField({
       {multiline ? (
         <GrowingText field={field} {...shared} />
       ) : (
-        <input {...shared} className={field === "statusLabel" ? styles.plain : styles.box} />
+        <input {...shared} className={styles.box} />
       )}
     </>
   );
@@ -337,7 +335,6 @@ function readText(draft: ProgramEditItem, field: ProgramTextField, children: Rea
   }
   if (field === "title") return draft.title;
   if (field === "tagline") return draft.tagline;
-  if (field === "statusLabel") return draft.statusLabel;
   if (field === "presenter") return draft.presenter;
   if (field === "description") return draft.description;
   return children;

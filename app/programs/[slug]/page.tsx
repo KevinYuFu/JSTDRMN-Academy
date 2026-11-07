@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { savePrograms } from "@/app/program-edit-actions";
 import { AppHeader } from "@/components/app-header";
-import { ProgramBadges, SubscriptionNote } from "@/components/program-badges";
 import { EditableProgramText, ProgramEditor } from "@/components/program-editor";
 import { VideoUnavailable } from "@/components/video-unavailable";
 import { hubspotApplyUrl } from "@/lib/config";
@@ -10,7 +9,7 @@ import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { isStaff } from "@/lib/entitlements";
 import { canEditPrograms, detailEditItem } from "@/lib/program-edit";
-import { displayPrice, programBadges, showStatusLabel } from "@/lib/program-labels";
+import { enrollmentPrice } from "@/lib/program-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +27,6 @@ export default async function ProgramPage({
       include: {
         cohorts: { orderBy: { sort: "asc" } },
         lessons: { select: { id: true } },
-        plan: true,
       },
     }),
     getUser(),
@@ -38,9 +36,7 @@ export default async function ProgramPage({
     if (program?.access === "request") redirect("/private-sessions");
     notFound();
   }
-  const badges = programBadges(program);
-  const price = displayPrice(program, program.plan);
-  const status = showStatusLabel(program.statusLabel, badges);
+  const price = enrollmentPrice(program);
   const payable =
     program.priceCents != null &&
     (program.access === "purchase" || program.access === "subscription") &&
@@ -53,12 +49,15 @@ export default async function ProgramPage({
   const lead = canEditPrograms(user?.role);
   const article = (
     <article className="program-detail">
-      <ProgramBadges delivery={program.delivery} setting={program.setting} access={program.access} />
-      {status ? (
-        <EditableProgramText lead={lead} programId={program.id} field="statusLabel" as="div" className="tag">
-          {program.statusLabel}
-        </EditableProgramText>
-      ) : null}
+      <EditableProgramText lead={lead} programId={program.id} field="title" as="h1" className="page-title">
+        {program.title}
+      </EditableProgramText>
+      <EditableProgramText lead={lead} programId={program.id} field="tagline" as="p" className="lead">
+        {program.tagline}
+      </EditableProgramText>
+      <EditableProgramText lead={lead} programId={program.id} field="description" as="p" className="body">
+        {program.description}
+      </EditableProgramText>
       {program.presenter ? (
         <p className="presenter">
           <EditableProgramText lead={lead} programId={program.id} field="presenter">
@@ -67,21 +66,11 @@ export default async function ProgramPage({
           {" presents"}
         </p>
       ) : null}
-      <EditableProgramText lead={lead} programId={program.id} field="title" as="h1" className="page-title">
-        {program.title}
-      </EditableProgramText>
-      <EditableProgramText lead={lead} programId={program.id} field="tagline" as="p" className="lead">
-        {program.tagline}
-      </EditableProgramText>
       {price ? (
         <EditableProgramText lead={lead} programId={program.id} field="price" as="p" className="amount">
           {price} CAD
         </EditableProgramText>
       ) : null}
-      {program.access === "subscription" && program.plan ? <SubscriptionNote /> : null}
-      <EditableProgramText lead={lead} programId={program.id} field="description" as="p" className="body">
-        {program.description}
-      </EditableProgramText>
       <div className="detail-actions">
         {program.billing === "application" ? (
           <a className="pill pill-purple" href={applyHref} target="_blank" rel="noreferrer">
@@ -105,7 +94,7 @@ export default async function ProgramPage({
       </div>
       {hasLessons ? null : <VideoUnavailable />}
       {program.access === "open" ? <p className="note">Free for any signed-in student.</p> : null}
-      {program.access === "subscription" && program.plan ? (
+      {program.access === "subscription" && program.planCourseId ? (
         <p className="note">Checkout for this subscription is not open yet.</p>
       ) : null}
       {program.access === "cohort" && program.billing === "application" ? (
@@ -114,7 +103,7 @@ export default async function ProgramPage({
         </p>
       ) : null}
       {program.access === "cohort" && program.billing === "monthly" && program.priceCents == null ? (
-        <p className="note">{program.setting ? "Price not published." : "Price not confirmed."}</p>
+        <p className="note">Price not published.</p>
       ) : null}
       {program.cohorts.length > 0 && user && isStaff(user.role) ? (
         <ul className="cohort-list">
