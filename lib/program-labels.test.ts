@@ -1,6 +1,25 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { displayPrice, programBadges, showStatusLabel } from "./program-labels";
+import { displayPrice, programBadges, programGroups, showStatusLabel } from "./program-labels";
+
+describe("program groups", () => {
+  it("puts live courses above on-demand courses and keeps the given order", () => {
+    const groups = programGroups([
+      { delivery: "on_demand", title: "Intro to EDM" },
+      { delivery: "live", title: "DJ Bootcamp" },
+      { delivery: "live", title: "Production Bootcamp" },
+      { delivery: "on_demand", title: "Intro to Ableton" },
+      { delivery: "live", title: "FB2B" },
+    ]);
+    assert.deepEqual(
+      groups.map((group) => [group.title, group.items.map((item) => item.title)]),
+      [
+        ["Live Programs", ["DJ Bootcamp", "Production Bootcamp", "FB2B"]],
+        ["Offline Programs", ["Intro to EDM", "Intro to Ableton"]],
+      ],
+    );
+  });
+});
 
 describe("program badges", () => {
   it("labels free on-demand, the shared subscription, and live classes", () => {

@@ -6,6 +6,14 @@ export type PricedCourse = {
   billing: string;
 };
 
+/** Live courses first, then on-demand courses. Order inside each group stays as given. */
+export function programGroups<T extends { delivery: string }>(cards: T[]) {
+  return [
+    { title: "Live Programs", items: cards.filter((card) => card.delivery === "live") },
+    { title: "Offline Programs", items: cards.filter((card) => card.delivery === "on_demand") },
+  ].filter((group) => group.items.length > 0);
+}
+
 /** Words shown on a program card. Live classes do not pick up the Subscription badge. */
 export function programBadges(course: { delivery: string; setting: string; access: string }) {
   const badges: string[] = [];

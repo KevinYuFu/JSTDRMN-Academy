@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { ProgramBadges, SubscriptionNote } from "@/components/program-badges";
+import { ProgramGroup } from "@/components/program-groups";
 import { formatCad, prices } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
-import { displayPrice, showStatusLabel, programBadges } from "@/lib/program-labels";
+import { displayPrice, programBadges, programGroups, showStatusLabel } from "@/lib/program-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -40,28 +41,30 @@ export default async function HomePage() {
       <section className="program-section" aria-label="Programs">
         <h2>Programs</h2>
         <p className="note">Group classes and self-paced lessons. Price shows only when that program has one.</p>
-        <div className="program-grid">
-          {cards.map((program) => {
-            const badges = programBadges(program);
-            const plan = program.planCourseId ? plans.get(program.planCourseId) ?? null : null;
-            const price = displayPrice(program, plan);
-            const status = showStatusLabel(program.statusLabel, badges);
-            return (
-              <article key={program.id} className={`program-card${program.special ? " special" : ""}`}>
-                <ProgramBadges delivery={program.delivery} setting={program.setting} access={program.access} />
-                {status ? <div className="tag">{program.statusLabel}</div> : null}
-                {program.presenter ? <div className="presenter">{program.presenter} presents</div> : null}
-                <h3>{program.title}</h3>
-                <p>{program.tagline}</p>
-                {price ? <div className="amount">{price} CAD</div> : null}
-                {program.access === "subscription" && plan ? <SubscriptionNote /> : null}
-                <Link className="pill pill-purple" href={`/programs/${program.slug}`}>
-                  Learn More
-                </Link>
-              </article>
-            );
-          })}
-        </div>
+        {programGroups(cards).map((group) => (
+          <ProgramGroup key={group.title} title={group.title}>
+            {group.items.map((program) => {
+              const badges = programBadges(program);
+              const plan = program.planCourseId ? plans.get(program.planCourseId) ?? null : null;
+              const price = displayPrice(program, plan);
+              const status = showStatusLabel(program.statusLabel, badges);
+              return (
+                <article key={program.id} className={`program-card${program.special ? " special" : ""}`}>
+                  <ProgramBadges delivery={program.delivery} setting={program.setting} access={program.access} />
+                  {status ? <div className="tag">{program.statusLabel}</div> : null}
+                  {program.presenter ? <div className="presenter">{program.presenter} presents</div> : null}
+                  <h3>{program.title}</h3>
+                  <p>{program.tagline}</p>
+                  {price ? <div className="amount">{price} CAD</div> : null}
+                  {program.access === "subscription" && plan ? <SubscriptionNote /> : null}
+                  <Link className="pill pill-purple" href={`/programs/${program.slug}`}>
+                    Learn More
+                  </Link>
+                </article>
+              );
+            })}
+          </ProgramGroup>
+        ))}
       </section>
     </div>
   );
