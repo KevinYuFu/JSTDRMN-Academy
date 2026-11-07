@@ -34,6 +34,9 @@ yarn-error.log*
 .env
 .env*.local
 
+# Local review app: downloaded Node, Postgres binaries, data, and the login file.
+/.local-review/
+
 # sqlite
 /prisma/dev.db
 /prisma/dev.db-journal
