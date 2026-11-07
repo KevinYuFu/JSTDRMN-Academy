@@ -34,7 +34,7 @@ yarn-error.log*
 .env
 .env*.local
 
-# Local Postgres files. Not part of this branch's review scripts.
+# Local review app: downloaded Node, Postgres binaries, data, and the login file.
 /.local-review/
 
 # sqlite
