@@ -62,3 +62,26 @@ describe("programs catalog copy", () => {
     assert.equal(detail.includes("program.plan."), false);
   });
 });
+
+describe("catalog card whitespace", () => {
+  const groups = readFileSync("components/program-groups.tsx", "utf8");
+  const scoped = readFileSync("components/program-groups.module.css", "utf8");
+  const globalCss = readFileSync("app/globals.css", "utf8");
+
+  it("keeps the prior grid and adds interior space around a smaller Learn More pill", () => {
+    assert.match(groups, /program-grid/);
+    assert.equal(groups.includes("styles.grid"), false);
+    assert.equal(scoped.includes("minmax(320px"), false);
+    assert.equal(scoped.includes("min-height: 0"), false);
+    assert.equal(scoped.includes("min-height: 40px"), false);
+    assert.match(scoped, /padding: 28px 28px 26px;/);
+    assert.match(scoped, /margin-top: 26px;/);
+    assert.match(scoped, /padding: 2px 8px;/);
+    assert.match(scoped, /font-size: 14px;/);
+    assert.match(globalCss, /\.pill \{[^}]*padding: 8px 20px;/);
+    assert.match(globalCss, /minmax\(260px, 1fr\)/);
+    assert.match(globalCss, /\.program-card \{[^}]*padding: 18px 18px 16px;/);
+    assert.match(globalCss, /\.program-card \{[^}]*min-height: 240px;/);
+    assert.match(globalCss, /\.program-card \.pill \{[^}]*margin-top: 16px;/);
+  });
+});
