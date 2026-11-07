@@ -102,7 +102,6 @@ function previewDir(label) {
 }
 
 async function startPreview(dir, label, branch) {
-  await mkdir(dir, { recursive: true });
   const recordPath = path.join(dir, "preview.json");
   const existing = await readRecord(recordPath);
   if (existing && existing.branch !== branch) {
@@ -115,6 +114,8 @@ async function startPreview(dir, label, branch) {
     console.log("That preview is already running. This command did not restart it or reseed it.");
     return;
   }
+  await resolvePreviewCommit(branch, root);
+  await mkdir(dir, { recursive: true });
 
   const reserved = await withPreviewLock(async () => reservePreviewPorts(existing));
   const { appPort, internalPort, dbPort } = reserved;
@@ -559,13 +560,74 @@ async function leadExists(postgres, label) {
   }
 }
 
+export function remoteBranchRequest(branch) {
+  const trimmed = String(branch ?? "").trim();
+  if (!trimmed || trimmed === "HEAD") return { kind: "head" };
+  if (trimmed.startsWith("-") || /[\s~^:?*[\\\]]/.test(trimmed) || trimmed.includes("..")) {
+    throw new Error(`Branch name "${trimmed}" is not allowed. Nothing was fetched.`);
+  }
+  if (/^[0-9a-f]{7,40}$/i.test(trimmed)) return { kind: "sha", name: trimmed };
+  const name = trimmed.replace(/^refs\/heads\//, "").replace(/^origin\//, "");
+  if (!/^[A-Za-z0-9._/-]+$/.test(name) || name.startsWith("/") || name.endsWith("/")) {
+    throw new Error(`Branch name "${trimmed}" is not allowed. Nothing was fetched.`);
+  }
+  return { kind: "branch", name };
+}
+
+export async function resolvePreviewCommit(branch, repoRoot = root) {
+  const request = remoteBranchRequest(branch);
+  if (request.kind === "head") return git(["rev-parse", "--verify", "HEAD"], repoRoot);
+  if (request.kind === "sha") {
+    try {
+      return await git(["rev-parse", "--verify", `${request.name}^{commit}`], repoRoot);
+    } catch {
+      throw new Error(
+        `Commit ${request.name} is not in this checkout. Pass the branch name so it can be fetched from origin. Nothing was changed.`,
+      );
+    }
+  }
+  for (const candidate of [request.name, `origin/${request.name}`]) {
+    try {
+      return await git(["rev-parse", "--verify", `${candidate}^{commit}`], repoRoot);
+    } catch {
+      // The fresh single-branch checkout often has neither ref yet.
+    }
+  }
+  try {
+    await git(["remote", "get-url", "origin"], repoRoot);
+  } catch {
+    throw new Error("This checkout has no origin remote, so the branch cannot be fetched. Nothing was changed.");
+  }
+  const remoteRef = `refs/remotes/origin/${request.name}`;
+  try {
+    await git(
+      ["fetch", "--no-tags", "origin", `+refs/heads/${request.name}:${remoteRef}`],
+      repoRoot,
+    );
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    if (/couldn't find remote ref|not found|does not appear to be a git repository/i.test(text)) {
+      throw new Error(
+        `No branch named "${request.name}" on origin. Nothing was checked out and no preview data was deleted.`,
+      );
+    }
+    throw new Error(`Could not fetch "${request.name}" from origin. ${text}`);
+  }
+  try {
+    return await git(["rev-parse", "--verify", `${remoteRef}^{commit}`], repoRoot);
+  } catch {
+    throw new Error(
+      `No branch named "${request.name}" on origin. Nothing was checked out and no preview data was deleted.`,
+    );
+  }
+}
+
 async function ensureWorktree(src, branch) {
-  const sha = await git(["rev-parse", "--verify", `${branch}^{commit}`]);
+  const sha = await resolvePreviewCommit(branch, root);
   if (!existsSync(path.join(src, ".git"))) {
     await git(["worktree", "add", "--detach", src, sha]);
   }
-  const actual = await git(["rev-parse", "HEAD"], src);
-  return actual;
+  return git(["rev-parse", "HEAD"], src);
 }
 
 async function ensureWorktreeModules(src) {

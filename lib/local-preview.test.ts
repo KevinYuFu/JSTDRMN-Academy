@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, it } from "node:test";
-import { blockedPreviewPort, classifyLoopbackLookup, lookupFailureIsFatal, parsePreviewArgs } from "../scripts/local-preview.mjs";
+import {
+  blockedPreviewPort,
+  classifyLoopbackLookup,
+  lookupFailureIsFatal,
+  parsePreviewArgs,
+  remoteBranchRequest,
+  resolvePreviewCommit,
+} from "../scripts/local-preview.mjs";
 import {
   choosePort,
   isPreviewAppPort,
@@ -34,6 +45,41 @@ describe("named preview addresses", () => {
     assert.equal(classifyLoopbackLookup([]), "absent");
     assert.equal(classifyLoopbackLookup(["127.0.0.1", "::1"]), "loopback");
     assert.equal(classifyLoopbackLookup(["203.0.113.5"]), "public");
+  });
+
+  it("fetches a missing remote branch into a fresh single-branch checkout without creating a local branch", async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "preview-refs-"));
+    const remote = path.join(dir, "remote.git");
+    const seed = path.join(dir, "seed");
+    const clone = path.join(dir, "clone");
+    const git = (args, cwd) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    try {
+      git(["init", "--bare", remote]);
+      git(["clone", remote, seed]);
+      git(["config", "user.email", "preview@example.com"], seed);
+      git(["config", "user.name", "Preview"], seed);
+      execFileSync("git", ["checkout", "-b", "tooling"], { cwd: seed });
+      execFileSync("git", ["commit", "--allow-empty", "-m", "tooling"], { cwd: seed });
+      git(["push", "origin", "tooling"], seed);
+      execFileSync("git", ["checkout", "--orphan", "feature"], { cwd: seed });
+      execFileSync("git", ["commit", "--allow-empty", "-m", "feature"], { cwd: seed });
+      const featureSha = git(["rev-parse", "HEAD"], seed);
+      git(["push", "origin", "feature"], seed);
+      git(["clone", "--branch", "tooling", "--single-branch", remote, clone]);
+      assert.throws(() => git(["rev-parse", "--verify", "origin/feature"], clone));
+      assert.equal(remoteBranchRequest("origin/feature").name, "feature");
+      const resolved = await resolvePreviewCommit("feature", clone);
+      assert.equal(resolved, featureSha);
+      assert.equal(git(["rev-parse", "refs/remotes/origin/feature"], clone), featureSha);
+      assert.equal(git(["branch", "--list", "feature"], clone), "");
+      await assert.rejects(
+        () => resolvePreviewCommit("missing-feature", clone),
+        /No branch named "missing-feature"/,
+      );
+      assert.equal(git(["branch", "--list", "missing-feature"], clone), "");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("requires a label and a branch, and does not invent one", () => {

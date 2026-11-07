@@ -87,7 +87,7 @@ A named preview is a second copy, with its own checkout, app process, and databa
 sh scripts/local-review.sh --label editor --branch cursor/program-lead-edit-9d9b
 ```
 
-The label is a short name you choose, such as `editor` or `cleanup`. The branch is the feature you want to look at. The first start checks out that commit in `.local-review/previews/editor/src` and creates a database in `.local-review/previews/editor/pgdata`. A later start of the same label keeps that database and does not seed again. It will not switch the label onto a different branch.
+The label is a short name you choose, such as `editor` or `cleanup`. The branch is the feature you want to look at. A fresh checkout of only this tooling branch does not already have `main` or the feature branch. The command fetches that one branch from `origin` into a remote-tracking ref. It does not create a local branch, and it does not push or change the branch on `origin`. If origin has no branch by that name, it stops with that message and does not create a database. The first successful start checks out that commit in `.local-review/previews/editor/src` and creates a database in `.local-review/previews/editor/pgdata`. A later start of the same label keeps that database and does not seed again. It will not switch the label onto a different branch.
 
 When it is ready, the terminal prints a URL like:
 
