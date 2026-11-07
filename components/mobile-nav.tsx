@@ -1,9 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { logout } from "@/app/actions";
 import { Icon } from "./icons";
 import { NavPending } from "./nav-pending";
+
+type NavigateAbort = {
+  destination: { url: string };
+  signal: { addEventListener: (type: "abort", listener: () => void) => void };
+};
+
+type NavigationWithAbort = {
+  addEventListener: (type: "navigate" | "navigateerror", listener: (event: NavigateAbort) => void) => void;
+  removeEventListener: (type: "navigate" | "navigateerror", listener: (event: NavigateAbort) => void) => void;
+};
 
 export function MobileNav({
   links,
@@ -14,6 +24,23 @@ export function MobileNav({
 }) {
   const [open, setOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  useEffect(() => {
+    const navigation = (window as Window & { navigation?: NavigationWithAbort }).navigation;
+    if (!navigation) return;
+    const onNavigate = (event: NavigateAbort) => {
+      const path = new URL(event.destination.url).pathname;
+      event.signal.addEventListener("abort", () => {
+        setPendingHref((current) => (current === path ? null : current));
+      });
+    };
+    const onError = () => setPendingHref(null);
+    navigation.addEventListener("navigate", onNavigate);
+    navigation.addEventListener("navigateerror", onError);
+    return () => {
+      navigation.removeEventListener("navigate", onNavigate);
+      navigation.removeEventListener("navigateerror", onError);
+    };
+  }, []);
   return (
     <>
       <button

@@ -10,8 +10,12 @@ describe("menu click feedback", () => {
     const menu = readFileSync(new URL("../components/desktop-nav.tsx", import.meta.url), "utf8");
     assert.match(menu, /useLinkStatus/);
     assert.match(menu, /aria-current=\{link\.current \? "page" : undefined\}/);
+    assert.equal(menu.includes("popstate"), false);
+    assert.equal(menu.includes("setTimeout"), false);
     const pending = readFileSync(new URL("../components/nav-pending.tsx", import.meta.url), "utf8");
     assert.match(pending, /role="status"/);
+    assert.equal(pending.includes("popstate"), false);
+    assert.equal(pending.includes("setTimeout"), false);
     assert.equal(pending.includes("100%"), false);
     const css = readFileSync(new URL("../components/nav-pending.module.css", import.meta.url), "utf8");
     assert.match(css, /prefers-reduced-motion:\s*reduce/);
