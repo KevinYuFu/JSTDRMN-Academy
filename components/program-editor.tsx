@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useReducer, useRef } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   createProgramEditorState,
   editorIsDirty,
+  formatShownPrice,
+  parsePriceDollars,
   programEditCopy,
   reduceProgramEditor,
   submissionFromItems,
@@ -18,6 +17,33 @@ import {
   type ProgramTextField,
 } from "@/lib/program-edit";
 import styles from "./program-editor.module.css";
+
+const FIELD_LABEL: Record<ProgramTextField, string> = {
+  statusLabel: "Label",
+  presenter: "Presenter",
+  title: "Title",
+  tagline: "Short line",
+  description: "About",
+  price: "Price",
+};
+
+const FIELD_MAX: Record<Exclude<ProgramTextField, "price">, number> = {
+  statusLabel: 40,
+  presenter: 60,
+  title: 80,
+  tagline: 180,
+  description: 2000,
+};
+
+type EditorContextValue = {
+  mode: "view" | "edit";
+  saving: boolean;
+  drafts: ProgramEditItem[];
+  fieldErrors: Record<string, string>;
+  change: (id: string, field: ProgramTextField, value: string) => void;
+};
+
+const ProgramEditorContext = createContext<EditorContextValue | null>(null);
 
 export function ProgramEditor({
   scope,
@@ -79,9 +105,32 @@ export function ProgramEditor({
 
   const dirty = editorIsDirty(state);
   const toolbarClass = align === "page" ? `${styles.toolbar} ${styles.page}` : `${styles.toolbar} ${styles.shell}`;
+  const alertClass = align === "page" ? `${styles.alert} ${styles.alertPage}` : `${styles.alert} ${styles.alertShell}`;
+  const value: EditorContextValue = {
+    mode: state.mode,
+    saving: state.saving,
+    drafts: state.drafts,
+    fieldErrors: state.fieldErrors,
+    change: (id, field, next) => dispatch({ type: "change", id, field, value: next }),
+  };
+
+  const body =
+    state.mode === "edit" ? (
+      <form
+        className={styles.frame}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onSave();
+        }}
+      >
+        {children}
+      </form>
+    ) : (
+      children
+    );
 
   return (
-    <>
+    <ProgramEditorContext.Provider value={value}>
       <div className={toolbarClass} role="group" aria-label="Program editing" data-program-editor={state.mode}>
         {state.mode === "edit" ? (
           <span className={styles.status} aria-live="polite">
@@ -113,169 +162,183 @@ export function ProgramEditor({
           </>
         )}
       </div>
-      {state.mode === "view" ? (
-        children
+      {state.mode === "edit" && state.message ? (
+        <div className={alertClass} role="alert">
+          {state.message}
+        </div>
+      ) : null}
+      {body}
+    </ProgramEditorContext.Provider>
+  );
+}
+
+export function EditableProgramText({
+  lead,
+  programId,
+  field,
+  as = "span",
+  className,
+  children,
+}: {
+  lead: boolean;
+  programId: string;
+  field: ProgramTextField;
+  as?: "span" | "div" | "p" | "h1" | "h2" | "h3";
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (!lead) {
+    const Tag = as;
+    return <Tag className={className}>{children}</Tag>;
+  }
+  return (
+    <ProgramText programId={programId} field={field} as={as} className={className}>
+      {children}
+    </ProgramText>
+  );
+}
+
+function ProgramText({
+  programId,
+  field,
+  as: Tag,
+  className,
+  children,
+}: {
+  programId: string;
+  field: ProgramTextField;
+  as: "span" | "div" | "p" | "h1" | "h2" | "h3";
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const editor = useContext(ProgramEditorContext);
+  const draft = editor?.drafts.find((item) => item.id === programId);
+  if (!editor || !draft) {
+    return <Tag className={className}>{children}</Tag>;
+  }
+  const read = readText(draft, field, children);
+  if (editor.mode !== "edit" || !canType(draft, field)) {
+    if (read == null) return null;
+    return <Tag className={className}>{read}</Tag>;
+  }
+  const error = editor.fieldErrors[`${programId}.${field}`];
+  const errorId = error ? `program-${programId}-${field}-error` : undefined;
+  return (
+    <Tag className={className}>
+      <InPlaceField
+        programId={programId}
+        field={field}
+        draft={draft}
+        disabled={editor.saving}
+        errorId={errorId}
+        onChange={(value) => editor.change(programId, field, value)}
+      />
+      {error ? (
+        <span className={styles.fieldError} id={errorId}>
+          {error}
+        </span>
+      ) : null}
+    </Tag>
+  );
+}
+
+function InPlaceField({
+  programId,
+  field,
+  draft,
+  disabled,
+  errorId,
+  onChange,
+}: {
+  programId: string;
+  field: ProgramTextField;
+  draft: ProgramEditItem;
+  disabled: boolean;
+  errorId?: string;
+  onChange: (value: string) => void;
+}) {
+  const id = `program-${programId}-${field}`;
+  const invalid = errorId ? true : undefined;
+  if (field === "price") {
+    return (
+      <span className={styles.priceLine}>
+        <span aria-hidden="true">$</span>
+        <input
+          id={id}
+          className={styles.price}
+          value={draft.price}
+          inputMode="decimal"
+          autoComplete="off"
+          disabled={disabled}
+          aria-invalid={invalid}
+          aria-describedby={errorId}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        {draft.priceCadence === "month" ? <span>/month</span> : null}
+        <span>CAD</span>
+        <label className={styles.sr} htmlFor={id}>
+          {FIELD_LABEL.price}
+        </label>
+      </span>
+    );
+  }
+  const value = draft[field];
+  const shared = {
+    id,
+    value,
+    disabled,
+    maxLength: FIELD_MAX[field],
+    autoComplete: "off" as const,
+    "aria-invalid": invalid,
+    "aria-describedby": errorId,
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
+  };
+  const multiline = field === "title" || field === "tagline" || field === "description";
+  return (
+    <>
+      <label className={styles.sr} htmlFor={id}>
+        {FIELD_LABEL[field]}
+      </label>
+      {multiline ? (
+        <GrowingText field={field} {...shared} />
       ) : (
-        <form
-          className={styles.form}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void onSave();
-          }}
-        >
-          <p className={styles.intro}>{programEditCopy.intro}</p>
-          {state.message ? (
-            <div className={styles.alert} role="alert">
-              {state.message}
-            </div>
-          ) : null}
-          {state.drafts.map((draft) => {
-            const saved = state.saved.find((item) => item.id === draft.id);
-            return (
-              <section key={draft.id} className={styles.block} aria-label={saved?.title || draft.title}>
-                <h2>{draft.kind === "banner" ? "Top banner" : saved?.title || draft.title}</h2>
-                <EditorField
-                  itemId={draft.id}
-                  field="statusLabel"
-                  label="Label"
-                  value={draft.statusLabel}
-                  maxLength={40}
-                  error={state.fieldErrors[`${draft.id}.statusLabel`]}
-                  disabled={state.saving}
-                  onChange={(value) => dispatch({ type: "change", id: draft.id, field: "statusLabel", value })}
-                />
-                {draft.kind !== "banner" ? (
-                  <EditorField
-                    itemId={draft.id}
-                    field="presenter"
-                    label="Presenter"
-                    value={draft.presenter}
-                    maxLength={60}
-                    hint="Leave blank if none."
-                    error={state.fieldErrors[`${draft.id}.presenter`]}
-                    disabled={state.saving}
-                    onChange={(value) => dispatch({ type: "change", id: draft.id, field: "presenter", value })}
-                  />
-                ) : null}
-                <EditorField
-                  itemId={draft.id}
-                  field="title"
-                  label="Title"
-                  value={draft.title}
-                  maxLength={80}
-                  error={state.fieldErrors[`${draft.id}.title`]}
-                  disabled={state.saving}
-                  onChange={(value) => dispatch({ type: "change", id: draft.id, field: "title", value })}
-                />
-                <EditorField
-                  itemId={draft.id}
-                  field="tagline"
-                  label="Short line"
-                  value={draft.tagline}
-                  maxLength={180}
-                  error={state.fieldErrors[`${draft.id}.tagline`]}
-                  disabled={state.saving}
-                  onChange={(value) => dispatch({ type: "change", id: draft.id, field: "tagline", value })}
-                />
-                {scope === "detail" ? (
-                  <EditorField
-                    itemId={draft.id}
-                    field="description"
-                    label="About"
-                    value={draft.description}
-                    maxLength={2000}
-                    multiline
-                    error={state.fieldErrors[`${draft.id}.description`]}
-                    disabled={state.saving}
-                    onChange={(value) => dispatch({ type: "change", id: draft.id, field: "description", value })}
-                  />
-                ) : null}
-                {draft.priceEditable ? (
-                  <EditorField
-                    itemId={draft.id}
-                    field="price"
-                    label="Price"
-                    value={draft.price}
-                    hint="Example: 20 or 20.50"
-                    error={state.fieldErrors[`${draft.id}.price`]}
-                    disabled={state.saving}
-                    onChange={(value) => dispatch({ type: "change", id: draft.id, field: "price", value })}
-                  />
-                ) : draft.priceNote ? (
-                  <p className={styles.note}>{draft.priceNote}</p>
-                ) : null}
-              </section>
-            );
-          })}
-        </form>
+        <input {...shared} className={field === "statusLabel" ? styles.plain : styles.box} />
       )}
     </>
   );
 }
 
-function EditorField({
-  itemId,
+function GrowingText({
   field,
-  label,
-  value,
-  error,
-  hint,
-  maxLength,
-  multiline,
-  disabled,
-  onChange,
-}: {
-  itemId: string;
-  field: ProgramTextField;
-  label: string;
-  value: string;
-  error?: string;
-  hint?: string;
-  maxLength?: number;
-  multiline?: boolean;
-  disabled: boolean;
-  onChange: (value: string) => void;
-}) {
-  const id = `program-${itemId}-${field}`;
-  const errorId = error ? `${id}-error` : undefined;
-  const hintId = hint ? `${id}-hint` : undefined;
-  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
-  return (
-    <div className={styles.field}>
-      <Label htmlFor={id}>{label}</Label>
-      {multiline ? (
-        <Textarea
-          id={id}
-          value={value}
-          maxLength={maxLength}
-          disabled={disabled}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      ) : (
-        <Input
-          id={id}
-          value={value}
-          maxLength={maxLength}
-          disabled={disabled}
-          inputMode={field === "price" ? "decimal" : undefined}
-          autoComplete="off"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      )}
-      {hint ? (
-        <p className={styles.hint} id={hintId}>
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p className={styles.fieldError} id={errorId}>
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
+  ...props
+}: React.ComponentProps<"textarea"> & { field: ProgramTextField }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [props.value]);
+  return <textarea {...props} ref={ref} rows={field === "description" ? 3 : 1} className={styles.box} />;
+}
+
+function canType(draft: ProgramEditItem, field: ProgramTextField) {
+  if (field === "price") return draft.priceEditable;
+  if (field === "description") return draft.kind === "detail";
+  return true;
+}
+
+function readText(draft: ProgramEditItem, field: ProgramTextField, children: React.ReactNode) {
+  if (field === "price") {
+    if (!draft.priceEditable) return children;
+    const parsed = parsePriceDollars(draft.price);
+    if (!parsed.ok || parsed.cents == null) return null;
+    return `${formatShownPrice(parsed.cents, draft.priceCadence)} CAD`;
+  }
+  if (field === "title") return draft.title;
+  if (field === "tagline") return draft.tagline;
+  if (field === "statusLabel") return draft.statusLabel;
+  if (field === "presenter") return draft.presenter;
+  if (field === "description") return draft.description;
+  return children;
 }

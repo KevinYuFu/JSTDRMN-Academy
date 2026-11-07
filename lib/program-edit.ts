@@ -6,8 +6,8 @@
  * its own price (monthly or once, and not the Headliner banner price).
  *
  * Not written: slug, access, billing, placement, kind, panel, sort, special,
- * hubspotUrl, lessons, cohorts. delivery, setting, and planCourseId are not
- * columns on this branch. The public page stays read-only until Edit.
+ * hubspotUrl, lessons, cohorts, delivery, setting, planCourseId, badges,
+ * or a price borrowed from another plan. The public page stays read-only until Edit.
  */
 
 import { isLead } from "./roles";
@@ -33,7 +33,7 @@ export const programEditCopy = {
   failed: "Could not save. Try again.",
   title: "Add a title.",
   tagline: "Add a short line.",
-  statusLabel: "Add a label.",
+  statusLabel: "Use a shorter label.",
   presenter: "Use a shorter name.",
   description: "Add the about text.",
   price: "Use a price like 20 or 20.50.",
@@ -85,6 +85,7 @@ export type ProgramEditItem = {
   description: string;
   price: string;
   priceEditable: boolean;
+  priceCadence: "month" | "once" | null;
   priceNote: string | null;
 };
 
@@ -153,22 +154,38 @@ export function isListingProgram(course: { placement: string; access: string }) 
   return course.placement === "banner" || (course.placement === "grid" && course.access !== "request");
 }
 
-/** Same programs the program page renders today. */
-export function isDetailProgram(course: { placement: string; access: string }) {
-  return course.placement !== "banner" && course.access !== "request";
+/** Program pages render grid rows only. Banner and hidden plan rows stay off this save. */
+export function isDetailProgram(course: { placement: string }) {
+  return course.placement === "grid";
 }
 
 export type PriceEditMode = "course" | "external" | "hidden";
 
 /**
- * course: priceCents on the row (monthly or once).
+ * course: this row shows its own monthly or once price.
  * external: Headliner amount, or the top banner, which always shows that amount.
- * hidden: the page does not show a price, so there is nothing to save.
+ * hidden: no own price. A plan price and an unpublished price stay as read-only text.
  */
-export function priceEditMode(course: { access: string; billing: string; placement: string }): PriceEditMode {
+export function priceEditMode(course: {
+  access: string;
+  billing: string;
+  placement: string;
+  priceCents: number | null;
+}): PriceEditMode {
   if (course.placement === "banner" || course.access === "headliner") return "external";
+  if (course.priceCents == null) return "hidden";
   if (course.billing === "monthly" || course.billing === "once") return "course";
   return "hidden";
+}
+
+/** Same currency text the public page uses for a stored price. */
+export function formatShownPrice(cents: number, cadence: "month" | "once" | null) {
+  const amount = new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  }).format(cents / 100);
+  return cadence === "month" ? `${amount}/month` : amount;
 }
 
 export function formatPriceInput(cents: number | null) {
@@ -384,6 +401,7 @@ function toEditItem(row: ProgramContentRow, kind: ProgramEditItem["kind"]): Prog
     description: kind === "detail" ? row.description : "",
     price: mode === "course" ? formatPriceInput(row.priceCents) : "",
     priceEditable: mode === "course",
+    priceCadence: mode === "course" && row.billing === "monthly" ? "month" : mode === "course" ? "once" : null,
     priceNote:
       mode === "external" ? programEditCopy.bannerPrice : mode === "hidden" ? programEditCopy.hiddenPrice : null,
   };
@@ -414,11 +432,11 @@ function parseSubmission(input: unknown): ParsedSubmission {
     seen.add(id);
     const title = readText(record.title, LIMITS.title);
     const tagline = readText(record.tagline, LIMITS.tagline);
-    const statusLabel = readText(record.statusLabel, LIMITS.statusLabel);
+    const statusLabel = readStatus(record.statusLabel);
     const presenter = readPresenter(record.presenter);
     if (!title) fieldErrors[`${id}.title`] = programEditCopy.title;
     if (!tagline) fieldErrors[`${id}.tagline`] = programEditCopy.tagline;
-    if (!statusLabel) fieldErrors[`${id}.statusLabel`] = programEditCopy.statusLabel;
+    if (statusLabel === undefined) fieldErrors[`${id}.statusLabel`] = programEditCopy.statusLabel;
     if (presenter === undefined) fieldErrors[`${id}.presenter`] = programEditCopy.presenter;
     const program: ProgramEditInput = {
       id,
@@ -439,6 +457,13 @@ function parseSubmission(input: unknown): ParsedSubmission {
     return { ok: false, message: programEditCopy.invalid, fieldErrors };
   }
   return { ok: true, scope, programs: parsed };
+}
+
+function readStatus(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length > LIMITS.statusLabel) return undefined;
+  return trimmed;
 }
 
 function readText(value: unknown, max: number) {

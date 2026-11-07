@@ -147,11 +147,12 @@ describe("explicit edit transitions", () => {
 
 describe("field boundaries", () => {
   it("edits a stored price and leaves the Headliner and hidden prices alone", () => {
-    assert.equal(priceEditMode({ placement: "banner", access: "headliner", billing: "monthly" }), "external");
-    assert.equal(priceEditMode({ placement: "grid", access: "headliner", billing: "monthly" }), "external");
-    assert.equal(priceEditMode({ placement: "grid", access: "cohort", billing: "application" }), "hidden");
-    assert.equal(priceEditMode({ placement: "grid", access: "cohort", billing: "monthly" }), "course");
-    assert.equal(priceEditMode({ placement: "grid", access: "purchase", billing: "once" }), "course");
+    assert.equal(priceEditMode({ placement: "banner", access: "headliner", billing: "monthly", priceCents: 2000 }), "external");
+    assert.equal(priceEditMode({ placement: "grid", access: "headliner", billing: "monthly", priceCents: 2000 }), "external");
+    assert.equal(priceEditMode({ placement: "grid", access: "cohort", billing: "application", priceCents: null }), "hidden");
+    assert.equal(priceEditMode({ placement: "grid", access: "cohort", billing: "monthly", priceCents: null }), "hidden");
+    assert.equal(priceEditMode({ placement: "grid", access: "subscription", billing: "monthly", priceCents: null }), "hidden");
+    assert.equal(priceEditMode({ placement: "grid", access: "purchase", billing: "once", priceCents: 4000 }), "course");
     assert.deepEqual(parsePriceDollars("20.50"), { ok: true, cents: 2050 });
     assert.deepEqual(parsePriceDollars(" 0 "), { ok: true, cents: 0 });
     assert.deepEqual(parsePriceDollars(""), { ok: true, cents: null });
@@ -382,6 +383,47 @@ describe("save", () => {
     if (!two.ok) assert.equal(two.message, programEditCopy.invalid);
     assert.deepEqual(db.updates, []);
     assert.equal(db.rows[0]?.title, "DJ Bootcamp");
+  });
+
+  it("keeps a blank label and still saves the title", async () => {
+    const db = memory([row({ id: "crs_fb", statusLabel: "", title: "FB2B" })]);
+    const result = await commitProgramEdits({
+      role: "lead",
+      input: listingInput([text("crs_fb", { title: "FB2B Live", statusLabel: "" })]),
+      store: db.store,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(db.rows[0]?.title, "FB2B Live");
+    assert.equal(db.rows[0]?.statusLabel, "");
+  });
+
+  it("refuses a hidden plan row on the list and the program page", async () => {
+    const db = memory([
+      row({
+        id: "crs_plan",
+        slug: "intro-plan",
+        placement: "plan",
+        access: "subscription",
+        billing: "monthly",
+        priceCents: 2000,
+        title: "Intro plan",
+      }),
+    ]);
+    const listing = await commitProgramEdits({
+      role: "lead",
+      input: listingInput([text("crs_plan", { title: "Intro plan", price: "25" })]),
+      store: db.store,
+    });
+    assert.equal(listing.ok, false);
+    if (!listing.ok) assert.equal(listing.message, programEditCopy.missing);
+    const detail = await commitProgramEdits({
+      role: "lead",
+      input: { scope: "detail", programs: [text("crs_plan", { title: "Intro plan", description: "Nope", price: "25" })] },
+      store: db.store,
+    });
+    assert.equal(detail.ok, false);
+    assert.deepEqual(db.updates, []);
+    assert.equal(db.rows[0]?.priceCents, 2000);
   });
 
   it("revalidates the Headliner page when that course copy changes", async () => {

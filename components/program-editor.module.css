@@ -28,55 +28,8 @@
   cursor: default;
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-top: 8px;
-}
-
-.intro {
-  color: var(--soft);
-  font-size: 15px;
-  line-height: 1.45;
-  max-width: 42ch;
-}
-
-.block {
-  background: var(--card);
-  border-radius: 4px;
-  padding: 14px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 720px;
-  box-shadow: var(--shadow);
-}
-
-.block h2 {
-  font-family: var(--font-unbounded), sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.note,
-.hint {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.fieldError {
-  color: #ffd0d0;
-  font-size: 14px;
-  line-height: 1.4;
+.frame {
+  display: contents;
 }
 
 .alert {
@@ -84,14 +37,113 @@
   border: 1px solid rgba(255, 80, 80, 0.35);
   color: #ffd0d0;
   border-radius: 4px;
-  padding: 10px 14px;
-  max-width: 720px;
-  font-size: 15px;
+  padding: 8px 12px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
+.alertPage {
+  margin: 8px 40px 0;
+}
+
+.alertShell {
+  margin: 0 0 10px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.box,
+.plain,
+.price {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  line-height: inherit;
+  margin: 0;
+  box-shadow: none;
+}
+
+.box,
+.plain {
+  width: 100%;
+  min-width: 0;
+}
+
+.box,
+.price {
+  background: rgba(255, 242, 204, 0.06);
+  border: 1px solid rgba(255, 242, 204, 0.4);
+  border-radius: 4px;
+  padding: 0 6px;
+}
+
+.plain {
+  width: auto;
+  min-width: 6ch;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  padding: 0 2px;
+  box-shadow: inset 0 -1px 0 rgba(255, 242, 204, 0.55);
+  field-sizing: content;
+}
+
+.box:focus,
+.plain:focus,
+.price:focus {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
+textarea.box {
+  display: block;
+  resize: none;
+  overflow: hidden;
+  min-height: 1.45em;
+  field-sizing: content;
+}
+
+.priceLine {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.price {
+  field-sizing: content;
+  width: 4ch;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.fieldError {
+  display: block;
+  margin-top: 4px;
+  color: #ffd0d0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.35;
+}
+
 @media (max-width: 980px) {
-  .page {
-    margin: 8px 16px 0;
+  .page,
+  .alertPage {
+    margin-left: 16px;
+    margin-right: 16px;
   }
 }

@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { savePrograms } from "@/app/program-edit-actions";
 import { AppHeader } from "@/components/app-header";
 import { ProgramBadges, SubscriptionNote } from "@/components/program-badges";
+import { EditableProgramText, ProgramEditor } from "@/components/program-editor";
 import { ProgramGroup } from "@/components/program-groups";
 import { formatCad, prices } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { canEditPrograms, listingEditItems } from "@/lib/program-edit";
 import { displayPrice, programBadges, programGroups, showStatusLabel } from "@/lib/program-labels";
 
 export const dynamic = "force-dynamic";
@@ -19,16 +22,24 @@ export default async function HomePage() {
   const plans = new Map(programs.map((program) => [program.id, program]));
   const subscribeHref = user ? "/checkout?product=headliner" : "/signup?next=/checkout?product=headliner";
   const headlinerPrice = formatCad(prices.headlinerMonthlyCents, "month");
-
-  return (
-    <div className="programs-page">
-      <AppHeader active="programs" />
+  const editItems = listingEditItems(banner ?? null, cards);
+  const lead = canEditPrograms(user?.role) && editItems.length > 0;
+  const programsBody = (
+    <>
       {banner ? (
         <section className="headliner-banner" aria-label={banner.title}>
           <div>
-            <div className="kicker">{banner.statusLabel}</div>
-            <h2>{banner.title}</h2>
-            <p>{banner.tagline}</p>
+            <div className="kicker">
+              <EditableProgramText lead={lead} programId={banner.id} field="statusLabel">
+                {banner.statusLabel}
+              </EditableProgramText>
+            </div>
+            <EditableProgramText lead={lead} programId={banner.id} field="title" as="h2">
+              {banner.title}
+            </EditableProgramText>
+            <EditableProgramText lead={lead} programId={banner.id} field="tagline" as="p">
+              {banner.tagline}
+            </EditableProgramText>
           </div>
           <div className="banner-side">
             <div className="amount">{headlinerPrice} CAD</div>
@@ -50,11 +61,30 @@ export default async function HomePage() {
               return (
                 <article key={program.id} className={`program-card${program.special ? " special" : ""}`}>
                   <ProgramBadges delivery={program.delivery} setting={program.setting} access={program.access} />
-                  {status ? <div className="tag">{program.statusLabel}</div> : null}
-                  {program.presenter ? <div className="presenter">{program.presenter} presents</div> : null}
-                  <h3>{program.title}</h3>
-                  <p>{program.tagline}</p>
-                  {price ? <div className="amount">{price} CAD</div> : null}
+                  {status ? (
+                    <EditableProgramText lead={lead} programId={program.id} field="statusLabel" as="div" className="tag">
+                      {program.statusLabel}
+                    </EditableProgramText>
+                  ) : null}
+                  {program.presenter ? (
+                    <div className="presenter">
+                      <EditableProgramText lead={lead} programId={program.id} field="presenter">
+                        {program.presenter}
+                      </EditableProgramText>
+                      {" presents"}
+                    </div>
+                  ) : null}
+                  <EditableProgramText lead={lead} programId={program.id} field="title" as="h3">
+                    {program.title}
+                  </EditableProgramText>
+                  <EditableProgramText lead={lead} programId={program.id} field="tagline" as="p">
+                    {program.tagline}
+                  </EditableProgramText>
+                  {price ? (
+                    <EditableProgramText lead={lead} programId={program.id} field="price" as="div" className="amount">
+                      {price} CAD
+                    </EditableProgramText>
+                  ) : null}
                   {program.access === "subscription" && plan ? <SubscriptionNote /> : null}
                   <Link className="pill pill-purple" href={`/programs/${program.slug}`}>
                     Learn More
@@ -65,6 +95,19 @@ export default async function HomePage() {
           </ProgramGroup>
         ))}
       </section>
+    </>
+  );
+
+  return (
+    <div className="programs-page">
+      <AppHeader active="programs" />
+      {lead ? (
+        <ProgramEditor scope="listing" align="page" items={editItems} save={savePrograms}>
+          {programsBody}
+        </ProgramEditor>
+      ) : (
+        programsBody
+      )}
     </div>
   );
 }
