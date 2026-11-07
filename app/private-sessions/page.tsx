@@ -44,6 +44,9 @@ export default async function PrivateSessionsPage({
             specialties: unpackMentorList(mentor.specialties),
             genres: unpackMentorList(mentor.genres),
             placeholder: mentor.placeholder,
+            rateLabel: mentor.rateLabel,
+            instagramUrl: mentor.instagramUrl,
+            instagramLabel: mentor.instagramLabel,
           }))}
         />
       </main>

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { requestSession } from "@/app/actions";
 import { mentorInitial } from "@/lib/mentors";
+import { MentorCardFace } from "./mentor-card-face";
+import styles from "./mentor-draft-review.module.css";
 import { Icon } from "./icons";
 import { Button } from "./ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
@@ -21,6 +23,9 @@ export type MentorView = {
   specialties: string[];
   genres: string[];
   placeholder: boolean;
+  rateLabel: string | null;
+  instagramUrl: string | null;
+  instagramLabel: string | null;
 };
 
 export function MentorRoster({
@@ -54,19 +59,27 @@ export function MentorRoster({
   return (
     <>
       {mentors.length === 0 ? <p className="note">Mentors will be listed here.</p> : null}
-      <div className="mentor-grid">
+      <div className={`${styles.grid} ${styles.liveGrid}`}>
         {mentors.map((mentor) => (
-          <button key={mentor.id} type="button" className="mentor-card" onClick={() => openMentor(mentor)}>
-            <Avatar mentor={mentor} />
-            <span className="mentor-name">{mentor.name}</span>
-            <span className="mentor-role">{mentor.roleLine}</span>
-            <span className="mentor-tags">
-              {mentor.placeholder ? <span className="tag">Coming soon</span> : null}
-              {mentor.genres.map((genre) => (
-                <span key={genre} className="tag">{genre}</span>
-              ))}
-            </span>
-          </button>
+          <article key={mentor.id} className={`${styles.card} ${styles.liveCard}`} data-mentor={mentor.slug}>
+            <button type="button" className={styles.cardButton} onClick={() => openMentor(mentor)}>
+              <span className="sr-only">Open {mentor.name}&apos;s profile</span>
+            </button>
+            <MentorCardFace
+              name={mentor.name}
+              photoSrc={mentor.photoUrl}
+              photoAlt=""
+              bio={mentor.bio}
+              specialties={mentor.specialties}
+              genres={mentor.genres}
+              roleLine={mentor.roleLine}
+              placeholder={mentor.placeholder}
+              rateLabel={mentor.rateLabel}
+              rateNote={mentor.rateLabel?.trim() ? "provisional" : null}
+              instagramUrl={mentor.instagramUrl}
+              instagramLabel={mentor.instagramLabel}
+            />
+          </article>
         ))}
       </div>
       <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) close(); }}>
@@ -78,14 +91,14 @@ export function MentorRoster({
                 <Icon name="close" />
               </DialogClose>
             </div>
-            <DialogDescription className="sr-only">{selected.roleLine}. Close with Escape.</DialogDescription>
+            <DialogDescription className="sr-only">{selected.roleLine ? `${selected.roleLine}. Close with Escape.` : "Close with Escape."}</DialogDescription>
             <div className="mentor-panel">
               {mode === "profile" ? (
                 <>
                   <div className="mentor-panel-head">
                     <Avatar mentor={selected} />
                     <div>
-                      <p className="mentor-role">{selected.roleLine}</p>
+                      {selected.roleLine ? <p className="mentor-role">{selected.roleLine}</p> : null}
                       <div className="mentor-tags">
                         {selected.placeholder ? <span className="tag">Coming soon</span> : null}
                         {selected.genres.map((genre) => (

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
+import { MENTOR_DRAFT_RATE_LABEL, MENTOR_DRAFTS } from "./mentor-drafts";
 import {
   catalogCourses,
   djBootcamp,
@@ -159,6 +160,8 @@ describe("postgres migrations on deploy", () => {
       "20261106120000_skill_tree",
       "20261106233000_course_delivery",
       "20261107003000_fb2b_once_price",
+      "20261107120000_insert_reviewed_mentors",
+      "20261107140000_mentor_rate_and_instagram",
     ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
@@ -195,6 +198,28 @@ describe("postgres migrations on deploy", () => {
     assert.match(fb2bSql, /crs_fb2b/);
     assert.equal(/drop table/i.test(fb2bSql), false);
     assert.equal(/delete from/i.test(fb2bSql), false);
+    const mentorSql = readFileSync(join(migrationRoot, "20261107120000_insert_reviewed_mentors", "migration.sql"), "utf8");
+    assert.match(mentorSql, /INSERT INTO "Mentor"/);
+    assert.match(mentorSql, /WHERE NOT EXISTS/);
+    for (const id of ["mnt_yuzu", "mnt_odin", "mnt_dawner", "mnt_vymvn"]) {
+      assert.match(mentorSql, new RegExp(id));
+    }
+    assert.equal(/update\s+"/i.test(mentorSql), false);
+    assert.equal(/delete\s+from/i.test(mentorSql), false);
+    assert.equal(/drop table/i.test(mentorSql), false);
+    const rateSql = readFileSync(join(migrationRoot, "20261107140000_mentor_rate_and_instagram", "migration.sql"), "utf8");
+    assert.match(rateSql, /ADD COLUMN "rateLabel" TEXT/);
+    assert.match(rateSql, /ADD COLUMN "instagramUrl" TEXT/);
+    assert.match(rateSql, /ADD COLUMN "instagramLabel" TEXT/);
+    assert.equal(/not null/i.test(rateSql), false);
+    assert.equal(/delete\s+from/i.test(rateSql), false);
+    assert.equal(/drop table/i.test(rateSql), false);
+    for (const mentor of MENTOR_DRAFTS) {
+      const id = `mnt_${mentor.slug}`;
+      assert.match(rateSql, new RegExp(`SET "rateLabel" = '${MENTOR_DRAFT_RATE_LABEL.replace("$", "\\$")}' WHERE "id" = '${id}' AND "rateLabel" IS NULL`));
+      assert.match(rateSql, new RegExp(`SET "instagramUrl" = '${mentor.instagramUrl}' WHERE "id" = '${id}' AND "instagramUrl" IS NULL`));
+      assert.match(rateSql, new RegExp(`SET "instagramLabel" = '${mentor.instagramLabel}' WHERE "id" = '${id}' AND "instagramLabel" IS NULL`));
+    }
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });

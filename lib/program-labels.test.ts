@@ -32,6 +32,37 @@ describe("enrollment price", () => {
   });
 });
 
+describe("programs catalog copy", () => {
+  const listing = readFileSync("app/page.tsx", "utf8");
+  const detail = readFileSync("app/programs/[slug]/page.tsx", "utf8");
+
+  it("does not render badges, status tags, listing prices, or the intro subscription line", () => {
+    for (const source of [listing, detail]) {
+      assert.equal(source.includes("ProgramBadges"), false);
+      assert.equal(source.includes("SubscriptionNote"), false);
+      assert.equal(source.includes("programBadges"), false);
+      assert.equal(source.includes("showStatusLabel"), false);
+      assert.equal(source.includes("One subscription includes"), false);
+    }
+    assert.equal(listing.includes("displayPrice"), false);
+    assert.equal(listing.includes("enrollmentPrice"), false);
+    assert.equal(listing.includes("statusLabel"), false);
+    assert.match(listing, /Live Programs|programGroups/);
+    assert.match(listing, /Learn More/);
+    assert.match(listing, /program\.title/);
+    assert.match(listing, /program\.tagline/);
+  });
+
+  it("keeps the course's own price on the detail page", () => {
+    assert.match(detail, /enrollmentPrice/);
+    assert.match(detail, /program\.description/);
+    assert.match(detail, /planCourseId/);
+    assert.equal(detail.includes("displayPrice"), false);
+    assert.equal(detail.includes("program.plan?"), false);
+    assert.equal(detail.includes("program.plan."), false);
+  });
+});
+
 describe("catalog card whitespace", () => {
   const groups = readFileSync("components/program-groups.tsx", "utf8");
   const scoped = readFileSync("components/program-groups.module.css", "utf8");

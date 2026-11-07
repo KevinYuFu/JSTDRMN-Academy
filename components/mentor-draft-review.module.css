@@ -67,8 +67,14 @@
 }
 
 .card {
-  background: var(--draft-card);
-  border: 1px solid var(--draft-border);
+  /* Defined here, not only on .page, so Private Sessions cards get the same fill. */
+  --draft-card: #161622;
+  --draft-border: #2a2a3d;
+  --draft-text: #f2f0ff;
+  --draft-muted: #a8a4c0;
+  background: var(--draft-card, #161622);
+  border: 1px solid var(--draft-border, #2a2a3d);
+  color: var(--draft-text, #f2f0ff);
   border-radius: 12px;
   padding: 0.85rem 0.95rem;
   display: flex;
@@ -137,6 +143,71 @@
   margin-left: 0.25rem;
 }
 
+.role {
+  margin: 0 0 0.15rem;
+  color: var(--draft-muted);
+  font-size: 0.88rem;
+}
+
+.soon {
+  display: inline-block;
+  margin-left: 0.25rem;
+  background: #3b1d0f;
+  color: #fde68a;
+  border: 1px solid #f59e0b;
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e9d5ff;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.grid.liveGrid {
+  margin-top: 1.5rem;
+  justify-content: center;
+  grid-template-columns: minmax(0, 438px);
+  gap: 1.5rem 2.5rem;
+}
+
+@media (min-width: 700px) {
+  .grid.liveGrid {
+    grid-template-columns: 438px 438px;
+  }
+}
+
+.liveCard {
+  position: relative;
+  width: 100%;
+  max-width: 438px;
+}
+
+.cardButton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cardButton:focus-visible {
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
 .bio {
   margin: 0;
   color: #e4e1f5;
@@ -198,6 +269,8 @@
 }
 
 .link {
+  position: relative;
+  z-index: 2;
   color: #c084fc;
   text-decoration: underline;
 }

@@ -91,6 +91,11 @@ model Mentor {
   active       Boolean          @default(true)
   placeholder  Boolean          @default(false)
   sort         Int              @default(0)
+  /// Price pill. Null hides it.
+  rateLabel       String?
+  /// Instagram profile. Null hides the row.
+  instagramUrl    String?
+  instagramLabel  String?
   requests     SessionRequest[]
 }
 

@@ -115,11 +115,15 @@ describe("mentor draft profiles", () => {
     assert.equal(view.includes("Yu Fu"), false);
     assert.equal(page.includes("MentorDraftReview"), true);
     assert.equal(view.includes("MENTOR_DRAFT_RATE_LABEL"), true);
-    assert.equal(view.includes("Teaching topics"), true);
-    assert.equal(view.includes("Genres"), true);
+    assert.equal(view.includes('rateNote="provisional"'), true);
+    const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
+    assert.equal(face.includes("Teaching topics"), true);
+    assert.equal(face.includes("Genres"), true);
     assert.equal(view.includes("mentor.specialties"), true);
     assert.equal(view.includes("mentor.genres"), true);
+    assert.equal(view.includes("MentorCardFace"), true);
     assert.equal(view.includes("teachingTopics"), false);
+    assert.equal(face.includes("teachingTopics"), false);
     const schema = readFileSync(path.join(root, "prisma/schema.prisma"), "utf8");
     const mentorModel = schema.slice(schema.indexOf("model Mentor {"), schema.indexOf("model Track {"));
     assert.match(mentorModel, /specialties\s+String/);
@@ -137,6 +141,7 @@ describe("mentor draft profiles", () => {
     const files = [
       "app/mentor-drafts/page.tsx",
       "components/mentor-draft-review.tsx",
+      "components/mentor-card-face.tsx",
       "components/mentor-draft-review.module.css",
     ];
     for (const file of files) {
@@ -147,7 +152,40 @@ describe("mentor draft profiles", () => {
       assert.equal(source.includes("Editable for review"), false, file);
     }
     const view = readFileSync(path.join(root, "components/mentor-draft-review.tsx"), "utf8");
-    assert.match(view, /<p className=\{styles\.bio\}>\{mentor\.bio\}<\/p>/);
+    const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
+    assert.match(view, /bio=\{mentor\.bio\}/);
+    assert.match(face, /<p className=\{styles\.bio\}>\{bio\}<\/p>/);
     assert.equal(view.includes("MentorForm"), false);
+    assert.equal(face.includes("MentorForm"), false);
+  });
+
+  it("shows the draft price, provisional note, and Instagram only when the row has them", () => {
+    const roster = readFileSync(path.join(root, "components/mentor-roster.tsx"), "utf8");
+    const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
+    const page = readFileSync(path.join(root, "app/private-sessions/page.tsx"), "utf8");
+    assert.equal(roster.includes("MentorCardFace"), true);
+    assert.equal(roster.includes("mentor-draft-review.module.css"), true);
+    assert.equal(roster.includes("requestSession"), true);
+    assert.equal(roster.includes("Coming soon"), true);
+    assert.equal(roster.includes("placeholder"), true);
+    assert.equal(roster.includes("mentor-drafts"), false);
+    assert.equal(roster.includes("MENTOR_DRAFT"), false);
+    assert.equal(roster.includes("CAD $60"), false);
+    assert.equal(roster.includes("instagram.com"), false);
+    assert.match(roster, /rateLabel=\{mentor\.rateLabel\}/);
+    assert.match(roster, /rateNote=\{mentor\.rateLabel\?\.trim\(\) \? "provisional" : null\}/);
+    assert.match(roster, /instagramUrl=\{mentor\.instagramUrl\}/);
+    assert.match(roster, /instagramLabel=\{mentor\.instagramLabel\}/);
+    assert.match(page, /rateLabel: mentor\.rateLabel/);
+    assert.match(page, /instagramUrl: mentor\.instagramUrl/);
+    assert.match(page, /instagramLabel: mentor\.instagramLabel/);
+    assert.equal(page.includes("DRAFT"), false);
+    assert.match(face, /price \? <span className=\{styles\.price\}>\{price\}<\/span>/);
+    assert.match(face, /note \? <span className=\{styles\.provisional\}>\{note\}<\/span>/);
+    assert.match(face, /instagramHref && instagramText/);
+    assert.match(face, /<strong>Instagram:<\/strong>/);
+    const css = readFileSync(path.join(root, "components/mentor-draft-review.module.css"), "utf8");
+    assert.match(css, /grid-template-columns:\s*438px 438px/);
+    assert.match(css, /max-width:\s*438px/);
   });
 });
