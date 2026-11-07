@@ -159,6 +159,7 @@ describe("postgres migrations on deploy", () => {
       "20261106120000_skill_tree",
       "20261106233000_course_delivery",
       "20261107003000_fb2b_once_price",
+      "20261107120000_insert_reviewed_mentors",
     ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
@@ -195,6 +196,15 @@ describe("postgres migrations on deploy", () => {
     assert.match(fb2bSql, /crs_fb2b/);
     assert.equal(/drop table/i.test(fb2bSql), false);
     assert.equal(/delete from/i.test(fb2bSql), false);
+    const mentorSql = readFileSync(join(migrationRoot, "20261107120000_insert_reviewed_mentors", "migration.sql"), "utf8");
+    assert.match(mentorSql, /INSERT INTO "Mentor"/);
+    assert.match(mentorSql, /WHERE NOT EXISTS/);
+    for (const id of ["mnt_yuzu", "mnt_odin", "mnt_dawner", "mnt_vymvn"]) {
+      assert.match(mentorSql, new RegExp(id));
+    }
+    assert.equal(/update\s+"/i.test(mentorSql), false);
+    assert.equal(/delete\s+from/i.test(mentorSql), false);
+    assert.equal(/drop table/i.test(mentorSql), false);
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
   });
 });

@@ -59,7 +59,7 @@ export function MentorRoster({
           <button key={mentor.id} type="button" className="mentor-card" onClick={() => openMentor(mentor)}>
             <Avatar mentor={mentor} />
             <span className="mentor-name">{mentor.name}</span>
-            <span className="mentor-role">{mentor.roleLine}</span>
+            {mentor.roleLine ? <span className="mentor-role">{mentor.roleLine}</span> : null}
             <span className="mentor-tags">
               {mentor.placeholder ? <span className="tag">Coming soon</span> : null}
               {mentor.genres.map((genre) => (
@@ -78,14 +78,14 @@ export function MentorRoster({
                 <Icon name="close" />
               </DialogClose>
             </div>
-            <DialogDescription className="sr-only">{selected.roleLine}. Close with Escape.</DialogDescription>
+            <DialogDescription className="sr-only">{selected.roleLine ? `${selected.roleLine}. Close with Escape.` : "Close with Escape."}</DialogDescription>
             <div className="mentor-panel">
               {mode === "profile" ? (
                 <>
                   <div className="mentor-panel-head">
                     <Avatar mentor={selected} />
                     <div>
-                      <p className="mentor-role">{selected.roleLine}</p>
+                      {selected.roleLine ? <p className="mentor-role">{selected.roleLine}</p> : null}
                       <div className="mentor-tags">
                         {selected.placeholder ? <span className="tag">Coming soon</span> : null}
                         {selected.genres.map((genre) => (
