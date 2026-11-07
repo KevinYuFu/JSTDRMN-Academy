@@ -1,18 +1,29 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { ProgramGroup } from "@/components/program-groups";
 import { formatCad, prices } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { programGroups } from "@/lib/program-labels";
+import { localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const [programs, user] = await Promise.all([
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ entered?: string }>;
+}) {
+  const [programs, user, query, headerList] = await Promise.all([
     prisma.course.findMany({ orderBy: { sort: "asc" } }),
     getUser(),
+    searchParams,
+    headers(),
   ]);
+  const entry = localReviewEntryDecision(localReviewEntryFrom(process.env, headerList));
+  if (!user && entry.ok && query.entered !== "1") redirect("/local-review/enter");
   const banner = programs.find((program) => program.placement === "banner");
   const cards = programs.filter((program) => program.placement === "grid" && program.access !== "request");
   const subscribeHref = user ? "/checkout?product=headliner" : "/signup?next=/checkout?product=headliner";
