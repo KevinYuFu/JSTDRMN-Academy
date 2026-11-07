@@ -34,6 +34,7 @@ export async function GET(_request: Request, context: { params: Promise<{ lesson
       headliner: lesson.headliner,
       drip: lesson.drip,
       courseAccess: asCourseAccess(lesson.course.access),
+      planCourseId: lesson.course.planCourseId,
     },
   });
   if (!access.allowed && !isStaff(user.role)) {

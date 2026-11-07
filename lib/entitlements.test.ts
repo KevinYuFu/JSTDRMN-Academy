@@ -19,6 +19,7 @@ function lesson(overrides: Partial<LessonGate> = {}): LessonGate {
     headliner: false,
     drip: false,
     courseAccess: "cohort",
+    planCourseId: null,
     ...overrides,
   };
 }
@@ -128,6 +129,82 @@ describe("lessonAccess", () => {
       lessonAccess({ role: "student", lesson: mixing, entitlements: [ash], earlierComplete: true, now }).allowed,
       false,
     );
+  });
+
+  it("lets a signed-in student open a free intro without the subscription", () => {
+    const free = lesson({
+      id: "les_edm",
+      courseId: "crs_intro_edm",
+      cohortId: null,
+      courseAccess: "open",
+      planCourseId: "crs_intro_pass",
+    });
+    const allowed = lessonAccess({ role: "student", lesson: free, entitlements: [], earlierComplete: true, now });
+    assert.equal(allowed.allowed, true);
+    assert.equal(allowed.reason, "open");
+
+    const guest = lessonAccess({ role: "guest", lesson: free, entitlements: [], earlierComplete: true, now });
+    assert.equal(guest.allowed, false);
+    assert.equal(guest.reason, "missing");
+
+    const loggedOut = lessonAccess({
+      role: "student",
+      signedIn: false,
+      lesson: free,
+      entitlements: [],
+      earlierComplete: true,
+      now,
+    });
+    assert.equal(loggedOut.allowed, false);
+
+    const paced = lessonAccess({
+      role: "student",
+      lesson: { ...free, drip: true },
+      entitlements: [],
+      earlierComplete: false,
+      now,
+    });
+    assert.equal(paced.reason, "drip");
+  });
+
+  it("lets one intro subscription open every course in that plan", () => {
+    const pass = grant({ product: "program", courseId: "crs_intro_pass", cohortId: null });
+    const sound = lesson({
+      id: "les_sound",
+      courseId: "crs_intro_sound",
+      cohortId: null,
+      courseAccess: "subscription",
+      planCourseId: "crs_intro_pass",
+    });
+    assert.equal(
+      lessonAccess({ role: "student", lesson: sound, entitlements: [pass], earlierComplete: true, now }).allowed,
+      true,
+    );
+    const other = lesson({
+      id: "les_other",
+      courseId: "crs_other",
+      cohortId: null,
+      courseAccess: "subscription",
+    });
+    assert.equal(
+      lessonAccess({ role: "student", lesson: other, entitlements: [pass], earlierComplete: true, now }).allowed,
+      false,
+    );
+    const live = lesson({ courseAccess: "cohort" });
+    assert.equal(
+      lessonAccess({ role: "student", lesson: live, entitlements: [pass], earlierComplete: true, now }).allowed,
+      false,
+    );
+    const shelf = containerAccess({
+      role: "student",
+      access: "subscription",
+      courseId: "crs_intro_sound",
+      cohortId: null,
+      planCourseId: "crs_intro_pass",
+      entitlements: [pass],
+      now,
+    });
+    assert.equal(shelf.allowed, true);
   });
 
   it("limits bootcamp access to the granted cohort", () => {

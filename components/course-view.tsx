@@ -9,6 +9,7 @@ import { Textarea } from "./ui/textarea";
 import { Icon } from "./icons";
 import { SlidesCard } from "./slides-card";
 import { VideoPlayer } from "./video-player";
+import { VideoUnavailable } from "./video-unavailable";
 
 type CourseData = Awaited<ReturnType<typeof openCourse>>;
 
@@ -46,6 +47,16 @@ function upsellCopy(data: CourseData) {
       body: "Headliner is one subscription. Access stays while you keep paying. It does not include other programs or a bootcamp seat.",
       cta: `Subscribe · ${formatCad(prices.headlinerMonthlyCents, "month")}`,
       href: "/checkout?product=headliner",
+      external: false,
+    };
+  }
+  if (data.course.access === "open") {
+    return {
+      kicker: "Free",
+      title: "Sign in to watch",
+      body: "This course is free for any signed-in student.",
+      cta: "Sign in",
+      href: "/login",
       external: false,
     };
   }
@@ -91,7 +102,7 @@ export function CourseView({
           <Link href="/dashboard">My Courses</Link> › <b>{data.course.title}</b>
         </div>
         <h1 className="page-title">{data.course.title}</h1>
-        <p className="note" style={{ marginTop: 12 }}>No lessons in this portal yet.</p>
+        <VideoUnavailable />
       </main>
     );
   }
@@ -138,7 +149,11 @@ export function CourseView({
               <h2>{copy.title}</h2>
               <p>{copy.body}</p>
               {copy.href && copy.cta ? (
-                signedIn || copy.external ? (
+                data.course.access === "open" ? (
+                  <Link className="pill pill-purple" href="/login">
+                    {copy.cta}
+                  </Link>
+                ) : signedIn || copy.external ? (
                   <a className="pill pill-purple" href={copy.href} target={copy.external ? "_blank" : undefined} rel={copy.external ? "noreferrer" : undefined}>
                     {copy.cta}
                   </a>

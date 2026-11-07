@@ -3,7 +3,7 @@ import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { isBuiltinLeadEmail, leadEmails, nameFromEmail } from "../lib/google";
 import { ensureSkillTree, type SkillTreeStore } from "../lib/skill-tree-store";
-import { djBootcamp, djCohorts, djLessons, sampleEventTypes, sampleEvents, seedAdmin } from "./seed-data";
+import { catalogCourses, djCohorts, djLessons, sampleEventTypes, sampleEvents, seedAdmin } from "./seed-data";
 
 const prisma = new PrismaClient();
 
@@ -22,12 +22,6 @@ function adminPassword() {
   return password;
 }
 
-function withoutId<T extends { id: string }>(row: T) {
-  const { id, ...data } = row;
-  void id;
-  return data;
-}
-
 async function main() {
   let skillTreeCreated = false;
   const email = adminEmail();
@@ -37,42 +31,30 @@ async function main() {
   const allowList = leadEmails().filter((item) => item !== email);
 
   await prisma.$transaction(async (db) => {
-    await db.course.upsert({
-      where: { id: djBootcamp.id },
-      create: djBootcamp,
-      update: withoutId(djBootcamp),
-    });
+    // Insert by stable id only. A second run does not update or delete rows staff already edited.
+    for (const course of catalogCourses) {
+      const existing = await db.course.findUnique({ where: { id: course.id } });
+      if (!existing) await db.course.create({ data: course });
+    }
 
     for (const cohort of djCohorts) {
-      await db.cohort.upsert({
-        where: { id: cohort.id },
-        create: cohort,
-        update: withoutId(cohort),
-      });
+      const existing = await db.cohort.findUnique({ where: { id: cohort.id } });
+      if (!existing) await db.cohort.create({ data: cohort });
     }
 
     for (const lesson of djLessons) {
-      await db.lesson.upsert({
-        where: { id: lesson.id },
-        create: lesson,
-        update: withoutId(lesson),
-      });
+      const existing = await db.lesson.findUnique({ where: { id: lesson.id } });
+      if (!existing) await db.lesson.create({ data: lesson });
     }
 
     for (const eventType of sampleEventTypes) {
-      await db.eventType.upsert({
-        where: { id: eventType.id },
-        create: eventType,
-        update: withoutId(eventType),
-      });
+      const existing = await db.eventType.findUnique({ where: { id: eventType.id } });
+      if (!existing) await db.eventType.create({ data: eventType });
     }
 
     for (const event of sampleEvents) {
-      await db.event.upsert({
-        where: { id: event.id },
-        create: event,
-        update: withoutId(event),
-      });
+      const existing = await db.event.findUnique({ where: { id: event.id } });
+      if (!existing) await db.event.create({ data: event });
     }
 
     if (existing) {
@@ -120,7 +102,7 @@ async function main() {
     skillTreeCreated = skill.created;
   });
 
-  console.log("Seeded DJ Bootcamp, sample events, and Yu.");
+  console.log("Inserted any missing programs, sample events, and Yu. Existing rows were left as they are.");
   console.log(skillTreeCreated ? "Skill tree filled from the built-in map." : "Skill tree already saved. Left it alone.");
   if (passwordHash) console.log("Yu's password was set from SEED_ADMIN_PASSWORD.");
   else if (existing) console.log("Yu already existed. Password was left unchanged.");
