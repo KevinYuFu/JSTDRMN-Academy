@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { savePrograms } from "@/app/program-edit-actions";
 import { AppHeader } from "@/components/app-header";
-import { ProgramEditor } from "@/components/program-editor";
+import { EditableProgramText, ProgramEditor } from "@/components/program-editor";
 import { VideoUnavailable } from "@/components/video-unavailable";
 import { hubspotApplyUrl } from "@/lib/config";
 import { prisma } from "@/lib/db";
@@ -49,11 +49,28 @@ export default async function ProgramPage({
   const lead = canEditPrograms(user?.role);
   const article = (
     <article className="program-detail">
-      <h1 className="page-title">{program.title}</h1>
-      <p className="lead">{program.tagline}</p>
-      <p className="body">{program.description}</p>
-      {program.presenter ? <p className="presenter">{program.presenter} presents</p> : null}
-      {price ? <p className="amount">{price} CAD</p> : null}
+      <EditableProgramText lead={lead} programId={program.id} field="title" as="h1" className="page-title">
+        {program.title}
+      </EditableProgramText>
+      <EditableProgramText lead={lead} programId={program.id} field="tagline" as="p" className="lead">
+        {program.tagline}
+      </EditableProgramText>
+      <EditableProgramText lead={lead} programId={program.id} field="description" as="p" className="body">
+        {program.description}
+      </EditableProgramText>
+      {program.presenter ? (
+        <p className="presenter">
+          <EditableProgramText lead={lead} programId={program.id} field="presenter">
+            {program.presenter}
+          </EditableProgramText>
+          {" presents"}
+        </p>
+      ) : null}
+      {price ? (
+        <EditableProgramText lead={lead} programId={program.id} field="price" as="p" className="amount">
+          {price} CAD
+        </EditableProgramText>
+      ) : null}
       <div className="detail-actions">
         {program.billing === "application" ? (
           <a className="pill pill-purple" href={applyHref} target="_blank" rel="noreferrer">
