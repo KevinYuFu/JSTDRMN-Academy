@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { coursePageHref, dashboardRoleLabel, personName } from "./dashboard-people";
 
@@ -19,6 +20,18 @@ describe("person name", () => {
     assert.deepEqual(personName("A"), { ok: false, reason: "invalid" });
     assert.deepEqual(personName(""), { ok: false, reason: "invalid" });
     assert.deepEqual(personName("a".repeat(81)), { ok: false, reason: "invalid" });
+  });
+});
+
+describe("name save action", () => {
+  it("checks for a Lead and writes only the name column", () => {
+    const source = readFileSync(new URL("../app/people-actions.ts", import.meta.url), "utf8");
+    assert.match(source, /isLeadActor\(actor\.role\)/);
+    assert.match(source, /data:\s*\{\s*name:\s*decision\.name\s*\}/);
+    assert.equal(source.includes("passwordHash"), false);
+    assert.equal(source.includes("googleSub"), false);
+    assert.equal(source.includes("discordId"), false);
+    assert.equal(source.includes("role:"), false);
   });
 });
 
