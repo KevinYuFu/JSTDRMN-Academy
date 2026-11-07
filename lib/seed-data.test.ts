@@ -162,6 +162,7 @@ describe("postgres migrations on deploy", () => {
       "20261107003000_fb2b_once_price",
       "20261107120000_insert_reviewed_mentors",
       "20261107140000_mentor_rate_and_instagram",
+      "20261107180000_insert_catalog_courses",
     ]);
     const sql = readFileSync(join(migrationRoot, "20261021205041_init", "migration.sql"), "utf8");
     assert.match(sql, /CREATE TABLE "Course"/);
@@ -221,5 +222,29 @@ describe("postgres migrations on deploy", () => {
       assert.match(rateSql, new RegExp(`SET "instagramLabel" = '${mentor.instagramLabel}' WHERE "id" = '${id}' AND "instagramLabel" IS NULL`));
     }
     assert.match(readFileSync(join(migrationRoot, "migration_lock.toml"), "utf8"), /postgresql/);
+
+    const catalogSql = readFileSync(join(migrationRoot, "20261107180000_insert_catalog_courses", "migration.sql"), "utf8");
+    const catalogBlocks = catalogSql.split('INSERT INTO "Course"').slice(1);
+    assert.equal(catalogBlocks.length, catalogCourses.length);
+    assert.equal(/update\s+"/i.test(catalogSql), false);
+    assert.equal(/delete\s+from/i.test(catalogSql), false);
+    assert.equal(/drop\s+table/i.test(catalogSql), false);
+    assert.equal(/insert into "(lesson|cohort|event|user)"/i.test(catalogSql), false);
+    for (const course of catalogCourses) {
+      const block = catalogBlocks.find((item) => item.includes(`'${course.id}'`));
+      assert.ok(block, course.id);
+      assert.match(block, new RegExp(`WHERE "id" = '${course.id}'\\s+OR "slug" = '${course.slug}'`));
+      for (const value of [course.slug, course.title, course.tagline, course.description, course.kind, course.access, course.billing, course.panel, course.placement, course.delivery]) {
+        assert.equal(block.includes(`'${value}'`), true, `${course.id} missing ${value}`);
+      }
+      assert.equal(block.includes(`'${course.statusLabel}'`), true, `${course.id} status`);
+      assert.equal(block.includes(`'${course.setting}'`), true, `${course.id} setting`);
+      assert.match(block, new RegExp(`\\n\\s+${course.sort},\\n`));
+      assert.match(block, course.special ? /\n\s+true,/ : /\n\s+false,/);
+      assert.match(block, course.priceCents == null ? /\n\s+NULL,/ : new RegExp(`\\n\\s+${course.priceCents},`));
+      assert.equal(block.includes(course.hubspotUrl == null ? "NULL" : `'${course.hubspotUrl}'`), true);
+      assert.equal(block.includes(course.presenter == null ? "NULL" : `'${course.presenter}'`), true);
+      assert.equal(block.includes(course.planCourseId == null ? "NULL" : `'${course.planCourseId}'`), true);
+    }
   });
 });
