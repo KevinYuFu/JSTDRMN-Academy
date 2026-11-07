@@ -6,9 +6,17 @@
   margin-top: 36px;
 }
 
-.heading {
+/* Beats .program-section h2 (22px / 600) without editing globals.css. */
+:global(.program-section) .heading {
   font-family: var(--font-unbounded), sans-serif;
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+
+@media (min-width: 768px) {
+  :global(.program-section) .heading {
+    font-size: 34px;
+  }
 }
