@@ -20,7 +20,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
         : null;
   return (
     <>
-      <AppHeader active="dashboard" />
+      <AppHeader />
       <div className="auth-wrap">
         <div className="auth-card">
           <h1>Create an account</h1>
