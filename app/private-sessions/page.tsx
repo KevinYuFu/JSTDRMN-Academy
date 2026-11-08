@@ -25,8 +25,7 @@ export default async function PrivateSessionsPage({
   return (
     <>
       <AppHeader active="sessions" />
-      <main className="sessions-page">
-        <SessionsBoard
+      <SessionsBoard
           lead={canEditPrograms(user?.role)}
           copy={copy}
           courseId={course?.id ?? ""}
@@ -51,7 +50,6 @@ export default async function PrivateSessionsPage({
             instagramLabel: mentor.instagramLabel,
           }))}
         />
-      </main>
     </>
   );
 }

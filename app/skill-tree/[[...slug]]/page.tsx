@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { SkillCopyEditor } from "@/components/skill-tree/copy";
-import { SkillTreeShell } from "@/components/skill-tree/shell";
 import { getUser } from "@/lib/auth";
 import { canEditPrograms } from "@/lib/program-edit";
 import { skillTreeNav, stackFromSlug } from "@/lib/skill-tree";
@@ -26,9 +25,7 @@ export default async function SkillTreePage({ params }: { params: Promise<{ slug
   return (
     <>
       <AppHeader active={skillTreeNav.key} />
-      <SkillTreeShell stack={stack}>
-        <SkillCopyEditor lead={canEditPrograms(user?.role)} stack={stack} />
-      </SkillTreeShell>
+      <SkillCopyEditor lead={canEditPrograms(user?.role)} stack={stack} />
     </>
   );
 }

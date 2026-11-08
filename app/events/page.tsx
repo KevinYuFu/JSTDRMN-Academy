@@ -60,14 +60,12 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <AppHeader active="events" />
-      <main className="sessions-page">
-        <EventsBoard
+      <EventsBoard
           lead={canEditPrograms(user?.role)}
           copy={copy}
           events={cards}
           sentDiscord={query.discord === "connected" || query.discord === "unconfigured" ? query.discord : null}
         />
-      </main>
     </>
   );
 }

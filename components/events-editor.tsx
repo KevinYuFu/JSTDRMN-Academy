@@ -28,22 +28,14 @@ function Field({
   label,
   onChange,
   rows = 1,
-  className,
 }: {
   value: string;
   label: string;
   onChange: (value: string) => void;
   rows?: number;
-  className?: string;
 }) {
   return (
-    <textarea
-      className={className ? `${styles.box} ${className}` : styles.box}
-      aria-label={label}
-      rows={rows}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    />
+    <textarea className={styles.box} aria-label={label} rows={rows} value={value} onChange={(event) => onChange(event.target.value)} />
   );
 }
 
@@ -149,7 +141,7 @@ export function EventsBoard({
         {editing ? (
           <>
             <h1>
-              <Field className={styles.heroTitle} label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
+              <Field label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
             </h1>
             <p>
               <Field label="Short line" value={draftCopy.lede} onChange={(lede) => setDraftCopy({ ...draftCopy, lede })} />
@@ -175,7 +167,8 @@ export function EventsBoard({
     </>
   );
 
-  if (!lead) return body;
+  const page = <main className="sessions-page">{body}</main>;
+  if (!lead) return page;
   return (
     <LeadEditFrame
       editing={editing}
@@ -192,7 +185,7 @@ export function EventsBoard({
       }}
       onSave={() => void onSave()}
     >
-      {body}
+      {page}
     </LeadEditFrame>
   );
 }

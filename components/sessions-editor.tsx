@@ -24,16 +24,14 @@ function Field({
   value,
   label,
   onChange,
-  className,
 }: {
   value: string;
   label: string;
   onChange: (value: string) => void;
-  className?: string;
 }) {
   return (
     <textarea
-      className={className ? `${styles.box} ${className}` : styles.box}
+      className={styles.box}
       aria-label={label}
       value={value}
       rows={label === "Bio" || label === "Teaching topics" || label === "Genres" ? 3 : 1}
@@ -143,7 +141,7 @@ export function SessionsBoard({
       {editing ? (
         <>
           <h1>
-            <Field className={styles.heroTitle} label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
+            <Field label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
           </h1>
           <p>
             <Field label="Short line" value={draftCopy.lede} onChange={(lede) => setDraftCopy({ ...draftCopy, lede })} />
@@ -218,7 +216,8 @@ export function SessionsBoard({
     setDrafts((current) => current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
   }
 
-  if (!lead) return body;
+  const page = <main className="sessions-page">{body}</main>;
+  if (!lead) return page;
 
   return (
     <LeadEditFrame
@@ -236,7 +235,7 @@ export function SessionsBoard({
       }}
       onSave={() => void onSave()}
     >
-      {body}
+      {page}
     </LeadEditFrame>
   );
 }

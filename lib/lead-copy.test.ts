@@ -122,20 +122,22 @@ describe("lead copy actions", () => {
 });
 
 describe("edit control shape", () => {
-  it("uses a lower rounded rectangle for Edit, Save, and Cancel", () => {
+  it("keeps Edit, Save, and Cancel in one in-flow row under the header", () => {
     const css = readFileSync("components/program-editor.module.css", "utf8");
-    assert.match(css, /position: fixed;/);
-    assert.match(css, /top: 84px;/);
-    assert.match(css, /right: 40px;/);
-    assert.match(css, /\.box\.heroTitle \{/);
+    assert.match(css, /\.actionRow \{[^}]*display: flex;/);
+    assert.match(css, /\.actionRow \{[^}]*flex-wrap: wrap;/);
+    assert.match(css, /\.actionRow \{[^}]*position: static;/);
+    assert.doesNotMatch(css, /position:\s*fixed/);
+    assert.match(css, /\.actionRow \.action \{[^}]*border-radius: 6px;/);
+    assert.match(css, /\.actionRow \.action \{[^}]*padding: 12px 16px;/);
     const frame = readFileSync("components/lead-edit.tsx", "utf8");
-    assert.match(frame, /createPortal/);
-    assert.match(frame, /styles\.toolbar/);
-    assert.doesNotMatch(frame, /placement/);
-    assert.match(css, /\.toolbar \.action \{[^}]*border-radius: 6px;/);
-    assert.match(css, /\.toolbar \.action \{[^}]*padding: 12px 16px;/);
+    assert.match(frame, /LeadActionRow/);
+    assert.match(frame, /data-lead-editor/);
+    assert.match(frame, /\.site-header/);
+    assert.doesNotMatch(frame, /createPortal/);
+    assert.doesNotMatch(frame, /position:\s*fixed/);
     const programs = readFileSync("components/program-editor.tsx", "utf8");
-    assert.match(programs, /styles\.action/);
-    assert.match(programs, /data-lead-editor/);
+    assert.match(programs, /LeadActionRow/);
+    assert.doesNotMatch(programs, /createPortal/);
   });
 });

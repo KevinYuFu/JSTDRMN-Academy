@@ -74,6 +74,16 @@
 .stree-bracket.bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
 .stree-bracket.br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
 
+[data-lead-editor-layout] .stree-field,
+[data-lead-editor-layout] .stree-vignette {
+  position: absolute;
+  top: 0;
+}
+[data-lead-editor-layout] .stree-frame {
+  position: absolute;
+  top: var(--stree-frame);
+}
+
 .stree-app {
   position: relative;
   z-index: 5;

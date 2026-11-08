@@ -120,22 +120,26 @@ export default async function ProgramPage({
     </article>
   );
 
+  const page = (
+    <main className="shell">
+      <div className="crumbs">
+        <Link href="/programs">Programs</Link> › <b>{program.title}</b>
+      </div>
+      {query.unlocked ? <div className="banner">You’re in. This program is on your account.</div> : null}
+      {article}
+    </main>
+  );
+
   return (
     <>
       <AppHeader active="programs" />
-      <main className="shell">
-        <div className="crumbs">
-          <Link href="/programs">Programs</Link> › <b>{program.title}</b>
-        </div>
-        {query.unlocked ? <div className="banner">You’re in. This program is on your account.</div> : null}
-        {lead ? (
-          <ProgramEditor scope="detail" align="shell" items={[detailEditItem(program)]} save={savePrograms}>
-            {article}
-          </ProgramEditor>
-        ) : (
-          article
-        )}
-      </main>
+      {lead ? (
+        <ProgramEditor scope="detail" align="shell" items={[detailEditItem(program)]} save={savePrograms}>
+          {page}
+        </ProgramEditor>
+      ) : (
+        page
+      )}
     </>
   );
 }
