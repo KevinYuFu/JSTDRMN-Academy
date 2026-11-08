@@ -75,8 +75,9 @@ describe("skill tree storage", () => {
     const before = JSON.stringify(db.row()?.document);
     const loaded = await ensureSkillTree(db.store);
     assert.equal(loaded.created, false);
-    assert.equal(loaded.tree.card.title, "Introduction to Music and EDM");
-    assert.equal(findNode("community", loaded.tree), undefined);
+    assert.equal(findNode("dj", loaded.tree)?.card.title, "Introduction to Music and EDM");
+    assert.equal(findNode("community", loaded.tree)?.page?.title, "Community Events");
+    assert.equal((db.row()?.document as { children: { card: { title: string } }[] }).children[1]?.card.title, "DJ");
     assert.equal(JSON.stringify(db.row()?.document), before);
     assert.equal(db.creates(), 0);
     assert.ok(parseSkillTree(previousDefault));
@@ -92,7 +93,7 @@ describe("skill tree storage", () => {
     const loaded = await ensureSkillTree(db.store);
     assert.equal(loaded.created, false);
     assert.equal(findNode("community", loaded.tree)?.card.title, "Gather");
-    assert.notEqual(loaded.tree.card.title, "Introduction to Music and EDM");
+    assert.equal(findNode("dj", loaded.tree)?.card.title, "DJ");
     assert.equal(db.creates(), 0);
   });
 
@@ -110,7 +111,7 @@ describe("skill tree storage", () => {
   it("uses the row that won a create race", async () => {
     const db = memoryStore();
     const tree = structuredClone(skillTree);
-    const mashup = tree.children.find((child) => child.id === "mashup");
+    const mashup = findNode("mashup", tree);
     assert.ok(mashup);
     mashup.card = { ...mashup.card, title: "Already saved" };
     db.store.skillTree.create = async () => {

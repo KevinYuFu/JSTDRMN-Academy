@@ -200,8 +200,11 @@ function Block({ node, stack, block }: { node: SkillNode; stack: readonly SkillN
       return <ChipBlock block={block} />;
     case "cards":
       return <CardsBlock node={node} stack={stack} block={block} />;
-    case "flow":
+    case "flow": {
+      const path = resolvedSkillPath(node);
+      if (path) return <PathGraph node={node} stack={stack} path={path} showRoot={false} />;
       return <Flow node={node} stack={stack} place="hub" />;
+    }
     case "group":
       return <GroupBlock node={node} stack={stack} block={block} />;
     default: {
@@ -266,35 +269,32 @@ function PathJoin() {
   );
 }
 
-function PathOverview({
-  root,
+function PathGraph({
+  node,
   stack,
   path,
+  showRoot,
 }: {
-  root: SkillNode;
+  node: SkillNode;
   stack: readonly SkillNode[];
   path: NonNullable<ReturnType<typeof resolvedSkillPath>>;
+  showRoot: boolean;
 }) {
+  const childStack = stack[stack.length - 1]?.id === node.id ? stack : [...stack, node];
   const rows = Math.max(path.left.length, path.right.length);
   return (
-    <section className="stree-view" aria-label="Academy overview">
-      <div className="stree-path">
+    <div className="stree-path">
+      {showRoot ? (
         <div className="stree-path-intro">
-          <div className="stree-panel is-static">
-            <span className="stree-panel-inner">
-              <span className="stree-panel-copy">
-                <h1 className="stree-title">{root.card.title}</h1>
-                {root.card.sub ? <span className="stree-sub">{root.card.sub}</span> : null}
-              </span>
-            </span>
-          </div>
+          <Card node={node} stack={stack} place="map" index={0} />
         </div>
-        <div className="stree-path-stem stree-path-stem-top" aria-hidden="true" />
-        <div className="stree-path-rail" aria-hidden="true">
-          <span />
-          <span />
-        </div>
-        <div className="stree-path-board">
+      ) : null}
+      <div className="stree-path-stem stree-path-stem-top" aria-hidden="true" />
+      <div className="stree-path-rail" aria-hidden="true">
+        <span />
+        <span />
+      </div>
+      <div className="stree-path-board">
           {Array.from({ length: rows }, (_, index) => {
             const left = path.left[index];
             const right = path.right[index];
@@ -304,7 +304,7 @@ function PathOverview({
             return (
               <div key={index} className={index === 0 ? "stree-path-row is-first" : "stree-path-row"}>
                 {left ? (
-                  <PathCell node={left} stack={stack} stemBelow={leftContinues} index={index + 1} />
+                  <PathCell node={left} stack={childStack} stemBelow={leftContinues} index={index + 1} />
                 ) : leftEnded && path.join ? (
                   index === rows - 1 ? (
                     <PathJoin />
@@ -320,30 +320,26 @@ function PathOverview({
                   {index === 0 && path.across ? <span className="stree-path-across" /> : null}
                 </div>
                 {right ? (
-                  <PathCell node={right} stack={stack} stemBelow={rightContinues} index={index + path.left.length + 1} />
+                  <PathCell node={right} stack={childStack} stemBelow={rightContinues} index={index + path.left.length + 1} />
                 ) : (
                   <div className="stree-path-cell" />
                 )}
               </div>
             );
           })}
-        </div>
       </div>
       <ul className="stree-sr">
-        {relationLines(root, path).map((line) => (
+        {relationLines(node, path).map((line) => (
           <li key={line}>{line}</li>
         ))}
       </ul>
-      {root.hint ? <p className="stree-hint">{root.hint}</p> : null}
-    </section>
+    </div>
   );
 }
 
 function Overview({ stack }: { stack: readonly SkillNode[] }) {
   const root = stack[0];
   if (!root) return null;
-  const path = resolvedSkillPath(root);
-  if (path) return <PathOverview root={root} stack={stack} path={path} />;
   return (
     <section className="stree-view" aria-label="Academy overview">
       <div className="stree-tree" style={{ "--stree-columns": overviewColumns(root) } as CSSProperties}>
@@ -357,12 +353,21 @@ function Overview({ stack }: { stack: readonly SkillNode[] }) {
           ))}
         </div>
         <div className="stree-primary">
-          {root.children.map((branch, index) => (
-            <div key={branch.id} className={branch.mapFlow ? "stree-col stree-col-dj" : "stree-col"}>
-              <Card node={branch} stack={stack} place="map" index={index} />
-              {branch.mapFlow ? <Flow node={branch} stack={stack} place="map" /> : null}
-            </div>
-          ))}
+          {root.children.map((branch, index) => {
+            const path = resolvedSkillPath(branch);
+            return (
+              <div key={branch.id} className={branch.mapFlow || path ? "stree-col stree-col-dj" : "stree-col"}>
+                {path ? (
+                  <PathGraph node={branch} stack={stack} path={path} showRoot />
+                ) : (
+                  <>
+                    <Card node={branch} stack={stack} place="map" index={index} />
+                    {branch.mapFlow ? <Flow node={branch} stack={stack} place="map" /> : null}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       {root.hint ? <p className="stree-hint">{root.hint}</p> : null}

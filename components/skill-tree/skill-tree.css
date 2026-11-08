@@ -571,10 +571,11 @@
 }
 
 .stree-path {
-  --stree-path-gap: 3.25rem;
-  width: min(860px, 100%);
+  --stree-path-gap: 2.4rem;
+  width: 100%;
   margin: 0 auto;
 }
+.stree-col .stree-path { width: 100%; }
 .stree-path-intro {
   width: min(420px, 100%);
   margin: 0 auto;

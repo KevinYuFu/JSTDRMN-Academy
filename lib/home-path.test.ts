@@ -18,22 +18,26 @@ describe("homepage skill tree preview", () => {
     const preview = homePathPreview(skillTree);
     assert.deepEqual(
       preview.branches.map((branch) => branch.title),
+      ["Community", "Introduction to Music and EDM", "Branding", "Education"],
+    );
+    assert.equal(preview.overviewHref, "/skill-tree");
+    assert.equal(preview.branches[0]?.href, "/skill-tree/community");
+    assert.equal(preview.branches[1]?.href, "/skill-tree/dj");
+    assert.equal(preview.branches[1]?.detail, "Getting comfortable with music");
+    assert.equal(preview.flow?.label, "Introduction to Music and EDM");
+    assert.deepEqual(
+      preview.flow?.steps.map((item) => item.title),
       [
         "Intro DJ Bootcamp",
-        "Ableton/Mashup Bootcamp",
         "Intermediate DJ Bootcamp",
-        "Intro Production Bootcamp",
         "DJ Retreat",
+        "Ableton/Mashup Bootcamp",
+        "Intro Production Bootcamp",
         "Intermediate Production Bootcamp",
         "Track Finisher Bootcamp",
       ],
     );
-    assert.equal(preview.overviewHref, "/skill-tree");
-    assert.equal(preview.branches[0]?.href, "/skill-tree/dj/bootcamp");
-    assert.equal(preview.branches[1]?.href, "/skill-tree/mashup");
-    assert.equal(preview.branches[1]?.detail, "Start in ableton with mashups");
-    assert.equal(preview.flow, null);
-    for (const item of preview.branches) {
+    for (const item of [...preview.branches, ...(preview.flow?.steps ?? [])]) {
       const slug = item.href === "/skill-tree" ? [] : item.href.replace(/^\/skill-tree\//, "").split("/");
       const stack = stackFromSlug(slug, skillTree);
       assert.ok(stack, item.href);

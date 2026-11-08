@@ -1,4 +1,4 @@
-import { childById, drillHref, skillTreeNav, type SkillNode } from "./skill-tree";
+import { childById, drillHref, resolvedSkillPath, skillTreeNav, type SkillNode } from "./skill-tree";
 
 export type HomePathStep = {
   id: string;
@@ -36,10 +36,13 @@ function step(node: SkillNode, href: string): HomePathStep {
  */
 export function homePathPreview(tree: SkillNode): HomePathPreview {
   const branches = tree.children.map((node) => step(node, drillHref([tree], node)));
-  const flowNode = tree.children.find((node) => node.mapFlow);
-  const flowIds = flowNode?.mapFlow
-    ? [flowNode.mapFlow.left, flowNode.mapFlow.right, flowNode.mapFlow.hang].filter((id): id is string => Boolean(id))
-    : [];
+  const flowNode = tree.children.find((node) => node.path || node.mapFlow);
+  const diagram = flowNode ? resolvedSkillPath(flowNode) : null;
+  const flowIds = diagram
+    ? [...diagram.left, ...diagram.right].map((node) => node.id)
+    : flowNode?.mapFlow
+      ? [flowNode.mapFlow.left, flowNode.mapFlow.right, flowNode.mapFlow.hang].filter((id): id is string => Boolean(id))
+      : [];
   const steps = flowNode
     ? flowIds.flatMap((id) => {
         const node = childById(flowNode, id);

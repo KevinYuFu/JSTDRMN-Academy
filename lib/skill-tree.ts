@@ -1,3 +1,5 @@
+import previousDefault from "./skill-tree-previous-default.json";
+
 /**
  * Skill Tree content and routes.
  *
@@ -10,7 +12,9 @@
  * Shape:
  * - `children` is the drill path and the URL (`slug` segments).
  * - `page.sections` is what the drill-in shows (panel, note, chips, cards, flow).
- * - `path` on the overview draws the two-column map. It is optional.
+ * - The overview stays the original four branches. Community, Branding, and Education
+ *   are unchanged. The DJ branch is the introduction and the eight-step diagram.
+ * - `path` on that branch draws the diagram. It is optional.
  *   Saved maps without a complete path keep the older column layout.
  * - `mapFlow` draws that older tight overview: left, right, and `hang` under the right card.
  * - `fromOverview` is only for a different URL when the card is opened from the map.
@@ -124,11 +128,11 @@ export type SkillNode = {
   /**
    * Tight pair on the overview, and the same pair on this node's flow block.
    * `hang` is a sibling drawn under the right card. Its URL stays a child of this node.
-   * Older saved maps use this. The built-in map uses `path` instead.
+   * Older saved maps use this. The introduction branch uses `path` instead.
    */
   mapFlow?: { left: string; right: string; hang?: string };
   /**
-   * Two-column overview. Every direct child is listed once, in `left` or `right`.
+   * Diagram under this branch. Every direct child is listed once, in `left` or `right`.
    * Omitted on older saved maps, which keep the column layout.
    */
   path?: SkillPath;
@@ -140,6 +144,13 @@ export type SkillNode = {
 };
 
 const open = "Open →";
+
+function originalBranch(id: "community" | "branding" | "education"): SkillNode {
+  const children = (previousDefault as { children: SkillNode[] }).children;
+  const found = children.find((child) => child.id === id);
+  if (!found) throw new Error(`Original ${id} branch is missing.`);
+  return structuredClone(found);
+}
 
 function step(input: { id: string; slug: readonly string[]; title: string; sub: string }): SkillNode {
   return {
@@ -165,7 +176,7 @@ function step(input: { id: string; slug: readonly string[]; title: string; sub: 
 
 const introDj = step({
   id: "dj-bootcamp",
-  slug: ["dj", "bootcamp"],
+  slug: ["bootcamp"],
   title: "Intro DJ Bootcamp",
   sub: "Get Stage Ready",
 });
@@ -213,27 +224,28 @@ const finisher = step({
 });
 
 /**
- * The map. Introduction is the first step. Two paths leave it.
+ * Replaces the DJ branch. The introduction is that entry.
  * Left: Intro DJ, Intermediate DJ, DJ Retreat.
  * Right: Ableton/Mashup, Intro Production, Intermediate Production, Track Finisher.
  * Intro DJ also points across to Ableton/Mashup.
  * DJ Retreat also joins Track Finisher along the lower outside of the left path.
  */
-export const skillTree: SkillNode = {
-  id: "overview",
-  slug: [],
-  crumb: "Overview",
+const introduction: SkillNode = {
+  id: "dj",
+  slug: ["dj"],
+  crumb: "Introduction to Music and EDM",
   card: {
     title: "Introduction to Music and EDM",
     sub: "Getting comfortable with music",
+    foot: open,
+    label: "Open Introduction to Music and EDM",
   },
-  hint: "Overview shows branches only · details open after you click",
   path: {
     left: ["dj-bootcamp", "intermediate-dj", "dj-retreat"],
     right: ["mashup", "intro-production", "intermediate-production", "track-finisher"],
     edges: [
-      { from: "overview", to: "dj-bootcamp", kind: "branch" },
-      { from: "overview", to: "mashup", kind: "branch" },
+      { from: "dj", to: "dj-bootcamp", kind: "branch" },
+      { from: "dj", to: "mashup", kind: "branch" },
       { from: "dj-bootcamp", to: "mashup", kind: "across" },
       { from: "dj-bootcamp", to: "intermediate-dj", kind: "down" },
       { from: "intermediate-dj", to: "dj-retreat", kind: "down" },
@@ -243,7 +255,26 @@ export const skillTree: SkillNode = {
       { from: "dj-retreat", to: "track-finisher", kind: "join" },
     ],
   },
+  page: {
+    eyebrow: "Introduction to Music and EDM",
+    title: "Introduction to Music and EDM",
+    blurb: "Getting comfortable with music",
+    sections: [{ type: "flow" }],
+  },
   children: [introDj, mashup, intermediateDj, introProduction, retreat, intermediateProduction, finisher],
+};
+
+/**
+ * The map. Same four branches as before. DJ is now the introduction diagram.
+ * Community, Branding, and Education are the original branches.
+ */
+export const skillTree: SkillNode = {
+  id: "overview",
+  slug: [],
+  crumb: "Overview",
+  card: { title: "JSTDRMN Academy" },
+  hint: "Overview shows branches only · details open after you click",
+  children: [originalBranch("community"), introduction, originalBranch("branding"), originalBranch("education")],
 };
 
 export function countLabel(kind: "skill" | "topic", count: number) {
@@ -361,8 +392,9 @@ function matchChildren(parent: SkillNode, parts: readonly string[]): SkillNode[]
 }
 
 function flowTargets(node: SkillNode): SkillNode[] {
-  if (!node.mapFlow) return [];
-  const ids = [node.mapFlow.left, node.mapFlow.right, node.mapFlow.hang].filter((id): id is string => Boolean(id));
+  const ids: string[] = [];
+  if (node.mapFlow) ids.push(node.mapFlow.left, node.mapFlow.right, ...(node.mapFlow.hang ? [node.mapFlow.hang] : []));
+  if (node.path) ids.push(...node.path.left, ...node.path.right);
   return ids.map((id) => childById(node, id)).filter((item): item is SkillNode => Boolean(item));
 }
 
@@ -444,7 +476,13 @@ export function stackForNode(tree: SkillNode, id: string): SkillNode[] | null {
  */
 export function overviewColumns(root: SkillNode) {
   if (root.children.length === 0) return "1fr";
-  return root.children.map((branch) => (branch.mapFlow ? "minmax(220px, 360px)" : "minmax(0, 210px)")).join(" ");
+  return root.children
+    .map((branch) => {
+      if (branch.path) return "minmax(480px, 680px)";
+      if (branch.mapFlow) return "minmax(220px, 360px)";
+      return "minmax(0, 210px)";
+    })
+    .join(" ");
 }
 
 function markShown(node: SkillNode, sections: readonly SkillBlock[], shown: Set<string>): boolean {
@@ -464,6 +502,9 @@ function markShown(node: SkillNode, sections: readonly SkillBlock[], shown: Set<
       shown.add(node.mapFlow.left);
       shown.add(node.mapFlow.right);
       if (node.mapFlow.hang) shown.add(node.mapFlow.hang);
+    }
+    if (section.type === "flow" && node.path) {
+      for (const id of [...node.path.left, ...node.path.right]) shown.add(id);
     }
     if (section.type === "group" && markShown(node, section.sections, shown)) return true;
   }
