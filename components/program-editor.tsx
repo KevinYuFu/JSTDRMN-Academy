@@ -129,6 +129,8 @@ export function ProgramEditor({
   return (
     <ProgramEditorContext.Provider value={value}>
       <LeadEditorLayout
+        editing={state.mode === "edit"}
+        dirty={dirty}
         toolbar={
           <LeadActionRow
             editing={state.mode === "edit"}

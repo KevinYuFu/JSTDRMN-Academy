@@ -1,8 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { bindEditIsolation } from "@/lib/edit-isolation";
 import { programEditCopy } from "@/lib/program-edit";
 import styles from "./program-editor.module.css";
+
+function useEditIsolation(active: boolean, dirty: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    return bindEditIsolation(dirty);
+  }, [active, dirty]);
+}
 
 export function LeadActionRow({
   editing,
@@ -61,9 +69,20 @@ export function LeadActionRow({
   );
 }
 
-export function LeadEditorLayout({ toolbar, children }: { toolbar: ReactNode; children: ReactNode }) {
+export function LeadEditorLayout({
+  editing,
+  dirty,
+  toolbar,
+  children,
+}: {
+  editing: boolean;
+  dirty: boolean;
+  toolbar: ReactNode;
+  children: ReactNode;
+}) {
+  useEditIsolation(editing, dirty);
   return (
-    <div className={styles.editorColumn} data-lead-editor-layout>
+    <div className={styles.editorColumn} data-lead-editor-layout data-lead-editing={editing ? "true" : undefined}>
       <div className={styles.anchor}>{toolbar}</div>
       {children}
     </div>
@@ -91,6 +110,8 @@ export function LeadEditFrame({
 }) {
   return (
     <LeadEditorLayout
+      editing={editing}
+      dirty={dirty}
       toolbar={
         <LeadActionRow
           editing={editing}
