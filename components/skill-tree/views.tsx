@@ -16,6 +16,7 @@ import {
   type SkillNoteBlock,
   type SkillPanelBlock,
 } from "@/lib/skill-tree";
+import { SkillCopyLine } from "./copy-context";
 import { SkillPanel } from "./panel";
 
 function widthClass(width?: "narrow" | "core" | "hub") {
@@ -62,6 +63,9 @@ function Card({
       href={drillHref(stack, node)}
       accent={card.accent}
       label={card.label}
+      copyKey={place === "map" && node.map ? `n:${node.id}:map` : `n:${node.id}:card`}
+      lockSub={sub != null}
+      lockFoot={foot != null}
     />
   );
   return index == null ? panel : <Bob index={index}>{panel}</Bob>;
@@ -115,13 +119,16 @@ function Flow({ node, stack, place }: { node: SkillNode; stack: readonly SkillNo
   );
 }
 
-function PanelBlock({ block }: { block: SkillPanelBlock }) {
+function PanelBlock({ nodeId, index, block }: { nodeId: string; index: string; block: SkillPanelBlock }) {
+  const copyKey = `n:${nodeId}:sec:${index}`;
   return (
-    <SkillPanel title={block.title} sub={block.sub} foot={block.foot} accent={block.accent}>
+    <SkillPanel title={block.title} sub={block.sub} foot={block.foot} accent={block.accent} copyKey={copyKey}>
       {block.items ? (
         <ul className="stree-details">
-          {block.items.map((item) => (
-            <li key={item}>{item}</li>
+          {block.items.map((item, itemIndex) => (
+            <li key={`${item}-${itemIndex}`}>
+              <SkillCopyLine path={`${copyKey}:item:${itemIndex}`} text={item} label="Item" />
+            </li>
           ))}
         </ul>
       ) : null}
@@ -129,22 +136,27 @@ function PanelBlock({ block }: { block: SkillPanelBlock }) {
   );
 }
 
-function NoteBlock({ block }: { block: SkillNoteBlock }) {
+function NoteBlock({ nodeId, index, block }: { nodeId: string; index: string; block: SkillNoteBlock }) {
+  const copyKey = `n:${nodeId}:sec:${index}`;
   return (
     <div className="stree-note">
-      <strong>{block.strong}</strong> {block.text}
+      <strong>
+        <SkillCopyLine path={`${copyKey}:strong`} text={block.strong} label="Note" />
+      </strong>{" "}
+      <SkillCopyLine path={`${copyKey}:text`} text={block.text} label="Note" />
     </div>
   );
 }
 
-function ChipBlock({ block }: { block: SkillChipBlock }) {
+function ChipBlock({ nodeId, index, block }: { nodeId: string; index: string; block: SkillChipBlock }) {
+  const copyKey = `n:${nodeId}:sec:${index}`;
   return (
     <div className={widthClass(block.width)}>
-      <SkillPanel title={block.title} sub={block.sub} foot={block.foot} accent={block.accent}>
+      <SkillPanel title={block.title} sub={block.sub} foot={block.foot} accent={block.accent} copyKey={copyKey}>
         <div className="stree-chips">
-          {block.chips.map((chip) => (
-            <span key={chip.label} className={chip.hot ? "stree-chip is-hot" : "stree-chip"}>
-              {chip.label}
+          {block.chips.map((chip, chipIndex) => (
+            <span key={`${chip.label}-${chipIndex}`} className={chip.hot ? "stree-chip is-hot" : "stree-chip"}>
+              <SkillCopyLine path={`${copyKey}:chip:${chipIndex}`} text={chip.label} label="Chip" />
             </span>
           ))}
         </div>
@@ -153,12 +165,26 @@ function ChipBlock({ block }: { block: SkillChipBlock }) {
   );
 }
 
-function CardsBlock({ node, stack, block }: { node: SkillNode; stack: readonly SkillNode[]; block: SkillCardsBlock }) {
+function CardsBlock({
+  node,
+  stack,
+  block,
+  index,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  block: SkillCardsBlock;
+  index: string;
+}) {
   const cards = cardsFor(node, block);
   const listClass = block.layout === "grid" ? "stree-grid-cats" : block.layout === "grid-3" ? "stree-grid-3" : "stree-stack";
   return (
     <div className={["stree-lane", widthClass(block.width)].filter(Boolean).join(" ")}>
-      {block.label ? <p className="stree-lane-label">{block.label}</p> : null}
+      {block.label ? (
+        <p className="stree-lane-label">
+          <SkillCopyLine path={`n:${node.id}:sec:${index}:label`} text={block.label} label="Label" />
+        </p>
+      ) : null}
       <div className={listClass}>
         {cards.map((child) => {
           const count = block.count ? panelItems(child).length : undefined;
@@ -177,32 +203,56 @@ function CardsBlock({ node, stack, block }: { node: SkillNode; stack: readonly S
   );
 }
 
-function GroupBlock({ node, stack, block }: { node: SkillNode; stack: readonly SkillNode[]; block: SkillGroupBlock }) {
+function GroupBlock({
+  node,
+  stack,
+  block,
+  index,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  block: SkillGroupBlock;
+  index: string;
+}) {
   const className = [block.label ? "stree-lane" : "stree-stack", widthClass(block.width)].filter(Boolean).join(" ");
   return (
     <div className={className}>
-      {block.label ? <p className="stree-lane-label">{block.label}</p> : null}
-      {block.sections.map((section, index) => (
-        <Block key={`${section.type}-${index}`} node={node} stack={stack} block={section} />
+      {block.label ? (
+        <p className="stree-lane-label">
+          <SkillCopyLine path={`n:${node.id}:sec:${index}:label`} text={block.label} label="Label" />
+        </p>
+      ) : null}
+      {block.sections.map((section, sectionIndex) => (
+        <Block key={`${section.type}-${sectionIndex}`} node={node} stack={stack} block={section} index={`${index}.${sectionIndex}`} />
       ))}
     </div>
   );
 }
 
-function Block({ node, stack, block }: { node: SkillNode; stack: readonly SkillNode[]; block: SkillBlock }) {
+function Block({
+  node,
+  stack,
+  block,
+  index,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  block: SkillBlock;
+  index: string;
+}) {
   switch (block.type) {
     case "panel":
-      return <PanelBlock block={block} />;
+      return <PanelBlock nodeId={node.id} index={index} block={block} />;
     case "note":
-      return <NoteBlock block={block} />;
+      return <NoteBlock nodeId={node.id} index={index} block={block} />;
     case "chips":
-      return <ChipBlock block={block} />;
+      return <ChipBlock nodeId={node.id} index={index} block={block} />;
     case "cards":
-      return <CardsBlock node={node} stack={stack} block={block} />;
+      return <CardsBlock node={node} stack={stack} block={block} index={index} />;
     case "flow":
       return <Flow node={node} stack={stack} place="hub" />;
     case "group":
-      return <GroupBlock node={node} stack={stack} block={block} />;
+      return <GroupBlock node={node} stack={stack} block={block} index={index} />;
     default: {
       const unused: never = block;
       return unused;
@@ -217,7 +267,9 @@ function Overview({ stack }: { stack: readonly SkillNode[] }) {
     <section className="stree-view" aria-label="Academy overview">
       <div className="stree-tree" style={{ "--stree-columns": overviewColumns(root) } as CSSProperties}>
         <div className="stree-root-wrap">
-          <h1 className="stree-root-heading">{root.card.title}</h1>
+          <h1 className="stree-root-heading">
+            <SkillCopyLine path={`n:${root.id}:card:title`} text={root.card.title} label="Title" />
+          </h1>
         </div>
         <div className="stree-stem" aria-hidden="true" />
         <div className="stree-rail" aria-hidden="true">
@@ -234,7 +286,11 @@ function Overview({ stack }: { stack: readonly SkillNode[] }) {
           ))}
         </div>
       </div>
-      {root.hint ? <p className="stree-hint">{root.hint}</p> : null}
+      {root.hint ? (
+        <p className="stree-hint">
+          <SkillCopyLine path={`n:${root.id}:hint`} text={root.hint} label="Note" />
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -246,12 +302,22 @@ function Detail({ node, stack }: { node: SkillNode; stack: readonly SkillNode[] 
   return (
     <section className="stree-view" aria-label={page.title}>
       <div className="stree-section-head">
-        {page.eyebrow ? <p className="stree-eyebrow">{page.eyebrow}</p> : null}
-        <h1>{page.title}</h1>
-        {page.blurb ? <p>{page.blurb}</p> : null}
+        {page.eyebrow ? (
+          <p className="stree-eyebrow">
+            <SkillCopyLine path={`n:${node.id}:page:eyebrow`} text={page.eyebrow} label="Eyebrow" />
+          </p>
+        ) : null}
+        <h1>
+          <SkillCopyLine path={`n:${node.id}:page:title`} text={page.title} label="Title" />
+        </h1>
+        {page.blurb ? (
+          <p>
+            <SkillCopyLine path={`n:${node.id}:page:blurb`} text={page.blurb} label="Blurb" />
+          </p>
+        ) : null}
       </div>
       {page.sections.map((section, index) => (
-        <Block key={`${section.type}-${index}`} node={node} stack={stack} block={section} />
+        <Block key={`${section.type}-${index}`} node={node} stack={stack} block={section} index={String(index)} />
       ))}
       {extra.length > 0 ? (
         <div className="stree-lane">

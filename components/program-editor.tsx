@@ -129,7 +129,7 @@ export function ProgramEditor({
 
   return (
     <ProgramEditorContext.Provider value={value}>
-      <div className={toolbarClass} role="group" aria-label="Program editing" data-program-editor={state.mode}>
+      <div className={toolbarClass} role="group" aria-label="Program editing" data-program-editor={state.mode} data-lead-editor={state.mode}>
         {state.mode === "edit" ? (
           <span className={styles.status} aria-live="polite">
             {state.saving ? programEditCopy.saving : dirty ? programEditCopy.dirty : programEditCopy.clean}

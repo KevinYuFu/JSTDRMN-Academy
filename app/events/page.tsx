@@ -1,16 +1,18 @@
 import { AppHeader } from "@/components/app-header";
-import { EventJoin } from "@/components/event-join";
+import { EventsBoard } from "@/components/events-editor";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { audienceLabel, canSeeEvent, formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
 import { entitlementRecords } from "@/lib/learn";
+import { pageCopyKeys, readPageCopy } from "@/lib/page-copy";
+import { canEditPrograms } from "@/lib/program-edit";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
   const query = await searchParams;
   const now = new Date();
-  const [rows, user, production] = await Promise.all([
+  const [rows, user, production, storedCopy] = await Promise.all([
     prisma.event.findMany({
       where: { active: true, cancelled: false },
       include: { type: true, cohort: true },
@@ -18,7 +20,9 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
     }),
     getUser(),
     prisma.course.findUnique({ where: { slug: "production-bootcamp" }, select: { id: true } }),
+    prisma.meta.findUnique({ where: { key: pageCopyKeys.events } }),
   ]);
+  const copy = readPageCopy("events", storedCopy?.value);
   const entitlements = user ? await entitlementRecords(user.id) : [];
   const producerCourseIds = production ? [production.id] : [];
   const upcoming = rows
@@ -39,43 +43,30 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
     .sort((a, b) => a.when.start.getTime() - b.when.start.getTime());
   const [featured, ...rest] = upcoming;
   const linked = Boolean(user?.discordId);
+  const cards = [featured, ...rest].filter((item): item is NonNullable<typeof featured> => Boolean(item)).map((item, index) => ({
+    id: item.event.id,
+    slug: item.event.slug,
+    featured: index === 0,
+    kicker: `${item.event.type.name}${item.event.recurrence === "weekly" ? " · Weekly" : ""}`,
+    title: item.event.title,
+    when: formatToronto(item.when.start),
+    description: item.event.description,
+    audience: audienceLabel(item.event.audience, item.event.cohort?.name),
+    join: resolveJoin(item.event, item.event.type),
+    linked,
+    signedIn: Boolean(user),
+  }));
 
   return (
     <>
       <AppHeader active="events" />
       <main className="sessions-page">
-        <section className="sessions-hero">
-          <h1>Events</h1>
-          <p>Academy events only. Showcase nights stay on the JSTDRMN site.</p>
-        </section>
-        {query.discord === "connected" ? <div className="banner shell-note">Discord is connected.</div> : null}
-        {query.discord === "unconfigured" ? <div className="banner shell-note">Discord linking isn’t configured yet.</div> : null}
-        {featured ? (
-          <article className="event-feature">
-            <div className="kicker">{featured.event.type.name}{featured.event.recurrence === "weekly" ? " · Weekly" : ""}</div>
-            <h2>{featured.event.title}</h2>
-            <p className="event-when">{formatToronto(featured.when.start)}</p>
-            <p>{featured.event.description}</p>
-            <p className="note">{audienceLabel(featured.event.audience, featured.event.cohort?.name)}</p>
-            <EventJoin action={resolveJoin(featured.event, featured.event.type)} slug={featured.event.slug} linked={linked} signedIn={Boolean(user)} />
-          </article>
-        ) : (
-          <p className="note">No upcoming events for this account.</p>
-        )}
-        {rest.length > 0 ? (
-          <div className="event-grid">
-            {rest.map(({ event, when }) => (
-              <article key={event.id} className="event-card">
-                <div className="kicker">{event.type.name}{event.recurrence === "weekly" ? " · Weekly" : ""}</div>
-                <h3>{event.title}</h3>
-                <p className="event-when">{formatToronto(when.start)}</p>
-                <p>{event.description}</p>
-                <p className="note">{audienceLabel(event.audience, event.cohort?.name)}</p>
-                <EventJoin action={resolveJoin(event, event.type)} slug={event.slug} linked={linked} signedIn={Boolean(user)} />
-              </article>
-            ))}
-          </div>
-        ) : null}
+        <EventsBoard
+          lead={canEditPrograms(user?.role)}
+          copy={copy}
+          events={cards}
+          sentDiscord={query.discord === "connected" || query.discord === "unconfigured" ? query.discord : null}
+        />
       </main>
     </>
   );
