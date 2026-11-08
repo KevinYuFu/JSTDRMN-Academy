@@ -49,7 +49,7 @@ export default async function ProgramPage({
       <AppHeader active="programs" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/">Programs</Link> › <b>{program.title}</b>
+          <Link href="/programs">Programs</Link> › <b>{program.title}</b>
         </div>
         {query.unlocked ? <div className="banner">You’re in. This program is on your account.</div> : null}
         <article className="program-detail">

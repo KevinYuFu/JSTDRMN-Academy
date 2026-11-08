@@ -32,7 +32,7 @@ export function SubscriptionSection({
         <>
           <p className={styles.note}>This page does not start a purchase.</p>
           <div className={styles.action}>
-            <Link className="pill pill-purple" href="#programs">
+            <Link className="pill pill-purple" href="/programs">
               Browse programs
             </Link>
           </div>

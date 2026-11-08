@@ -17,7 +17,7 @@ export type AcademyNavItem = {
  */
 export function academyNav(role: string | null): AcademyNavItem[] {
   const items: AcademyNavItem[] = [
-    { key: "programs", label: "Programs", href: "/" },
+    { key: "programs", label: "Programs", href: "/programs" },
     skillTreeNav,
     { key: "sessions", label: "Private Sessions", href: "/private-sessions" },
     { key: "events", label: "Events", href: "/events" },

@@ -43,7 +43,7 @@ export default async function HeadlinerPage({
       <AppHeader active="courses" />
       <main className="shell">
         <div className="crumbs">
-          <Link href="/">Programs</Link> › <b>{course.title}</b>
+          <Link href="/programs">Programs</Link> › <b>{course.title}</b>
         </div>
         {query.unlocked ? <div className="banner">You’re in. Headliner stays open while the subscription is paid.</div> : null}
         {query.discord === "connected" ? <div className="banner">Discord is connected. The Headliner role follows this subscription.</div> : null}
