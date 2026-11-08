@@ -1,0 +1,908 @@
+{
+  "id": "overview",
+  "slug": [],
+  "crumb": "Overview",
+  "card": {
+    "title": "JSTDRMN Academy"
+  },
+  "hint": "Overview shows branches only · details open after you click",
+  "children": [
+    {
+      "id": "community",
+      "slug": [
+        "community"
+      ],
+      "crumb": "Community Events",
+      "card": {
+        "title": "Community",
+        "sub": "Events · gather and connect",
+        "foot": "Open →",
+        "label": "Open Community Events"
+      },
+      "curriculum": null,
+      "page": {
+        "eyebrow": "Community Events",
+        "title": "Community Events",
+        "blurb": "Bringing producers and Dreamers together through shared events and community touchpoints.",
+        "sections": [
+          {
+            "type": "group",
+            "width": "narrow",
+            "sections": [
+              {
+                "type": "panel",
+                "title": "Community Events",
+                "sub": "Bringing producers and Dreamers together through shared events and community touchpoints.",
+                "foot": "Details coming later. Purpose only for now."
+              },
+              {
+                "type": "note",
+                "strong": "No invented curriculum.",
+                "text": "Details coming later. Purpose only for now."
+              }
+            ]
+          }
+        ]
+      },
+      "children": []
+    },
+    {
+      "id": "dj",
+      "slug": [
+        "dj"
+      ],
+      "crumb": "DJ",
+      "card": {
+        "title": "DJ",
+        "sub": "Advanced · mashup · production",
+        "foot": "Open →",
+        "label": "Open DJ"
+      },
+      "mapFlow": {
+        "left": "advanced-dj",
+        "right": "mashup",
+        "hang": "production"
+      },
+      "page": {
+        "eyebrow": "DJ",
+        "title": "DJ Path",
+        "blurb": "DJ path into Advanced DJ and Mashup / Ableton, with Production Bootcamp under Mashup.",
+        "sections": [
+          {
+            "type": "group",
+            "width": "hub",
+            "sections": [
+              {
+                "type": "cards",
+                "layout": "stack",
+                "ids": [
+                  "dj-bootcamp"
+                ]
+              },
+              {
+                "type": "flow"
+              }
+            ]
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": "dj-bootcamp",
+          "slug": [
+            "bootcamp"
+          ],
+          "crumb": "DJ Bootcamp",
+          "card": {
+            "title": "DJ Bootcamp",
+            "sub": "Standalone DJ training — crate craft, culture, and clean AV setup.",
+            "foot": "Open →",
+            "label": "Open DJ Bootcamp"
+          },
+          "page": {
+            "eyebrow": "DJ Bootcamp",
+            "title": "DJ Bootcamp",
+            "blurb": "Standalone DJ training — crate craft, culture, and clean AV setup.",
+            "sections": [
+              {
+                "type": "group",
+                "width": "core",
+                "label": "Core foundations",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Core DJ Skills",
+                    "foot": "Taught in the bootcamp",
+                    "items": [
+                      "Crate building & basics",
+                      "Genre mixing styles & culture",
+                      "AV equipment connections & clean cabling"
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "cards",
+                "label": "Skill categories · click for details",
+                "layout": "grid",
+                "group": "category",
+                "count": "skill",
+                "foot": "Open details →"
+              }
+            ]
+          },
+          "children": [
+            {
+              "id": "library",
+              "slug": [
+                "library"
+              ],
+              "crumb": "Library",
+              "group": "category",
+              "card": {
+                "title": "Library",
+                "label": "Open Library"
+              },
+              "page": {
+                "eyebrow": "DJ Bootcamp",
+                "title": "Library",
+                "blurb": "Skill details for this category.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Library",
+                    "foot": "DJ Bootcamp",
+                    "items": [
+                      "Library curation",
+                      "Library management"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "transitions",
+              "slug": [
+                "transitions"
+              ],
+              "crumb": "Transitions",
+              "group": "category",
+              "card": {
+                "title": "Transitions",
+                "label": "Open Transitions"
+              },
+              "page": {
+                "eyebrow": "DJ Bootcamp",
+                "title": "Transitions",
+                "blurb": "Skill details for this category.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Transitions",
+                    "foot": "DJ Bootcamp",
+                    "items": [
+                      "Beat / phrase alignment",
+                      "Reverb / echo",
+                      "Phaser / flanger / filter",
+                      "Loops",
+                      "Stems",
+                      "Scratching",
+                      "Doubles"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "set-curation",
+              "slug": [
+                "set-curation"
+              ],
+              "crumb": "Set Curation",
+              "group": "category",
+              "card": {
+                "title": "Set Curation",
+                "label": "Open Set Curation"
+              },
+              "page": {
+                "eyebrow": "DJ Bootcamp",
+                "title": "Set Curation",
+                "blurb": "Skill details for this category.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Set Curation",
+                    "foot": "DJ Bootcamp",
+                    "items": [
+                      "Right vibe for the crowd"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "edits",
+              "slug": [
+                "edits"
+              ],
+              "crumb": "Edits",
+              "group": "category",
+              "card": {
+                "title": "Edits",
+                "label": "Open Edits"
+              },
+              "page": {
+                "eyebrow": "DJ Bootcamp",
+                "title": "Edits",
+                "blurb": "Skill details for this category.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Edits",
+                    "foot": "DJ Bootcamp",
+                    "items": [
+                      "Song edits"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "crowd-work",
+              "slug": [
+                "crowd-work"
+              ],
+              "crumb": "Crowd Work",
+              "group": "category",
+              "card": {
+                "title": "Crowd Work",
+                "label": "Open Crowd Work"
+              },
+              "page": {
+                "eyebrow": "DJ Bootcamp",
+                "title": "Crowd Work",
+                "blurb": "Skill details for this category.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Crowd Work",
+                    "foot": "DJ Bootcamp",
+                    "items": [
+                      "Reading and working the room"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "career",
+              "slug": [
+                "career"
+              ],
+              "crumb": "Career Growth",
+              "group": "category",
+              "card": {
+                "title": "Career Growth",
+                "label": "Open Career Growth"
+              },
+              "page": {
+                "eyebrow": "DJ Bootcamp",
+                "title": "Career Growth",
+                "blurb": "Skill details for this category.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Career Growth",
+                    "foot": "DJ Bootcamp",
+                    "items": [
+                      "Residency",
+                      "Networking"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "advanced-dj",
+          "slug": [
+            "advanced"
+          ],
+          "fromOverview": [
+            "advanced-dj"
+          ],
+          "crumb": "Advanced DJ",
+          "curriculum": null,
+          "card": {
+            "title": "Advanced DJ",
+            "sub": "Working title · tentative",
+            "foot": "Open →",
+            "accent": true,
+            "label": "Open Advanced DJ"
+          },
+          "map": {
+            "title": "Advanced DJ",
+            "sub": "Working title",
+            "foot": "Open →",
+            "accent": true,
+            "label": "Open Advanced DJ"
+          },
+          "page": {
+            "eyebrow": "DJ",
+            "title": "Advanced DJ",
+            "blurb": "Placeholder for advanced DJ programming beyond the current simplified map.",
+            "sections": [
+              {
+                "type": "group",
+                "width": "narrow",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Advanced DJ",
+                    "sub": "Working title",
+                    "foot": "Working title — tentative. Curriculum not supplied yet.",
+                    "accent": true
+                  },
+                  {
+                    "type": "note",
+                    "strong": "Working title.",
+                    "text": "Working title — tentative. Curriculum not supplied yet. No invented curriculum."
+                  }
+                ]
+              }
+            ]
+          },
+          "children": []
+        },
+        {
+          "id": "mashup",
+          "slug": [
+            "mashup"
+          ],
+          "crumb": "Mashup / Ableton",
+          "card": {
+            "title": "Mashup / Ableton Bootcamp",
+            "sub": "Stems, edits, release",
+            "foot": "Open →",
+            "label": "Open Mashup Ableton Bootcamp"
+          },
+          "page": {
+            "eyebrow": "Ableton / Mashup",
+            "title": "Mashup / Ableton Bootcamp",
+            "blurb": "Build mashups in Ableton and ship a release.",
+            "sections": [
+              {
+                "type": "chips",
+                "title": "Mashup focus",
+                "sub": "What this bootcamp covers",
+                "foot": "Leads into Music Production",
+                "accent": true,
+                "width": "narrow",
+                "chips": [
+                  {
+                    "label": "Ableton basics"
+                  },
+                  {
+                    "label": "Stem splitting"
+                  },
+                  {
+                    "label": "Editing"
+                  },
+                  {
+                    "label": "Mix / master mashups"
+                  },
+                  {
+                    "label": "SoundCloud release",
+                    "hot": true
+                  }
+                ]
+              }
+            ]
+          },
+          "children": []
+        },
+        {
+          "id": "production",
+          "slug": [
+            "production"
+          ],
+          "crumb": "Production Bootcamp",
+          "card": {
+            "title": "Production Bootcamp",
+            "sub": "Via Mashup path · shared skills",
+            "foot": "Open →",
+            "label": "Open Production Bootcamp"
+          },
+          "map": {
+            "title": "Production Bootcamp",
+            "sub": "Via Mashup path",
+            "foot": "Open →",
+            "label": "Open Production Bootcamp"
+          },
+          "page": {
+            "eyebrow": "Music Production",
+            "title": "Production Bootcamp",
+            "blurb": "Reached through Mashup / Ableton Bootcamp. Shared skill tree — not split into beginner vs intermediate without a supplied division.",
+            "sections": [
+              {
+                "type": "cards",
+                "label": "Course lanes",
+                "layout": "grid-3",
+                "group": "course"
+              },
+              {
+                "type": "cards",
+                "label": "Under production",
+                "layout": "stack",
+                "group": "under",
+                "width": "narrow"
+              },
+              {
+                "type": "cards",
+                "label": "Shared skills · not assigned to beginner vs intermediate",
+                "layout": "grid",
+                "group": "skill",
+                "count": "topic",
+                "foot": "Open details →"
+              }
+            ]
+          },
+          "children": [
+            {
+              "id": "prod-beginner",
+              "slug": [
+                "course",
+                "prod-beginner"
+              ],
+              "crumb": "Production Beginner",
+              "group": "course",
+              "card": {
+                "title": "Production Beginner",
+                "sub": "Course lane · skills shared below",
+                "foot": "Course",
+                "label": "Open Production Beginner"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Production Beginner",
+                "blurb": "Course lane inside Music Production. Shared skills stay on the production tree.",
+                "sections": [
+                  {
+                    "type": "group",
+                    "width": "narrow",
+                    "sections": [
+                      {
+                        "type": "panel",
+                        "title": "Production Beginner",
+                        "sub": "Known as a production course lane.",
+                        "foot": "Course"
+                      },
+                      {
+                        "type": "note",
+                        "strong": "Skill placement:",
+                        "text": "Production skills stay on the shared tree. Do not invent beginner / intermediate module lists."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "prod-intermediate",
+              "slug": [
+                "course",
+                "prod-intermediate"
+              ],
+              "crumb": "Production Intermediate",
+              "group": "course",
+              "card": {
+                "title": "Production Intermediate",
+                "sub": "Course lane · skills shared below",
+                "foot": "Course",
+                "label": "Open Production Intermediate"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Production Intermediate",
+                "blurb": "Course lane inside Music Production. Shared skills stay on the production tree.",
+                "sections": [
+                  {
+                    "type": "group",
+                    "width": "narrow",
+                    "sections": [
+                      {
+                        "type": "panel",
+                        "title": "Production Intermediate",
+                        "sub": "Known as a production course lane.",
+                        "foot": "Course"
+                      },
+                      {
+                        "type": "note",
+                        "strong": "Skill placement:",
+                        "text": "Production skills stay on the shared tree. Do not invent beginner / intermediate module lists."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "prod-finishing",
+              "slug": [
+                "course",
+                "prod-finishing"
+              ],
+              "crumb": "Track Finishing Group",
+              "group": "course",
+              "card": {
+                "title": "Track Finishing Group",
+                "sub": "For producers who already know production. Group schedule, finish tracks, accountability.",
+                "foot": "Working title",
+                "accent": true,
+                "label": "Open Track Finishing Group"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Track Finishing Group",
+                "blurb": "For producers who already know production. Group schedule, finish tracks, accountability.",
+                "sections": [
+                  {
+                    "type": "group",
+                    "width": "narrow",
+                    "sections": [
+                      {
+                        "type": "panel",
+                        "title": "Track Finishing Group",
+                        "sub": "For producers who already know production. Group schedule, finish tracks, accountability.",
+                        "foot": "Working title",
+                        "accent": true
+                      },
+                      {
+                        "type": "note",
+                        "strong": "Skill placement:",
+                        "text": "Production skills stay on the shared tree. Do not invent beginner / intermediate module lists."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "mixing",
+              "slug": [
+                "mixing"
+              ],
+              "crumb": "Mixing & Mastering",
+              "group": "under",
+              "curriculum": null,
+              "card": {
+                "title": "Mixing and Mastering",
+                "sub": "Under Music Production. Curriculum details not supplied yet.",
+                "foot": "Curriculum later",
+                "label": "Open Mixing and Mastering"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Mixing and Mastering",
+                "blurb": "Under Music Production. Curriculum details not supplied yet.",
+                "sections": [
+                  {
+                    "type": "group",
+                    "width": "narrow",
+                    "sections": [
+                      {
+                        "type": "panel",
+                        "title": "Mixing and Mastering",
+                        "sub": "Lives under Music Production — not a separate top-level branch.",
+                        "foot": "Curriculum not supplied"
+                      },
+                      {
+                        "type": "note",
+                        "strong": "No invented modules.",
+                        "text": "Show placement only until curriculum is supplied."
+                      }
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "daw",
+              "slug": [
+                "skill",
+                "daw"
+              ],
+              "crumb": "DAW",
+              "group": "skill",
+              "card": {
+                "title": "DAW",
+                "label": "Open DAW"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "DAW",
+                "blurb": "Shared production skill — not assigned to a specific course level.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "DAW",
+                    "foot": "Shared skill tree",
+                    "items": [
+                      "Audio manipulation",
+                      "MIDI",
+                      "Automation",
+                      "Routing",
+                      "File management"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "theory",
+              "slug": [
+                "skill",
+                "theory"
+              ],
+              "crumb": "Music Theory",
+              "group": "skill",
+              "card": {
+                "title": "Music Theory",
+                "label": "Open Music Theory"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Music Theory",
+                "blurb": "Shared production skill — not assigned to a specific course level.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Music Theory",
+                    "foot": "Shared skill tree",
+                    "items": [
+                      "Rhythm / counting",
+                      "Scales & chords",
+                      "Arrangement & phrasing",
+                      "Tension & release",
+                      "Call & response"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "cinema",
+              "slug": [
+                "skill",
+                "cinema"
+              ],
+              "crumb": "Cinema / FX",
+              "group": "skill",
+              "card": {
+                "title": "Cinema / FX",
+                "label": "Open Cinema / FX"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Cinema / FX",
+                "blurb": "Shared production skill — not assigned to a specific course level.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Cinema / FX",
+                    "foot": "Shared skill tree",
+                    "items": [
+                      "Risers",
+                      "Impacts",
+                      "Atmosphere",
+                      "Layering"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "audio-fx",
+              "slug": [
+                "skill",
+                "audio-fx"
+              ],
+              "crumb": "Audio FX",
+              "group": "skill",
+              "card": {
+                "title": "Audio FX",
+                "label": "Open Audio FX"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Audio FX",
+                "blurb": "Shared production skill — not assigned to a specific course level.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Audio FX",
+                    "foot": "Shared skill tree",
+                    "items": [
+                      "Utility",
+                      "EQ",
+                      "Dynamics",
+                      "Limiter",
+                      "Multiband",
+                      "Filter",
+                      "Reverb",
+                      "Delay",
+                      "Chorus",
+                      "Autopan",
+                      "Waveshapers",
+                      "OTT",
+                      "Phaser / Flanger"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "instruments",
+              "slug": [
+                "skill",
+                "instruments"
+              ],
+              "crumb": "Instruments",
+              "group": "skill",
+              "card": {
+                "title": "Instruments",
+                "label": "Open Instruments"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Instruments",
+                "blurb": "Shared production skill — not assigned to a specific course level.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Instruments",
+                    "foot": "Shared skill tree",
+                    "items": [
+                      "Samples & presets",
+                      "Synths",
+                      "Sound design"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "drums",
+              "slug": [
+                "skill",
+                "drums"
+              ],
+              "crumb": "Drums",
+              "group": "skill",
+              "card": {
+                "title": "Drums",
+                "label": "Open Drums"
+              },
+              "page": {
+                "eyebrow": "Music Production",
+                "title": "Drums",
+                "blurb": "Shared production skill — not assigned to a specific course level.",
+                "sections": [
+                  {
+                    "type": "panel",
+                    "title": "Drums",
+                    "foot": "Shared skill tree",
+                    "items": [
+                      "House patterns",
+                      "Breakbeat patterns",
+                      "Trap patterns",
+                      "Programming",
+                      "Dynamics"
+                    ]
+                  }
+                ]
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "branding",
+      "slug": [
+        "branding"
+      ],
+      "crumb": "Branding",
+      "card": {
+        "title": "Branding",
+        "sub": "Artist identity and presence",
+        "foot": "Open →",
+        "label": "Open Branding"
+      },
+      "curriculum": null,
+      "page": {
+        "eyebrow": "Branding",
+        "title": "Branding",
+        "blurb": "Artist identity and brand development for Dreamers building a public presence.",
+        "sections": [
+          {
+            "type": "group",
+            "width": "narrow",
+            "sections": [
+              {
+                "type": "panel",
+                "title": "Branding",
+                "sub": "Artist identity and brand development for Dreamers building a public presence.",
+                "foot": "Details coming later. Purpose only for now."
+              },
+              {
+                "type": "note",
+                "strong": "No invented curriculum.",
+                "text": "Details coming later. Purpose only for now."
+              }
+            ]
+          }
+        ]
+      },
+      "children": []
+    },
+    {
+      "id": "education",
+      "slug": [
+        "education"
+      ],
+      "crumb": "Education",
+      "card": {
+        "title": "Education",
+        "sub": "Required for teachers",
+        "foot": "Open →",
+        "accent": true,
+        "label": "Open Education"
+      },
+      "curriculum": null,
+      "page": {
+        "eyebrow": "Education",
+        "title": "Instructor Training",
+        "blurb": "Required training for anyone who wants to teach at JSTDRMN Academy.",
+        "sections": [
+          {
+            "type": "group",
+            "width": "narrow",
+            "sections": [
+              {
+                "type": "panel",
+                "title": "Required to teach",
+                "sub": "Required training for anyone who wants to teach at JSTDRMN Academy.",
+                "foot": "Requirement confirmed. Course modules not written yet — not invented here.",
+                "accent": true
+              },
+              {
+                "type": "note",
+                "strong": "No invented curriculum.",
+                "text": "Requirement confirmed. Course modules not written yet — not invented here."
+              }
+            ]
+          }
+        ]
+      },
+      "children": []
+    }
+  ]
+}

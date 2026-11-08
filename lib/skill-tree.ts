@@ -3,14 +3,17 @@
  *
  * `skillTree` is the built-in map. Neon stores the live map in one JSON row.
  * When that row is missing, the app copies this object in once.
+ * A row that is still the previous built-in map is shown as this object and is not written back.
+ * Any other saved map is left as the Lead saved it.
  * A Lead edits the live map at /teacher/skill-tree. The public page reads the database.
  *
  * Shape:
  * - `children` is the drill path and the URL (`slug` segments).
  * - `page.sections` is what the drill-in shows (panel, note, chips, cards, flow).
- * - `mapFlow` on DJ draws the tight overview: left, right, and `hang` under the right card.
- * - `fromOverview` is only for a different URL when the card is opened from the map
- *   (Advanced DJ is `/advanced-dj` from the map and `/dj/advanced` from the DJ page).
+ * - `path` on the overview draws the two-column map. It is optional.
+ *   Saved maps without a complete path keep the older column layout.
+ * - `mapFlow` draws that older tight overview: left, right, and `hang` under the right card.
+ * - `fromOverview` is only for a different URL when the card is opened from the map.
  * - `curriculum: null` means the list was not supplied. Leave it null.
  *
  * Temporary name and route — Yu has not picked a final name.
@@ -83,6 +86,19 @@ export type SkillGroupBlock = {
 
 export type SkillBlock = SkillPanelBlock | SkillNoteBlock | SkillChipBlock | SkillCardsBlock | SkillFlowBlock | SkillGroupBlock;
 
+export type SkillPathEdge = {
+  from: string;
+  to: string;
+  kind: "branch" | "across" | "down" | "join";
+};
+
+/** Two chains under the overview, plus the connectors between them. */
+export type SkillPath = {
+  left: readonly string[];
+  right: readonly string[];
+  edges: readonly SkillPathEdge[];
+};
+
 export type SkillPage = {
   eyebrow?: string;
   title: string;
@@ -108,8 +124,14 @@ export type SkillNode = {
   /**
    * Tight pair on the overview, and the same pair on this node's flow block.
    * `hang` is a sibling drawn under the right card. Its URL stays a child of this node.
+   * Older saved maps use this. The built-in map uses `path` instead.
    */
   mapFlow?: { left: string; right: string; hang?: string };
+  /**
+   * Two-column overview. Every direct child is listed once, in `left` or `right`.
+   * Omitted on older saved maps, which keep the column layout.
+   */
+  path?: SkillPath;
   /** Null means no curriculum was supplied. Do not fill it in. */
   curriculum?: null;
   hint?: string;
@@ -119,469 +141,109 @@ export type SkillNode = {
 
 const open = "Open →";
 
-const noCurriculum = "No invented curriculum.";
-const skillPlacement = "Production skills stay on the shared tree. Do not invent beginner / intermediate module lists.";
-
-function listed(input: {
-  id: string;
-  title: string;
-  slug?: readonly string[];
-  group: string;
-  items: readonly string[];
-  eyebrow: string;
-  blurb: string;
-  foot: string;
-}): SkillNode {
+function step(input: { id: string; slug: readonly string[]; title: string; sub: string }): SkillNode {
   return {
     id: input.id,
-    slug: input.slug ?? [input.id],
+    slug: input.slug,
     crumb: input.title,
-    group: input.group,
-    card: { title: input.title, label: `Open ${input.title}` },
-    page: {
-      eyebrow: input.eyebrow,
-      title: input.title,
-      blurb: input.blurb,
-      sections: [{ type: "panel", title: input.title, foot: input.foot, items: input.items }],
-    },
-    children: [],
-  };
-}
-
-function course(input: { id: string; title: string; foot: string; accent?: boolean; note?: string }): SkillNode {
-  const note = input.note;
-  return {
-    id: input.id,
-    slug: ["course", input.id],
-    crumb: input.title,
-    group: "course",
     card: {
       title: input.title,
-      sub: note ?? "Course lane · skills shared below",
-      foot: input.foot,
-      accent: input.accent,
+      sub: input.sub,
+      foot: open,
       label: `Open ${input.title}`,
     },
+    curriculum: null,
     page: {
-      eyebrow: "Music Production",
+      eyebrow: input.title,
       title: input.title,
-      blurb: note ?? "Course lane inside Music Production. Shared skills stay on the production tree.",
-      sections: [
-        {
-          type: "group",
-          width: "narrow",
-          sections: [
-            {
-              type: "panel",
-              title: input.title,
-              sub: note ?? "Known as a production course lane.",
-              foot: input.foot,
-              accent: input.accent,
-            },
-            { type: "note", strong: "Skill placement:", text: skillPlacement },
-          ],
-        },
-      ],
+      blurb: input.sub,
+      sections: [{ type: "panel", title: input.title, sub: input.sub }],
     },
     children: [],
   };
 }
 
-const djSkills = [
-  ["library", "Library", ["Library curation", "Library management"]],
-  [
-    "transitions",
-    "Transitions",
-    ["Beat / phrase alignment", "Reverb / echo", "Phaser / flanger / filter", "Loops", "Stems", "Scratching", "Doubles"],
-  ],
-  ["set-curation", "Set Curation", ["Right vibe for the crowd"]],
-  ["edits", "Edits", ["Song edits"]],
-  ["crowd-work", "Crowd Work", ["Reading and working the room"]],
-  ["career", "Career Growth", ["Residency", "Networking"]],
-] as const;
-
-const productionSkills = [
-  ["daw", "DAW", ["Audio manipulation", "MIDI", "Automation", "Routing", "File management"]],
-  ["theory", "Music Theory", ["Rhythm / counting", "Scales & chords", "Arrangement & phrasing", "Tension & release", "Call & response"]],
-  ["cinema", "Cinema / FX", ["Risers", "Impacts", "Atmosphere", "Layering"]],
-  [
-    "audio-fx",
-    "Audio FX",
-    ["Utility", "EQ", "Dynamics", "Limiter", "Multiband", "Filter", "Reverb", "Delay", "Chorus", "Autopan", "Waveshapers", "OTT", "Phaser / Flanger"],
-  ],
-  ["instruments", "Instruments", ["Samples & presets", "Synths", "Sound design"]],
-  ["drums", "Drums", ["House patterns", "Breakbeat patterns", "Trap patterns", "Programming", "Dynamics"]],
-] as const;
-
-function placeholder(input: {
-  id: string;
-  crumb: string;
-  card: SkillCard;
-  page: SkillPage;
-  curriculum?: null;
-}): SkillNode {
-  return {
-    id: input.id,
-    slug: [input.id],
-    crumb: input.crumb,
-    card: input.card,
-    curriculum: input.curriculum ?? null,
-    page: input.page,
-    children: [],
-  };
-}
-
-const community = placeholder({
-  id: "community",
-  crumb: "Community Events",
-  card: { title: "Community", sub: "Events · gather and connect", foot: open, label: "Open Community Events" },
-  page: {
-    eyebrow: "Community Events",
-    title: "Community Events",
-    blurb: "Bringing producers and Dreamers together through shared events and community touchpoints.",
-    sections: [
-      {
-        type: "group",
-        width: "narrow",
-        sections: [
-          {
-            type: "panel",
-            title: "Community Events",
-            sub: "Bringing producers and Dreamers together through shared events and community touchpoints.",
-            foot: "Details coming later. Purpose only for now.",
-          },
-          { type: "note", strong: noCurriculum, text: "Details coming later. Purpose only for now." },
-        ],
-      },
-    ],
-  },
-});
-
-const branding = placeholder({
-  id: "branding",
-  crumb: "Branding",
-  card: { title: "Branding", sub: "Artist identity and presence", foot: open, label: "Open Branding" },
-  page: {
-    eyebrow: "Branding",
-    title: "Branding",
-    blurb: "Artist identity and brand development for Dreamers building a public presence.",
-    sections: [
-      {
-        type: "group",
-        width: "narrow",
-        sections: [
-          {
-            type: "panel",
-            title: "Branding",
-            sub: "Artist identity and brand development for Dreamers building a public presence.",
-            foot: "Details coming later. Purpose only for now.",
-          },
-          { type: "note", strong: noCurriculum, text: "Details coming later. Purpose only for now." },
-        ],
-      },
-    ],
-  },
-});
-
-const education = placeholder({
-  id: "education",
-  crumb: "Education",
-  card: {
-    title: "Education",
-    sub: "Required for teachers",
-    foot: open,
-    accent: true,
-    label: "Open Education",
-  },
-  page: {
-    eyebrow: "Education",
-    title: "Instructor Training",
-    blurb: "Required training for anyone who wants to teach at JSTDRMN Academy.",
-    sections: [
-      {
-        type: "group",
-        width: "narrow",
-        sections: [
-          {
-            type: "panel",
-            title: "Required to teach",
-            sub: "Required training for anyone who wants to teach at JSTDRMN Academy.",
-            foot: "Requirement confirmed. Course modules not written yet — not invented here.",
-            accent: true,
-          },
-          {
-            type: "note",
-            strong: noCurriculum,
-            text: "Requirement confirmed. Course modules not written yet — not invented here.",
-          },
-        ],
-      },
-    ],
-  },
-});
-
-const advancedDj: SkillNode = {
-  id: "advanced-dj",
-  slug: ["advanced"],
-  fromOverview: ["advanced-dj"],
-  crumb: "Advanced DJ",
-  curriculum: null,
-  card: {
-    title: "Advanced DJ",
-    sub: "Working title · tentative",
-    foot: open,
-    accent: true,
-    label: "Open Advanced DJ",
-  },
-  map: {
-    title: "Advanced DJ",
-    sub: "Working title",
-    foot: open,
-    accent: true,
-    label: "Open Advanced DJ",
-  },
-  page: {
-    eyebrow: "DJ",
-    title: "Advanced DJ",
-    blurb: "Placeholder for advanced DJ programming beyond the current simplified map.",
-    sections: [
-      {
-        type: "group",
-        width: "narrow",
-        sections: [
-          {
-            type: "panel",
-            title: "Advanced DJ",
-            sub: "Working title",
-            foot: "Working title — tentative. Curriculum not supplied yet.",
-            accent: true,
-          },
-          {
-            type: "note",
-            strong: "Working title.",
-            text: "Working title — tentative. Curriculum not supplied yet. No invented curriculum.",
-          },
-        ],
-      },
-    ],
-  },
-  children: [],
-};
-
-const djBootcamp: SkillNode = {
+const introDj = step({
   id: "dj-bootcamp",
-  slug: ["bootcamp"],
-  crumb: "DJ Bootcamp",
-  card: {
-    title: "DJ Bootcamp",
-    sub: "Standalone DJ training — crate craft, culture, and clean AV setup.",
-    foot: open,
-    label: "Open DJ Bootcamp",
-  },
-  page: {
-    eyebrow: "DJ Bootcamp",
-    title: "DJ Bootcamp",
-    blurb: "Standalone DJ training — crate craft, culture, and clean AV setup.",
-    sections: [
-      {
-        type: "group",
-        width: "core",
-        label: "Core foundations",
-        sections: [
-          {
-            type: "panel",
-            title: "Core DJ Skills",
-            foot: "Taught in the bootcamp",
-            items: ["Crate building & basics", "Genre mixing styles & culture", "AV equipment connections & clean cabling"],
-          },
-        ],
-      },
-      {
-        type: "cards",
-        label: "Skill categories · click for details",
-        layout: "grid",
-        group: "category",
-        count: "skill",
-        foot: "Open details →",
-      },
-    ],
-  },
-  children: djSkills.map(([id, title, items]) =>
-    listed({
-      id,
-      title,
-      group: "category",
-      items,
-      eyebrow: "DJ Bootcamp",
-      blurb: "Skill details for this category.",
-      foot: "DJ Bootcamp",
-    }),
-  ),
-};
+  slug: ["dj", "bootcamp"],
+  title: "Intro DJ Bootcamp",
+  sub: "Get Stage Ready",
+});
 
-const mashup: SkillNode = {
+const mashup = step({
   id: "mashup",
   slug: ["mashup"],
-  crumb: "Mashup / Ableton",
-  card: {
-    title: "Mashup / Ableton Bootcamp",
-    sub: "Stems, edits, release",
-    foot: open,
-    label: "Open Mashup Ableton Bootcamp",
-  },
-  page: {
-    eyebrow: "Ableton / Mashup",
-    title: "Mashup / Ableton Bootcamp",
-    blurb: "Build mashups in Ableton and ship a release.",
-    sections: [
-      {
-        type: "chips",
-        title: "Mashup focus",
-        sub: "What this bootcamp covers",
-        foot: "Leads into Music Production",
-        accent: true,
-        width: "narrow",
-        chips: [
-          { label: "Ableton basics" },
-          { label: "Stem splitting" },
-          { label: "Editing" },
-          { label: "Mix / master mashups" },
-          { label: "SoundCloud release", hot: true },
-        ],
-      },
-    ],
-  },
-  children: [],
-};
+  title: "Ableton/Mashup Bootcamp",
+  sub: "Start in ableton with mashups",
+});
 
-const production: SkillNode = {
-  id: "production",
-  slug: ["production"],
-  crumb: "Production Bootcamp",
-  card: {
-    title: "Production Bootcamp",
-    sub: "Via Mashup path · shared skills",
-    foot: open,
-    label: "Open Production Bootcamp",
-  },
-  map: {
-    title: "Production Bootcamp",
-    sub: "Via Mashup path",
-    foot: open,
-    label: "Open Production Bootcamp",
-  },
-  page: {
-    eyebrow: "Music Production",
-    title: "Production Bootcamp",
-    blurb:
-      "Reached through Mashup / Ableton Bootcamp. Shared skill tree — not split into beginner vs intermediate without a supplied division.",
-    sections: [
-      { type: "cards", label: "Course lanes", layout: "grid-3", group: "course" },
-      { type: "cards", label: "Under production", layout: "stack", group: "under", width: "narrow" },
-      {
-        type: "cards",
-        label: "Shared skills · not assigned to beginner vs intermediate",
-        layout: "grid",
-        group: "skill",
-        count: "topic",
-        foot: "Open details →",
-      },
-    ],
-  },
-  children: [
-    course({ id: "prod-beginner", title: "Production Beginner", foot: "Course" }),
-    course({ id: "prod-intermediate", title: "Production Intermediate", foot: "Course" }),
-    course({
-      id: "prod-finishing",
-      title: "Track Finishing Group",
-      foot: "Working title",
-      accent: true,
-      note: "For producers who already know production. Group schedule, finish tracks, accountability.",
-    }),
-    {
-      id: "mixing",
-      slug: ["mixing"],
-      crumb: "Mixing & Mastering",
-      group: "under",
-      curriculum: null,
-      card: {
-        title: "Mixing and Mastering",
-        sub: "Under Music Production. Curriculum details not supplied yet.",
-        foot: "Curriculum later",
-        label: "Open Mixing and Mastering",
-      },
-      page: {
-        eyebrow: "Music Production",
-        title: "Mixing and Mastering",
-        blurb: "Under Music Production. Curriculum details not supplied yet.",
-        sections: [
-          {
-            type: "group",
-            width: "narrow",
-            sections: [
-              {
-                type: "panel",
-                title: "Mixing and Mastering",
-                sub: "Lives under Music Production — not a separate top-level branch.",
-                foot: "Curriculum not supplied",
-              },
-              { type: "note", strong: "No invented modules.", text: "Show placement only until curriculum is supplied." },
-            ],
-          },
-        ],
-      },
-      children: [],
-    },
-    ...productionSkills.map(([id, title, items]) =>
-      listed({
-        id,
-        title,
-        slug: ["skill", id],
-        group: "skill",
-        items,
-        eyebrow: "Music Production",
-        blurb: "Shared production skill — not assigned to a specific course level.",
-        foot: "Shared skill tree",
-      }),
-    ),
-  ],
-};
+const intermediateDj = step({
+  id: "intermediate-dj",
+  slug: ["intermediate-dj"],
+  title: "Intermediate DJ Bootcamp",
+  sub: "Business, direct support, set curation",
+});
 
-const dj: SkillNode = {
-  id: "dj",
-  slug: ["dj"],
-  crumb: "DJ",
-  card: { title: "DJ", sub: "Advanced · mashup · production", foot: open, label: "Open DJ" },
-  mapFlow: { left: "advanced-dj", right: "mashup", hang: "production" },
-  page: {
-    eyebrow: "DJ",
-    title: "DJ Path",
-    blurb: "DJ path into Advanced DJ and Mashup / Ableton, with Production Bootcamp under Mashup.",
-    sections: [
-      {
-        type: "group",
-        width: "hub",
-        sections: [
-          { type: "cards", layout: "stack", ids: ["dj-bootcamp"] },
-          { type: "flow" },
-        ],
-      },
-    ],
-  },
-  children: [djBootcamp, advancedDj, mashup, production],
-};
+const introProduction = step({
+  id: "intro-production",
+  slug: ["intro-production"],
+  title: "Intro Production Bootcamp",
+  sub: "First Track Beginning to End",
+});
+
+const retreat = step({
+  id: "dj-retreat",
+  slug: ["dj-retreat"],
+  title: "DJ Retreat",
+  sub: "Gathering of DJ's",
+});
+
+const intermediateProduction = step({
+  id: "intermediate-production",
+  slug: ["intermediate-production"],
+  title: "Intermediate Production Bootcamp",
+  sub: "Making Polished Professional Tracks",
+});
+
+const finisher = step({
+  id: "track-finisher",
+  slug: ["track-finisher"],
+  title: "Track Finisher Bootcamp",
+  sub: "Meet, Colab, Get Inspired",
+});
 
 /**
- * The map. Four top branches. DJ’s children are the bootcamp, Advanced DJ,
- * Mashup, and Production. Production is drawn under Mashup. Nothing sits above DJ.
+ * The map. Introduction is the first step. Two paths leave it.
+ * Left: Intro DJ, Intermediate DJ, DJ Retreat.
+ * Right: Ableton/Mashup, Intro Production, Intermediate Production, Track Finisher.
+ * Intro DJ also points across to Ableton/Mashup.
+ * DJ Retreat also joins Track Finisher along the lower outside of the left path.
  */
 export const skillTree: SkillNode = {
   id: "overview",
   slug: [],
   crumb: "Overview",
-  card: { title: "JSTDRMN Academy" },
+  card: {
+    title: "Introduction to Music and EDM",
+    sub: "Getting comfortable with music",
+  },
   hint: "Overview shows branches only · details open after you click",
-  children: [community, dj, branding, education],
+  path: {
+    left: ["dj-bootcamp", "intermediate-dj", "dj-retreat"],
+    right: ["mashup", "intro-production", "intermediate-production", "track-finisher"],
+    edges: [
+      { from: "overview", to: "dj-bootcamp", kind: "branch" },
+      { from: "overview", to: "mashup", kind: "branch" },
+      { from: "dj-bootcamp", to: "mashup", kind: "across" },
+      { from: "dj-bootcamp", to: "intermediate-dj", kind: "down" },
+      { from: "intermediate-dj", to: "dj-retreat", kind: "down" },
+      { from: "mashup", to: "intro-production", kind: "down" },
+      { from: "intro-production", to: "intermediate-production", kind: "down" },
+      { from: "intermediate-production", to: "track-finisher", kind: "down" },
+      { from: "dj-retreat", to: "track-finisher", kind: "join" },
+    ],
+  },
+  children: [introDj, mashup, intermediateDj, introProduction, retreat, intermediateProduction, finisher],
 };
 
 export function countLabel(kind: "skill" | "topic", count: number) {
@@ -600,6 +262,65 @@ export function findNode(id: string, node: SkillNode = skillTree): SkillNode | u
 
 export function childById(node: SkillNode, id: string) {
   return node.children.find((child) => child.id === id);
+}
+
+export type ResolvedSkillPath = {
+  left: SkillNode[];
+  right: SkillNode[];
+  across: boolean;
+  join: boolean;
+};
+
+function hasPathEdge(edges: readonly SkillPathEdge[], kind: SkillPathEdge["kind"], from: string, to: string) {
+  return edges.some((edge) => edge.kind === kind && edge.from === from && edge.to === to);
+}
+
+/**
+ * Draw `path` only when it names every direct child once and the edges are
+ * the intro split, the two chains, and the optional across link and lower join.
+ * A saved map that adds, removes, or rewires a node keeps the older columns
+ * so nothing is hidden and no connector is invented.
+ */
+export function resolvedSkillPath(root: SkillNode): ResolvedSkillPath | null {
+  const path = root.path;
+  if (!path || path.left.length === 0 || path.right.length === 0) return null;
+  const listed = [...path.left, ...path.right];
+  if (new Set(listed).size !== listed.length) return null;
+  const childIds = root.children.map((child) => child.id);
+  if (listed.length !== childIds.length || listed.some((id) => !childIds.includes(id))) return null;
+  const left = path.left.map((id) => childById(root, id));
+  const right = path.right.map((id) => childById(root, id));
+  if (left.some((node) => !node) || right.some((node) => !node)) return null;
+  const leftNodes = left.filter((node): node is SkillNode => Boolean(node));
+  const rightNodes = right.filter((node): node is SkillNode => Boolean(node));
+  const firstLeft = leftNodes[0];
+  const firstRight = rightNodes[0];
+  const lastLeft = leftNodes[leftNodes.length - 1];
+  const lastRight = rightNodes[rightNodes.length - 1];
+  if (!firstLeft || !firstRight || !lastLeft || !lastRight) return null;
+  const expected: SkillPathEdge[] = [
+    { from: root.id, to: firstLeft.id, kind: "branch" },
+    { from: root.id, to: firstRight.id, kind: "branch" },
+  ];
+  for (let index = 1; index < leftNodes.length; index += 1) {
+    const from = leftNodes[index - 1];
+    const to = leftNodes[index];
+    if (!from || !to) return null;
+    expected.push({ from: from.id, to: to.id, kind: "down" });
+  }
+  for (let index = 1; index < rightNodes.length; index += 1) {
+    const from = rightNodes[index - 1];
+    const to = rightNodes[index];
+    if (!from || !to) return null;
+    expected.push({ from: from.id, to: to.id, kind: "down" });
+  }
+  const across = hasPathEdge(path.edges, "across", firstLeft.id, firstRight.id);
+  const join = hasPathEdge(path.edges, "join", lastLeft.id, lastRight.id);
+  if (across) expected.push({ from: firstLeft.id, to: firstRight.id, kind: "across" });
+  if (join) expected.push({ from: lastLeft.id, to: lastRight.id, kind: "join" });
+  if (path.edges.length !== expected.length) return null;
+  if (expected.some((edge) => !hasPathEdge(path.edges, edge.kind, edge.from, edge.to))) return null;
+  return { left: leftNodes, right: rightNodes, across, join };
 }
 
 /** First bullet list on a node. Cards use this for "N skills". */

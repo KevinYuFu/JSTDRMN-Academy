@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyNodePatch, draftFromNode } from "./skill-tree-edit";
+import { applyNodePatch, draftFromNode, parseSkillTree } from "./skill-tree-edit";
 import { findNode, skillTree } from "./skill-tree";
 import { ensureSkillTree, saveSkillTree, type SkillTreeStore } from "./skill-tree-store";
+import previousDefault from "./skill-tree-previous-default.json";
 
 function memoryStore() {
   let row: { id: string; document: unknown } | null = null;
@@ -53,18 +54,46 @@ describe("skill tree storage", () => {
   it("keeps a Lead edit and does not replace it with the built-in map", async () => {
     const db = memoryStore();
     await ensureSkillTree(db.store);
-    const community = findNode("community");
-    assert.ok(community);
-    const draft = draftFromNode(community);
-    draft.cardTitle = "Gather";
-    const edited = applyNodePatch(skillTree, "community", draft);
+    const mashup = findNode("mashup");
+    assert.ok(mashup);
+    const draft = draftFromNode(mashup);
+    draft.cardTitle = "Mashup lab";
+    const edited = applyNodePatch(skillTree, "mashup", draft);
     assert.equal(edited.ok, true);
     if (!edited.ok) return;
     await saveSkillTree(edited.tree, db.store);
     const loaded = await ensureSkillTree(db.store);
     assert.equal(loaded.created, false);
-    assert.equal(findNode("community", loaded.tree)?.card.title, "Gather");
+    assert.equal(findNode("mashup", loaded.tree)?.card.title, "Mashup lab");
+    assert.equal(findNode("mashup", loaded.tree)?.card.sub, "Start in ableton with mashups");
     assert.equal(db.creates(), 1);
+  });
+
+  it("shows the new default for an untouched previous map and does not write the row", async () => {
+    const db = memoryStore();
+    db.setRow({ id: "current", document: previousDefault });
+    const before = JSON.stringify(db.row()?.document);
+    const loaded = await ensureSkillTree(db.store);
+    assert.equal(loaded.created, false);
+    assert.equal(loaded.tree.card.title, "Introduction to Music and EDM");
+    assert.equal(findNode("community", loaded.tree), undefined);
+    assert.equal(JSON.stringify(db.row()?.document), before);
+    assert.equal(db.creates(), 0);
+    assert.ok(parseSkillTree(previousDefault));
+  });
+
+  it("keeps a previous map once a Lead has changed it", async () => {
+    const db = memoryStore();
+    const saved = structuredClone(previousDefault) as { children: { id: string; card: { title: string } }[] };
+    const community = saved.children.find((child) => child.id === "community");
+    assert.ok(community);
+    community.card.title = "Gather";
+    db.setRow({ id: "current", document: saved });
+    const loaded = await ensureSkillTree(db.store);
+    assert.equal(loaded.created, false);
+    assert.equal(findNode("community", loaded.tree)?.card.title, "Gather");
+    assert.notEqual(loaded.tree.card.title, "Introduction to Music and EDM");
+    assert.equal(db.creates(), 0);
   });
 
   it("does not overwrite a row it cannot read", async () => {
@@ -81,9 +110,9 @@ describe("skill tree storage", () => {
   it("uses the row that won a create race", async () => {
     const db = memoryStore();
     const tree = structuredClone(skillTree);
-    const community = tree.children.find((child) => child.id === "community");
-    assert.ok(community);
-    community.card = { ...community.card, title: "Already saved" };
+    const mashup = tree.children.find((child) => child.id === "mashup");
+    assert.ok(mashup);
+    mashup.card = { ...mashup.card, title: "Already saved" };
     db.store.skillTree.create = async () => {
       db.setRow({ id: "current", document: tree });
       const error = new Error("Unique constraint") as Error & { code: string };
@@ -92,6 +121,6 @@ describe("skill tree storage", () => {
     };
     const loaded = await ensureSkillTree(db.store);
     assert.equal(loaded.created, false);
-    assert.equal(findNode("community", loaded.tree)?.card.title, "Already saved");
+    assert.equal(findNode("mashup", loaded.tree)?.card.title, "Already saved");
   });
 });

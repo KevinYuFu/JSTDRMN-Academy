@@ -6,6 +6,7 @@ import {
   drillHref,
   overviewColumns,
   panelItems,
+  resolvedSkillPath,
   unlinkedChildren,
   type SkillBlock,
   type SkillCard,
@@ -210,9 +211,139 @@ function Block({ node, stack, block }: { node: SkillNode; stack: readonly SkillN
   }
 }
 
+function relationLines(root: SkillNode, path: NonNullable<ReturnType<typeof resolvedSkillPath>>) {
+  const name = (node: SkillNode) => node.card.title;
+  const firstLeft = path.left[0];
+  const firstRight = path.right[0];
+  const lines: string[] = [];
+  if (firstLeft && firstRight) lines.push(`${name(root)} branches to ${name(firstLeft)} and ${name(firstRight)}.`);
+  if (path.across && firstLeft && firstRight) lines.push(`${name(firstLeft)} also points to ${name(firstRight)}.`);
+  for (let index = 1; index < path.left.length; index += 1) {
+    const from = path.left[index - 1];
+    const to = path.left[index];
+    if (from && to) lines.push(`${name(from)} continues to ${name(to)}.`);
+  }
+  for (let index = 1; index < path.right.length; index += 1) {
+    const from = path.right[index - 1];
+    const to = path.right[index];
+    if (from && to) lines.push(`${name(from)} continues to ${name(to)}.`);
+  }
+  const lastLeft = path.left[path.left.length - 1];
+  const lastRight = path.right[path.right.length - 1];
+  if (path.join && lastLeft && lastRight) lines.push(`${name(lastLeft)} also connects to ${name(lastRight)}.`);
+  return lines;
+}
+
+function PathCell({
+  node,
+  stack,
+  stemBelow,
+  index,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  stemBelow: boolean;
+  index: number;
+}) {
+  return (
+    <div className="stree-path-cell">
+      <Card node={node} stack={stack} place="map" index={index} />
+      {stemBelow ? <div className="stree-path-stem is-grow" aria-hidden="true" /> : null}
+    </div>
+  );
+}
+
+function PathJoin() {
+  return (
+    <div className="stree-path-cell">
+      <div className="stree-path-join" aria-hidden="true">
+        <span className="stree-path-join-elbow">
+          <span className="stree-path-join-down" />
+          <span className="stree-path-join-across" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PathOverview({
+  root,
+  stack,
+  path,
+}: {
+  root: SkillNode;
+  stack: readonly SkillNode[];
+  path: NonNullable<ReturnType<typeof resolvedSkillPath>>;
+}) {
+  const rows = Math.max(path.left.length, path.right.length);
+  return (
+    <section className="stree-view" aria-label="Academy overview">
+      <div className="stree-path">
+        <div className="stree-path-intro">
+          <div className="stree-panel is-static">
+            <span className="stree-panel-inner">
+              <span className="stree-panel-copy">
+                <h1 className="stree-title">{root.card.title}</h1>
+                {root.card.sub ? <span className="stree-sub">{root.card.sub}</span> : null}
+              </span>
+            </span>
+          </div>
+        </div>
+        <div className="stree-path-stem stree-path-stem-top" aria-hidden="true" />
+        <div className="stree-path-rail" aria-hidden="true">
+          <span />
+          <span />
+        </div>
+        <div className="stree-path-board">
+          {Array.from({ length: rows }, (_, index) => {
+            const left = path.left[index];
+            const right = path.right[index];
+            const leftEnded = index >= path.left.length;
+            const leftContinues = Boolean(left) && (index < path.left.length - 1 || (path.join && path.right.length > path.left.length));
+            const rightContinues = Boolean(right) && index < path.right.length - 1;
+            return (
+              <div key={index} className={index === 0 ? "stree-path-row is-first" : "stree-path-row"}>
+                {left ? (
+                  <PathCell node={left} stack={stack} stemBelow={leftContinues} index={index + 1} />
+                ) : leftEnded && path.join ? (
+                  index === rows - 1 ? (
+                    <PathJoin />
+                  ) : (
+                    <div className="stree-path-cell" aria-hidden="true">
+                      <div className="stree-path-stem is-grow" />
+                    </div>
+                  )
+                ) : (
+                  <div className="stree-path-cell" />
+                )}
+                <div className="stree-path-gap" aria-hidden="true">
+                  {index === 0 && path.across ? <span className="stree-path-across" /> : null}
+                </div>
+                {right ? (
+                  <PathCell node={right} stack={stack} stemBelow={rightContinues} index={index + path.left.length + 1} />
+                ) : (
+                  <div className="stree-path-cell" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <ul className="stree-sr">
+        {relationLines(root, path).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+      {root.hint ? <p className="stree-hint">{root.hint}</p> : null}
+    </section>
+  );
+}
+
 function Overview({ stack }: { stack: readonly SkillNode[] }) {
   const root = stack[0];
   if (!root) return null;
+  const path = resolvedSkillPath(root);
+  if (path) return <PathOverview root={root} stack={stack} path={path} />;
   return (
     <section className="stree-view" aria-label="Academy overview">
       <div className="stree-tree" style={{ "--stree-columns": overviewColumns(root) } as CSSProperties}>

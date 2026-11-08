@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   findNode,
-  overviewColumns,
+  resolvedSkillPath,
   skillTree,
   skillTreeHref,
   stackFromSlug,
@@ -14,6 +14,7 @@ import {
   applyNodePatch,
   builtinSkillTree,
   canEditSkillTree,
+  draftFromFields,
   draftFromNode,
   moveNode,
   parseSkillTree,
@@ -21,17 +22,7 @@ import {
   reparentNode,
 } from "./skill-tree-edit";
 
-const routes = [
-  [],
-  ["community"],
-  ["advanced-dj"],
-  ["mashup"],
-  ["production"],
-  ["dj", "advanced"],
-  ["dj", "bootcamp", "transitions"],
-  ["production", "skill", "daw"],
-  ["dj", "production", "mixing"],
-];
+const routes = [[], ["dj", "bootcamp"], ["mashup"], ["intro-production"], ["dj-retreat"], ["track-finisher"]];
 
 describe("skill tree document", () => {
   it("accepts the built-in map and keeps every route", () => {
@@ -46,13 +37,9 @@ describe("skill tree document", () => {
         slug.join("/") || "(overview)",
       );
     }
-    assert.equal(unlinkedChildren(findNode("dj") ?? skillTree).length, 0);
-    assert.equal(unlinkedChildren(findNode("community") ?? skillTree).length, 0);
-    assert.equal(unlinkedChildren(findNode("production") ?? skillTree).length, 0);
-    assert.equal(
-      overviewColumns(skillTree),
-      "minmax(0, 210px) minmax(220px, 360px) minmax(0, 210px) minmax(0, 210px)",
-    );
+    assert.equal(unlinkedChildren(findNode("mashup") ?? skillTree).length, 0);
+    assert.equal(unlinkedChildren(findNode("dj-bootcamp") ?? skillTree).length, 0);
+    assert.ok(resolvedSkillPath(parsed));
   });
 
   it("rejects a broken document", () => {
@@ -71,68 +58,76 @@ describe("skill tree edits", () => {
   });
 
   it("changes a title and shows it on the public map", () => {
-    const current = findNode("community");
+    const current = findNode("mashup");
     assert.ok(current);
     const draft = draftFromNode(current);
-    draft.cardTitle = "Gather";
-    const result = applyNodePatch(skillTree, "community", draft);
+    draft.cardTitle = "Mashup lab";
+    const result = applyNodePatch(skillTree, "mashup", draft);
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    const stack = stackFromSlug(["community"], result.tree);
-    assert.equal(stack?.at(-1)?.card.title, "Gather");
-    assert.equal(stack?.at(-1)?.page?.title, "Community Events");
-    assert.equal(stackFromSlug([], result.tree)?.[0]?.children.find((node) => node.id === "community")?.card.title, "Gather");
+    const stack = stackFromSlug(["mashup"], result.tree);
+    assert.equal(stack?.at(-1)?.card.title, "Mashup lab");
+    assert.equal(stack?.at(-1)?.card.sub, "Start in ableton with mashups");
+    assert.equal(stack?.at(-1)?.page?.blurb, "Start in ableton with mashups");
+    assert.ok(resolvedSkillPath(result.tree));
   });
 
   it("adds, reorders, moves, and removes nodes", () => {
-    const added = addChildNode(skillTree, "community", { title: "Open Mics", slug: "", blurb: "A night together." });
+    const added = addChildNode(skillTree, "mashup", { title: "Open Mics", slug: "", blurb: "A night together." });
     assert.equal(added.ok, true);
     if (!added.ok) return;
     assert.equal(added.focusId, "open-mics");
-    const stack = stackFromSlug(["community", "open-mics"], added.tree);
+    const stack = stackFromSlug(["mashup", "open-mics"], added.tree);
     assert.ok(stack);
-    assert.equal(skillTreeHref(stack), "/skill-tree/community/open-mics");
-    assert.deepEqual(unlinkedChildren(findNode("community", added.tree) as SkillNode).map((node) => node.id), ["open-mics"]);
+    assert.equal(skillTreeHref(stack), "/skill-tree/mashup/open-mics");
+    assert.deepEqual(unlinkedChildren(findNode("mashup", added.tree) as SkillNode).map((node) => node.id), ["open-mics"]);
+    assert.ok(resolvedSkillPath(added.tree));
 
-    const duplicate = addChildNode(skillTree, skillTree.id, { title: "Other DJ", slug: "dj", blurb: "" });
+    const duplicate = addChildNode(skillTree, skillTree.id, { title: "Other mashup", slug: "mashup", blurb: "" });
     assert.deepEqual(duplicate, { ok: false, reason: "slug" });
 
-    const movedDown = moveNode(added.tree, "branding", "down");
+    const movedDown = moveNode(skillTree, "mashup", "down");
     assert.equal(movedDown.ok, true);
     if (!movedDown.ok) return;
-    assert.deepEqual(
-      movedDown.tree.children.map((child) => child.id),
-      ["community", "dj", "education", "branding"],
-    );
-    assert.equal(
-      overviewColumns(movedDown.tree),
-      "minmax(0, 210px) minmax(220px, 360px) minmax(0, 210px) minmax(0, 210px)",
-    );
+    assert.deepEqual(movedDown.tree.children.map((child) => child.id).slice(0, 3), ["dj-bootcamp", "intermediate-dj", "mashup"]);
+    assert.ok(resolvedSkillPath(movedDown.tree));
 
-    const reparented = reparentNode(skillTree, "branding", "community");
+    const reparented = reparentNode(skillTree, "dj-retreat", "mashup");
     assert.equal(reparented.ok, true);
     if (!reparented.ok) return;
-    assert.equal(stackFromSlug(["branding"], reparented.tree), null);
-    assert.equal(stackFromSlug(["community", "branding"], reparented.tree)?.at(-1)?.id, "branding");
-    assert.equal(reparentNode(skillTree, "dj", "production").ok, false);
-    assert.equal(reparentNode(skillTree, skillTree.id, "community").ok, false);
+    assert.equal(stackFromSlug(["dj-retreat"], reparented.tree), null);
+    assert.equal(stackFromSlug(["mashup", "dj-retreat"], reparented.tree)?.at(-1)?.id, "dj-retreat");
+    assert.equal(reparentNode(skillTree, "mashup", "mashup").ok, false);
+    assert.equal(reparentNode(skillTree, skillTree.id, "mashup").ok, false);
 
-    const removed = removeNode(skillTree, "library");
+    const removed = removeNode(skillTree, "track-finisher");
     assert.equal(removed.ok, true);
     if (!removed.ok) return;
-    assert.equal(stackFromSlug(["dj", "bootcamp", "library"], removed.tree), null);
-    assert.equal(stackFromSlug(["dj", "bootcamp", "transitions"], removed.tree)?.at(-1)?.id, "transitions");
+    assert.equal(stackFromSlug(["track-finisher"], removed.tree), null);
+    assert.equal(stackFromSlug(["mashup"], removed.tree)?.at(-1)?.id, "mashup");
+    assert.equal(resolvedSkillPath(removed.tree), null);
     assert.equal(removeNode(skillTree, skillTree.id).ok, false);
-    assert.equal(findNode("dj")?.id, "dj");
+    assert.equal(findNode("mashup")?.id, "mashup");
+  });
+
+  it("keeps the introduction subtitle when the root form does not send a card line", () => {
+    const draft = draftFromFields(skillTree, { cardTitle: "Introduction to Music and EDM" });
+    assert.equal(draft.cardSub, "Getting comfortable with music");
+    const result = applyNodePatch(skillTree, skillTree.id, draft);
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.tree.card.sub, "Getting comfortable with music");
+    assert.ok(resolvedSkillPath(result.tree));
   });
 
   it("keeps the built-in map when a bad save is refused", () => {
-    const current = findNode("dj");
+    const current = findNode("mashup");
     assert.ok(current);
     const draft = draftFromNode(current);
     draft.slug = "";
-    assert.equal(applyNodePatch(skillTree, "dj", draft).ok, false);
+    assert.equal(applyNodePatch(skillTree, "mashup", draft).ok, false);
     assert.equal(builtinSkillTree().id, "overview");
-    assert.equal(stackFromSlug(["dj"])?.[1]?.id, "dj");
+    assert.equal(stackFromSlug(["mashup"])?.[1]?.id, "mashup");
+    assert.equal(builtinSkillTree().card.title, "Introduction to Music and EDM");
   });
 });
