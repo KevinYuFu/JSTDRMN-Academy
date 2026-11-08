@@ -122,25 +122,30 @@ describe("lead copy actions", () => {
 });
 
 describe("edit control shape", () => {
-  it("keeps Edit, Save, and Cancel in one in-flow row under the header", () => {
+  it("floats Edit, Save, and Cancel under the header without a full-width band", () => {
     const css = readFileSync("components/program-editor.module.css", "utf8");
+    assert.match(css, /\.anchor \{[^}]*height: 0;/);
+    assert.match(css, /\.actionRow \{[^}]*position: absolute;/);
+    assert.match(css, /\.actionRow \{[^}]*top: 20px;/);
     assert.match(css, /\.actionRow \{[^}]*display: flex;/);
     assert.match(css, /\.actionRow \{[^}]*flex-wrap: wrap;/);
-    assert.match(css, /\.actionRow \{[^}]*position: static;/);
-    assert.match(css, /\.editorColumn \{[^}]*display: block;/);
-    assert.doesNotMatch(css, /\.editorColumn > :last-child/);
-    assert.match(css, /\.editorColumn:has\(:global\(\.stree\)\)/);
+    assert.match(css, /\.actionRow \{[^}]*background: transparent;/);
+    assert.match(css, /\.actionRow \{[^}]*width: max-content;/);
+    assert.match(css, /\.editorColumn \{[^}]*display: contents;/);
     assert.doesNotMatch(css, /position:\s*fixed/);
+    assert.doesNotMatch(css, /editorColumn:has/);
     assert.match(css, /\.actionRow \.action \{[^}]*border-radius: 6px;/);
     assert.match(css, /\.actionRow \.action \{[^}]*padding: 12px 16px;/);
     const frame = readFileSync("components/lead-edit.tsx", "utf8");
-    assert.match(frame, /LeadActionRow/);
+    assert.match(frame, /styles\.anchor/);
     assert.match(frame, /data-lead-editor/);
-    assert.match(frame, /\.site-header/);
     assert.doesNotMatch(frame, /createPortal/);
-    assert.doesNotMatch(frame, /position:\s*fixed/);
     const programs = readFileSync("components/program-editor.tsx", "utf8");
     assert.match(programs, /LeadActionRow/);
+    assert.match(programs, /align === "page"/);
     assert.doesNotMatch(programs, /createPortal/);
+    const skill = readFileSync("components/skill-tree/skill-tree.css", "utf8");
+    assert.doesNotMatch(skill, /data-lead-editor-layout\] \.stree-field/);
+    assert.match(skill, /\[data-lead-editor-layout\] \.stree-topbar \{[^}]*padding-right: 240px;/);
   });
 });

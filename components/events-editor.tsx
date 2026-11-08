@@ -28,14 +28,22 @@ function Field({
   label,
   onChange,
   rows = 1,
+  className,
 }: {
   value: string;
   label: string;
   onChange: (value: string) => void;
   rows?: number;
+  className?: string;
 }) {
   return (
-    <textarea className={styles.box} aria-label={label} rows={rows} value={value} onChange={(event) => onChange(event.target.value)} />
+    <textarea
+      className={className ? `${styles.box} ${className}` : styles.box}
+      aria-label={label}
+      rows={rows}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+    />
   );
 }
 
@@ -141,7 +149,7 @@ export function EventsBoard({
         {editing ? (
           <>
             <h1>
-              <Field label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
+              <Field className={styles.heroTitle} label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
             </h1>
             <p>
               <Field label="Short line" value={draftCopy.lede} onChange={(lede) => setDraftCopy({ ...draftCopy, lede })} />

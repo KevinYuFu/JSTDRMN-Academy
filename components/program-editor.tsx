@@ -46,6 +46,7 @@ const ProgramEditorContext = createContext<EditorContextValue | null>(null);
 
 export function ProgramEditor({
   scope,
+  align,
   items,
   save,
   refreshAfterSave = true,
@@ -142,6 +143,7 @@ export function ProgramEditor({
           />
         }
       >
+        {align === "page" ? <div className={styles.reserve} aria-hidden="true" /> : null}
         {body}
       </LeadEditorLayout>
     </ProgramEditorContext.Provider>

@@ -1,51 +1,37 @@
 .editorColumn {
-  display: block;
+  display: contents;
+}
+
+/* Sits in flow at the header's bottom edge and takes no space.
+   The cluster hangs below that edge, so a taller header moves it. */
+.anchor {
+  position: relative;
+  height: 0;
   width: 100%;
-  max-width: none;
-}
-
-/* Only the skill map needs to fill the space under the row. A flex parent
-   would shrink max-width + margin:auto sections such as the program catalog. */
-.editorColumn:has(:global(.stree)) {
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100dvh - var(--site-header-height, 64px));
-}
-
-.editorColumn:has(:global(.stree)) > :global(.stree) {
-  flex: 1 1 auto;
-  align-self: stretch;
-  width: 100%;
-  min-height: 0;
-}
-
-.editorColumn :global(.stree),
-.editorColumn :global(.stree-app) {
-  min-height: 0;
-}
-
-.editorColumn :global(.stree) {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-}
-
-.editorColumn :global(.stree-app) {
-  flex: 1 1 auto;
+  z-index: 18;
+  pointer-events: none;
 }
 
 .actionRow {
+  position: absolute;
+  top: 20px;
+  right: 40px;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  max-width: 100%;
+  gap: 8px 10px;
+  width: max-content;
+  max-width: min(280px, calc(100% - 80px));
   box-sizing: border-box;
   margin: 0;
-  padding: 20px 40px 4px;
-  position: static;
+  padding: 0;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.reserve {
+  height: 64px;
 }
 
 .status {
@@ -62,9 +48,16 @@
 }
 
 .actionRow .alert {
-  flex: 1 1 16rem;
-  min-width: 0;
+  flex: 1 1 100%;
+  max-width: 100%;
   margin: 0;
+  text-align: right;
+}
+
+.box.heroTitle {
+  width: calc(100% - 240px);
+  max-width: calc(100% - 240px);
+  field-sizing: fixed;
 }
 
 .action:disabled {
@@ -178,7 +171,7 @@ textarea.box {
 
 @media (max-width: 980px) {
   .actionRow {
-    padding-right: 16px;
-    padding-left: 16px;
+    right: 16px;
+    max-width: calc(100% - 32px);
   }
 }

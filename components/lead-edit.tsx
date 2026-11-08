@@ -1,27 +1,8 @@
 "use client";
 
-import { useLayoutEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { programEditCopy } from "@/lib/program-edit";
 import styles from "./program-editor.module.css";
-
-function useSiteHeaderHeight() {
-  useLayoutEffect(() => {
-    const header = document.querySelector<HTMLElement>(".site-header");
-    if (!header) return;
-    const apply = () => {
-      const height = Math.ceil(header.getBoundingClientRect().height);
-      document.documentElement.style.setProperty("--site-header-height", `${height}px`);
-    };
-    apply();
-    const observer = new ResizeObserver(apply);
-    observer.observe(header);
-    window.addEventListener("resize", apply);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", apply);
-    };
-  }, []);
-}
 
 export function LeadActionRow({
   editing,
@@ -81,10 +62,9 @@ export function LeadActionRow({
 }
 
 export function LeadEditorLayout({ toolbar, children }: { toolbar: ReactNode; children: ReactNode }) {
-  useSiteHeaderHeight();
   return (
     <div className={styles.editorColumn} data-lead-editor-layout>
-      {toolbar}
+      <div className={styles.anchor}>{toolbar}</div>
       {children}
     </div>
   );
