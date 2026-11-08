@@ -168,7 +168,7 @@
   padding-top: 0.35rem;
   padding-bottom: 1rem;
 }
-.stree-view { width: min(1400px, 100%); }
+.stree-view { position: relative; width: min(1400px, 100%); }
 
 .stree-panel {
   position: relative;
@@ -568,4 +568,166 @@
   .stree-grid-3,
   .stree-grid-cats { grid-template-columns: 1fr; }
   .stree-col .stree-panel { min-height: 150px; }
+}
+
+.stree-path {
+  --stree-path-gap: 2.4rem;
+  width: 100%;
+  margin: 0 auto;
+}
+.stree-col .stree-path { width: 100%; }
+.stree-path-intro {
+  width: min(420px, 100%);
+  margin: 0 auto;
+}
+.stree-path-intro h1.stree-title {
+  margin: 0;
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+}
+.stree-path .stree-panel {
+  min-height: 0;
+  padding: 0.75rem 0.9rem 0.65rem;
+}
+.stree-path-stem {
+  width: 2px;
+  height: 16px;
+  margin: 0 auto;
+  flex: none;
+  background: linear-gradient(var(--stree-lilac), var(--stree-plum));
+}
+.stree-path-stem.is-grow {
+  flex: 1 0 auto;
+  height: auto;
+  min-height: 16px;
+}
+.stree-path-stem-top {
+  height: 18px;
+  margin-top: 0.2rem;
+}
+.stree-path-rail,
+.stree-path-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stree-path-gap) minmax(0, 1fr);
+}
+.stree-path-rail {
+  position: relative;
+  height: 16px;
+  align-items: start;
+}
+.stree-path-rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--stree-plum), var(--stree-lilac), var(--stree-plum), transparent);
+}
+.stree-path-rail span {
+  justify-self: center;
+  width: 2px;
+  height: 16px;
+  background: var(--stree-lilac);
+}
+.stree-path-rail span:first-child { grid-column: 1; }
+.stree-path-rail span:last-child { grid-column: 3; }
+.stree-path-board { width: 100%; }
+.stree-path-row { align-items: stretch; }
+.stree-path-row.is-first .stree-path-gap {
+  align-self: center;
+  transform: translateY(-8px);
+}
+.stree-path-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+.stree-path-cell > .stree-bob,
+.stree-path-cell > .stree-panel { width: 100%; min-width: 0; }
+.stree-path .stree-title { font-size: clamp(0.92rem, 1.5vw, 1.12rem); }
+.stree-path .stree-sub { font-size: 0.86rem; }
+.stree-path-gap { min-width: 0; }
+.stree-path-across {
+  display: block;
+  position: relative;
+  width: calc(100% - 8px);
+  height: 2px;
+  margin: 0 auto;
+  background: var(--stree-lilac);
+}
+.stree-path-across::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 7px solid var(--stree-lilac);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.stree-path-join {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+.stree-path-join-elbow {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 28px;
+}
+.stree-path-join-down {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 50%;
+  background: var(--stree-lilac);
+  transform: translateX(-50%);
+}
+.stree-path-join-across {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(50% + var(--stree-path-gap) - 8px);
+  height: 2px;
+  background: var(--stree-lilac);
+}
+.stree-path-join-across::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 7px solid var(--stree-lilac);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.stree-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 560px) {
+  .stree-path { --stree-path-gap: 1.65rem; }
+  .stree-path-intro h1.stree-title { font-size: 1.02rem; }
+  .stree-path .stree-panel { padding: 0.55rem 0.55rem 0.45rem; }
+  .stree-path .stree-title { font-size: 0.78rem; }
+  .stree-path .stree-sub { font-size: 0.72rem; margin-top: 0.28rem; }
+  .stree-path .stree-foot { font-size: 0.68rem; padding-top: 0.35rem; }
+  .stree-path-stem,
+  .stree-path-rail { height: 12px; }
+  .stree-path-stem.is-grow { min-height: 10px; }
+  .stree-path-rail span { height: 12px; }
+  .stree-path-stem-top { height: 12px; margin-top: 0.1rem; }
 }

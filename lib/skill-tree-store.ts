@@ -6,6 +6,7 @@
 
 import { builtinSkillTree, parseSkillTree } from "./skill-tree-edit";
 import type { SkillNode } from "./skill-tree";
+import previousDefault from "./skill-tree-previous-default.json";
 
 export const SKILL_TREE_ROW_ID = "current";
 
@@ -29,11 +30,23 @@ function plainDocument(tree: SkillNode): unknown {
   return JSON.parse(JSON.stringify(tree)) as unknown;
 }
 
+/**
+ * The untouched previous built-in map is shown as the current built-in map.
+ * The row is not written. A document that differs anywhere, including one
+ * title, stays as it was saved.
+ */
+function isUntouchedPreviousDefault(tree: SkillNode) {
+  const previous = parseSkillTree(previousDefault);
+  if (!previous) return false;
+  return JSON.stringify(tree) === JSON.stringify(previous);
+}
+
 export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: SkillNode; created: boolean }> {
   const row = await db.skillTree.findUnique({ where: { id: SKILL_TREE_ROW_ID } });
   if (row) {
     const tree = parseSkillTree(row.document);
     if (!tree) throw new Error("Saved skill tree is invalid.");
+    if (isUntouchedPreviousDefault(tree)) return { tree: builtinSkillTree(), created: false };
     return { tree, created: false };
   }
   const tree = builtinSkillTree();
@@ -45,6 +58,7 @@ export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: Skill
     if (!again) throw error;
     const saved = parseSkillTree(again.document);
     if (!saved) throw new Error("Saved skill tree is invalid.");
+    if (isUntouchedPreviousDefault(saved)) return { tree: builtinSkillTree(), created: false };
     return { tree: saved, created: false };
   }
   return { tree, created: true };

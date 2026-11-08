@@ -17,6 +17,8 @@ import {
   type SkillNoteBlock,
   type SkillPage,
   type SkillPanelBlock,
+  type SkillPath,
+  type SkillPathEdge,
 } from "./skill-tree";
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -355,6 +357,26 @@ function readPage(value: unknown): SkillPage | null | undefined {
   return page;
 }
 
+function readPath(value: unknown): SkillPath | null | undefined {
+  if (value == null) return undefined;
+  if (!isRecord(value) || !exactKeys(value, ["left", "right", "edges"])) return null;
+  const left = readStrings(value.left, 64, 12);
+  const right = readStrings(value.right, 64, 12);
+  if (!left || !right || left.length === 0 || right.length === 0) return null;
+  if (left.some((id) => !SLUG.test(id)) || right.some((id) => !SLUG.test(id))) return null;
+  if (!Array.isArray(value.edges) || value.edges.length > 24) return null;
+  const edges: SkillPathEdge[] = [];
+  for (const edge of value.edges) {
+    if (!isRecord(edge) || !exactKeys(edge, ["from", "to", "kind"])) return null;
+    const from = readString(edge.from, 64, true);
+    const to = readString(edge.to, 64, true);
+    if (!from || !to || !SLUG.test(from) || !SLUG.test(to)) return null;
+    if (edge.kind !== "branch" && edge.kind !== "across" && edge.kind !== "down" && edge.kind !== "join") return null;
+    edges.push({ from, to, kind: edge.kind });
+  }
+  return { left, right, edges };
+}
+
 function readMapFlow(value: unknown): SkillNode["mapFlow"] | null | undefined {
   if (value == null) return undefined;
   if (!isRecord(value) || !exactKeys(value, ["left", "right", "hang"])) return null;
@@ -374,7 +396,7 @@ function readNode(value: unknown, depth: number, isRoot: boolean, budget: Budget
   if (!isRecord(value) || depth > MAX_DEPTH) return null;
   budget.nodes += 1;
   if (budget.nodes > MAX_NODES) return null;
-  if (!exactKeys(value, ["id", "slug", "fromOverview", "crumb", "group", "card", "map", "mapFlow", "curriculum", "hint", "page", "children"])) {
+  if (!exactKeys(value, ["id", "slug", "fromOverview", "crumb", "group", "card", "map", "mapFlow", "path", "curriculum", "hint", "page", "children"])) {
     return null;
   }
   const id = readString(value.id, 64, true);
@@ -392,8 +414,9 @@ function readNode(value: unknown, depth: number, isRoot: boolean, budget: Budget
   const card = readCard(value.card);
   const map = value.map == null ? undefined : readCard(value.map);
   const mapFlow = readMapFlow(value.mapFlow);
+  const path = readPath(value.path);
   const page = readPage(value.page);
-  if (!card || map === null || mapFlow === null || page === null) return null;
+  if (!card || map === null || mapFlow === null || path === null || page === null) return null;
   if ("curriculum" in value && value.curriculum !== null) return null;
   if (!Array.isArray(value.children) || value.children.length > 50) return null;
   const children: SkillNode[] = [];
@@ -407,6 +430,7 @@ function readNode(value: unknown, depth: number, isRoot: boolean, budget: Budget
   if (group) node.group = group;
   if (map) node.map = map;
   if (mapFlow) node.mapFlow = mapFlow;
+  if (path) node.path = path;
   if ("curriculum" in value) node.curriculum = null;
   if (hint) node.hint = hint;
   if (page) node.page = page;
