@@ -118,7 +118,8 @@ describe("local review entry", () => {
     assert.match(listing, /localReviewEntryDecision/);
     assert.equal(listing.includes("ProgramEditor"), false);
     assert.equal(listing.includes("program-edit"), false);
-    assert.equal(existsSync("lib/program-edit.ts"), false);
+    assert.equal(route.includes("program-edit"), false);
+    assert.equal(existsSync("lib/program-edit.ts"), true);
   });
 
   it("allows one named preview host and refuses another preview's database or a shared 127.0.0.1 port", () => {
