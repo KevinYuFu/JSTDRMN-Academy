@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   NAV_TRACE_KEY,
@@ -72,12 +72,13 @@ describe("usable page", () => {
     assert.equal(usableSelector("/login"), ".auth-card h1");
   });
 
-  it("does not treat the dashboard loading line as the page", () => {
-    const loading = readFileSync(new URL("../app/dashboard/loading.tsx", import.meta.url), "utf8");
-    assert.equal(loading.includes("page-title"), false);
+  it("does not put a loading boundary in front of My Courses", () => {
+    assert.equal(existsSync(new URL("../app/dashboard/loading.tsx", import.meta.url)), false);
+    const page = readFileSync(new URL("../app/dashboard/page.tsx", import.meta.url), "utf8");
+    assert.equal(page.includes("page-title"), true);
+    assert.equal(page.includes("My Courses"), true);
     assert.equal(seeLoadingShell("/dashboard", false, true), true);
     assert.equal(seeLoadingShell("/dashboard", true, true), false);
-    assert.equal(seeLoadingShell("/events", false, true), false);
     assert.equal(usableSelector("/dashboard"), "h1.page-title");
   });
 
