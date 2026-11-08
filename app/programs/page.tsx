@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { savePrograms } from "@/app/program-edit-actions";
 import { AppHeader } from "@/components/app-header";
+import { EditableProgramText, ProgramEditor } from "@/components/program-editor";
 import { ProgramGroup } from "@/components/program-groups";
 import { formatCad, prices } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
+import { canEditPrograms, listingEditItems } from "@/lib/program-edit";
 import { programGroups } from "@/lib/program-labels";
 
 export const dynamic = "force-dynamic";
@@ -17,15 +20,19 @@ export default async function ProgramsPage() {
   const cards = programs.filter((program) => program.placement === "grid" && program.access !== "request");
   const subscribeHref = user ? "/checkout?product=headliner" : "/signup?next=/checkout?product=headliner";
   const headlinerPrice = formatCad(prices.headlinerMonthlyCents, "month");
-
-  return (
-    <div className="programs-page">
-      <AppHeader active="programs" />
+  const editItems = listingEditItems(banner ?? null, cards);
+  const lead = canEditPrograms(user?.role) && editItems.length > 0;
+  const programsBody = (
+    <>
       {banner ? (
         <section className="headliner-banner" aria-label={banner.title}>
           <div>
-            <h2>{banner.title}</h2>
-            <p>{banner.tagline}</p>
+            <EditableProgramText lead={lead} programId={banner.id} field="title" as="h2">
+              {banner.title}
+            </EditableProgramText>
+            <EditableProgramText lead={lead} programId={banner.id} field="tagline" as="p">
+              {banner.tagline}
+            </EditableProgramText>
           </div>
           <div className="banner-side">
             <div className="amount">{headlinerPrice} CAD</div>
@@ -40,9 +47,20 @@ export default async function ProgramsPage() {
           <ProgramGroup key={group.title} title={group.title}>
             {group.items.map((program) => (
               <article key={program.id} className={`program-card${program.special ? " special" : ""}`}>
-                <h3>{program.title}</h3>
-                <p>{program.tagline}</p>
-                {program.presenter ? <div className="presenter">{program.presenter} presents</div> : null}
+                <EditableProgramText lead={lead} programId={program.id} field="title" as="h3">
+                  {program.title}
+                </EditableProgramText>
+                <EditableProgramText lead={lead} programId={program.id} field="tagline" as="p">
+                  {program.tagline}
+                </EditableProgramText>
+                {program.presenter ? (
+                  <div className="presenter">
+                    <EditableProgramText lead={lead} programId={program.id} field="presenter">
+                      {program.presenter}
+                    </EditableProgramText>
+                    {" presents"}
+                  </div>
+                ) : null}
                 <Link className="pill pill-purple" href={`/programs/${program.slug}`}>
                   Learn More
                 </Link>
@@ -51,6 +69,19 @@ export default async function ProgramsPage() {
           </ProgramGroup>
         ))}
       </section>
+    </>
+  );
+
+  return (
+    <div className="programs-page">
+      <AppHeader active="programs" />
+      {lead ? (
+        <ProgramEditor scope="listing" align="page" items={editItems} save={savePrograms}>
+          {programsBody}
+        </ProgramEditor>
+      ) : (
+        programsBody
+      )}
     </div>
   );
 }

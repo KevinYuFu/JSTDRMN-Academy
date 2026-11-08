@@ -266,7 +266,7 @@ describe("save", () => {
     assert.equal(db.rows[0]?.billing, "application");
     assert.equal(db.rows[0]?.placement, "grid");
     assert.deepEqual(Object.keys(db.updates[0]?.data ?? {}).sort(), ["presenter", "tagline", "title"]);
-    assert.deepEqual(paths, ["/", "/programs/crs_dj"]);
+    assert.deepEqual(paths, ["/programs", "/programs/crs_dj"]);
     assert.equal(db.rows[1]?.title, "DJ Bootcamp");
   });
 
@@ -335,7 +335,7 @@ describe("save", () => {
     assert.equal(db.rows[0]?.access, "purchase");
     assert.equal(db.rows[0]?.billing, "monthly");
     assert.equal(db.rows[0]?.placement, "grid");
-    assert.deepEqual(paths, ["/", "/programs/studio-lab"]);
+    assert.deepEqual(paths, ["/programs", "/programs/studio-lab"]);
   });
 
   it("clears a stored price on the program page when the price field is emptied", async () => {
@@ -349,7 +349,7 @@ describe("save", () => {
       store: db.store,
     });
     assert.equal(result.ok, true);
-    if (result.ok) assert.deepEqual(result.paths, ["/", "/programs/crs_lab"]);
+    if (result.ok) assert.deepEqual(result.paths, ["/programs", "/programs/crs_lab"]);
     assert.equal(db.rows[0]?.priceCents, null);
   });
 
@@ -505,14 +505,14 @@ describe("save", () => {
       store: db.store,
     });
     assert.equal(result.ok, true);
-    if (result.ok) assert.deepEqual(result.paths, ["/", "/headliner"]);
+    if (result.ok) assert.deepEqual(result.paths, ["/programs", "/headliner"]);
     assert.equal(db.rows[0]?.title, "Headliner Club");
     assert.equal(db.rows[0]?.priceCents, null);
   });
 });
 
 describe("programs editor does not restore catalog chrome", () => {
-  const listing = readFileSync("app/page.tsx", "utf8");
+  const listing = readFileSync("app/programs/page.tsx", "utf8");
   const detail = readFileSync("app/programs/[slug]/page.tsx", "utf8");
   const editor = readFileSync("components/program-editor.tsx", "utf8");
   const edit = readFileSync("lib/program-edit.ts", "utf8");

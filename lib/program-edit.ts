@@ -241,7 +241,7 @@ export function pathsForSavedPrograms(rows: Pick<ProgramContentRow, "slug" | "ac
     seen.add(path);
     paths.push(path);
   };
-  if (rows.some((row) => isListingProgram(row))) add("/");
+  if (rows.some((row) => isListingProgram(row))) add("/programs");
   for (const row of rows) {
     if (isDetailProgram(row) && SLUG_RE.test(row.slug) && !row.slug.includes("..")) add(`/programs/${row.slug}`);
   }
