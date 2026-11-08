@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Unbounded } from "next/font/google";
+import { NavTrace } from "@/components/nav-trace";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${unbounded.variable} ${inter.className} antialiased`}>{children}</body>
+      <body className={`${inter.variable} ${unbounded.variable} ${inter.className} antialiased`}>
+        {children}
+        {process.env.NODE_ENV === "development" ? <NavTrace /> : null}
+      </body>
     </html>
   );
 }
