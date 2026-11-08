@@ -27,7 +27,8 @@ describe("skill tree map", () => {
       assert.equal(item.label, skillTreeNav.label);
       assert.equal(item.href, skillTreeNav.href);
     }
-    assert.equal(academyNav(null)[0].href, "/");
+    assert.equal(academyNav(null)[0].key, "programs");
+    assert.equal(academyNav(null)[0].href, "/programs");
     assert.equal(academyNav(null)[1], skillTreeNav);
   });
 

@@ -14,6 +14,7 @@ describe("staff tab", () => {
         ordinary,
       );
       assert.equal(items.some((item) => item.href === "/teacher" || item.label === "Dashboard"), false);
+      assert.equal(items.find((item) => item.key === "programs")?.href, "/programs");
       assert.equal(items.at(-1)?.href, "/dashboard");
       assert.equal(items.at(-1)?.key, "courses");
       assert.equal(items.at(-1)?.variant, undefined);
@@ -32,6 +33,7 @@ describe("staff tab", () => {
       assert.equal(dashboard.key, "teacher");
       assert.equal(items.filter((item) => item.variant === "staff").length, 1);
       assert.equal(courses.label, "My Courses");
+      assert.equal(items.find((item) => item.key === "programs")?.href, "/programs");
       assert.equal(courses.href, "/dashboard");
       assert.ok(items.indexOf(courses) < items.indexOf(dashboard));
       assert.equal(items[items.indexOf(dashboard) - 1], courses);

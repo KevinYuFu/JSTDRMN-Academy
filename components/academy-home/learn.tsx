@@ -2,7 +2,7 @@ import { AcademyFigure } from "./photo";
 import { djLandscape, djPortrait } from "./photos";
 import styles from "./home.module.css";
 
-export function LearnIntro({ hasPrograms }: { hasPrograms: boolean }) {
+export function LearnIntro() {
   return (
     <section className={styles.section} aria-labelledby="learn-heading">
       <h2 id="learn-heading">Find your way to learn.</h2>
@@ -14,7 +14,6 @@ export function LearnIntro({ hasPrograms }: { hasPrograms: boolean }) {
         <AcademyFigure photo={djLandscape} />
         <AcademyFigure photo={djPortrait} />
       </div>
-      {hasPrograms ? null : <p className={styles.note}>No programs are listed yet.</p>}
     </section>
   );
 }
