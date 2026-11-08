@@ -127,6 +127,9 @@ describe("edit control shape", () => {
     assert.match(css, /\.actionRow \{[^}]*display: flex;/);
     assert.match(css, /\.actionRow \{[^}]*flex-wrap: wrap;/);
     assert.match(css, /\.actionRow \{[^}]*position: static;/);
+    assert.match(css, /\.editorColumn \{[^}]*display: block;/);
+    assert.doesNotMatch(css, /\.editorColumn > :last-child/);
+    assert.match(css, /\.editorColumn:has\(:global\(\.stree\)\)/);
     assert.doesNotMatch(css, /position:\s*fixed/);
     assert.match(css, /\.actionRow \.action \{[^}]*border-radius: 6px;/);
     assert.match(css, /\.actionRow \.action \{[^}]*padding: 12px 16px;/);

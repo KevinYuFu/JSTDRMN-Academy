@@ -1,13 +1,21 @@
 .editorColumn {
+  display: block;
+  width: 100%;
+  max-width: none;
+}
+
+/* Only the skill map needs to fill the space under the row. A flex parent
+   would shrink max-width + margin:auto sections such as the program catalog. */
+.editorColumn:has(:global(.stree)) {
   display: flex;
   flex-direction: column;
   min-height: calc(100dvh - var(--site-header-height, 64px));
-  max-width: 100%;
 }
 
-.editorColumn > :last-child {
+.editorColumn:has(:global(.stree)) > :global(.stree) {
   flex: 1 1 auto;
-  min-width: 0;
+  align-self: stretch;
+  width: 100%;
   min-height: 0;
 }
 
