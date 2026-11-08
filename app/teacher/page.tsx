@@ -36,7 +36,20 @@ function tabFrom(value: string | undefined): DashboardTab {
   return "content";
 }
 
-export default async function TeacherPage({
+export default function TeacherPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string; roleError?: string; skillTree?: string; tab?: string; nameError?: string }>;
+}) {
+  return (
+    <>
+      <AppHeader active="teacher" />
+      <TeacherBody searchParams={searchParams} />
+    </>
+  );
+}
+
+async function TeacherBody({
   searchParams,
 }: {
   searchParams: Promise<{ saved?: string; roleError?: string; skillTree?: string; tab?: string; nameError?: string }>;
@@ -48,26 +61,60 @@ export default async function TeacherPage({
     prisma.course.findMany({
       where: { access: { not: "request" } },
       orderBy: { sort: "asc" },
-      include: { lessons: true, cohorts: { orderBy: { sort: "asc" } } },
+      include: { _count: { select: { lessons: true } } },
     }),
     prisma.comment.findMany({
       where: { parentId: null },
       orderBy: { createdAt: "desc" },
       take: 6,
-      include: { user: true, lesson: { include: { course: true, cohort: true } }, replies: { include: { user: true } } },
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        user: { select: { name: true } },
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            course: { select: { title: true, slug: true } },
+            cohort: { select: { slug: true } },
+          },
+        },
+        replies: { select: { user: { select: { role: true } } } },
+      },
     }),
     prisma.user.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, email: true, role: true, discordId: true, discordUsername: true },
     }),
     prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
-    prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
+    prisma.cohort.findMany({
+      orderBy: { sort: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        startsLabel: true,
+        course: { select: { title: true, slug: true } },
+      },
+    }),
     prisma.sessionRequest.findMany({
       orderBy: { createdAt: "desc" },
       take: 8,
-      include: { course: true, mentor: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        topic: true,
+        preferredTimes: true,
+        createdAt: true,
+        mentor: { select: { name: true } },
+      },
     }),
-    prisma.mentor.findMany({ orderBy: { sort: "asc" } }),
+    prisma.mentor.findMany({
+      orderBy: { sort: "asc" },
+      select: { id: true, slug: true, name: true, roleLine: true, placeholder: true, active: true },
+    }),
   ]);
   const roleError = query.roleError ? roleErrors[query.roleError] ?? "That role change did not save." : null;
   const nameError = query.nameError ? nameErrors[query.nameError] ?? "That name did not save." : null;
@@ -76,8 +123,6 @@ export default async function TeacherPage({
     : tabFrom(query.tab);
 
   return (
-    <>
-      <AppHeader active="teacher" />
       <main className="shell">
         <h1 className="page-title" style={{ marginBottom: 6 }}>{roleLabel(staff.role)}</h1>
         <p className="note" style={{ marginBottom: 12 }}>
@@ -116,9 +161,9 @@ export default async function TeacherPage({
                           <td data-label="Status"><span className={styles.value}>{course.statusLabel}</span></td>
                           <td data-label="Access"><span className={styles.value}>{course.access}</span></td>
                           <td data-label="Delivery"><span className={styles.value}>{course.delivery || "—"}</span></td>
-                          <td data-label="Lessons"><span className={styles.value}>{course.lessons.length}</span></td>
+                          <td data-label="Lessons"><span className={styles.value}>{course._count.lessons}</span></td>
                           <td className={styles.links} data-label="Links">
-                            <Link className="pill pill-black" href={`/teacher/courses/${course.slug}`}>Lessons</Link>
+                            <Link className="pill pill-black" href={`/teacher/courses/${course.slug}`} prefetch>Lessons</Link>
                             <Link className="pill pill-purple" href={coursePageHref(course)}>Page</Link>
                           </td>
                         </tr>
@@ -244,8 +289,8 @@ export default async function TeacherPage({
                 <h2 className="section-label">Events and announcements</h2>
                 <p className="note">Schedules and the announcement queue stay on their own pages. Nothing here connects a new provider.</p>
                 <div className={styles.links}>
-                  <Link className="pill pill-purple" href="/teacher/events">Events</Link>
-                  <Link className="pill pill-purple" href="/teacher/announcements">Announcements</Link>
+                  <Link className="pill pill-purple" href="/teacher/events" prefetch>Events</Link>
+                  <Link className="pill pill-purple" href="/teacher/announcements" prefetch>Announcements</Link>
                 </div>
               </section>
               <section className="card" style={{ padding: "8px 16px 16px" }}>
@@ -265,6 +310,5 @@ export default async function TeacherPage({
           }
         />
       </main>
-    </>
   );
 }

@@ -17,17 +17,22 @@ export const metadata: Metadata = {
  * Public preview, same idea as the Programs homepage.
  * Dashboard and checkout stay behind login. This map does not.
  */
-export default async function SkillTreePage({ params }: { params: Promise<{ slug?: string[] }> }) {
-  const tree = await loadSkillTree();
-  const { slug } = await params;
-  const stack = stackFromSlug(slug, tree);
-  if (!stack) notFound();
+export default function SkillTreePage({ params }: { params: Promise<{ slug?: string[] }> }) {
   return (
     <>
       <AppHeader active={skillTreeNav.key} />
-      <SkillTreeShell stack={stack}>
-        <SkillTreeView stack={stack} />
-      </SkillTreeShell>
+      <SkillTreeBody params={params} />
     </>
+  );
+}
+
+async function SkillTreeBody({ params }: { params: Promise<{ slug?: string[] }> }) {
+  const [tree, { slug }] = await Promise.all([loadSkillTree(), params]);
+  const stack = stackFromSlug(slug, tree);
+  if (!stack) notFound();
+  return (
+    <SkillTreeShell stack={stack}>
+      <SkillTreeView stack={stack} />
+    </SkillTreeShell>
   );
 }

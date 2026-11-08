@@ -7,7 +7,16 @@ import { entitlementRecords } from "@/lib/learn";
 
 export const dynamic = "force-dynamic";
 
-export default async function EventsPage({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
+export default function EventsPage({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
+  return (
+    <>
+      <AppHeader active="events" />
+      <EventsBody searchParams={searchParams} />
+    </>
+  );
+}
+
+async function EventsBody({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
   const query = await searchParams;
   const now = new Date();
   const [rows, user, production] = await Promise.all([
@@ -41,8 +50,6 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   const linked = Boolean(user?.discordId);
 
   return (
-    <>
-      <AppHeader active="events" />
       <main className="sessions-page">
         <section className="sessions-hero">
           <h1>Events</h1>
@@ -77,6 +84,5 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           </div>
         ) : null}
       </main>
-    </>
   );
 }

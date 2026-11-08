@@ -8,7 +8,16 @@ import { programGroups } from "@/lib/program-labels";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProgramsPage() {
+export default function ProgramsPage() {
+  return (
+    <div className="programs-page">
+      <AppHeader active="programs" />
+      <ProgramsBody />
+    </div>
+  );
+}
+
+async function ProgramsBody() {
   const [programs, user] = await Promise.all([
     prisma.course.findMany({ orderBy: { sort: "asc" } }),
     getUser(),
@@ -19,8 +28,7 @@ export default async function ProgramsPage() {
   const headlinerPrice = formatCad(prices.headlinerMonthlyCents, "month");
 
   return (
-    <div className="programs-page">
-      <AppHeader active="programs" />
+    <>
       {banner ? (
         <section className="headliner-banner" aria-label={banner.title}>
           <div>
@@ -43,7 +51,7 @@ export default async function ProgramsPage() {
                 <h3>{program.title}</h3>
                 <p>{program.tagline}</p>
                 {program.presenter ? <div className="presenter">{program.presenter} presents</div> : null}
-                <Link className="pill pill-purple" href={`/programs/${program.slug}`}>
+                <Link className="pill pill-purple" href={`/programs/${program.slug}`} prefetch>
                   Learn More
                 </Link>
               </article>
@@ -51,6 +59,6 @@ export default async function ProgramsPage() {
           </ProgramGroup>
         ))}
       </section>
-    </div>
+    </>
   );
 }

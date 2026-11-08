@@ -10,7 +10,22 @@ import { enrollmentPrice } from "@/lib/program-labels";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProgramPage({
+export default function ProgramPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ unlocked?: string }>;
+}) {
+  return (
+    <>
+      <AppHeader active="programs" />
+      <ProgramBody params={params} searchParams={searchParams} />
+    </>
+  );
+}
+
+async function ProgramBody({
   params,
   searchParams,
 }: {
@@ -23,7 +38,7 @@ export default async function ProgramPage({
       where: { slug },
       include: {
         cohorts: { orderBy: { sort: "asc" } },
-        lessons: { select: { id: true } },
+        _count: { select: { lessons: true } },
       },
     }),
     getUser(),
@@ -42,12 +57,10 @@ export default async function ProgramPage({
     ? `/checkout?product=program&slug=${program.slug}`
     : `/signup?next=${encodeURIComponent(`/checkout?product=program&slug=${program.slug}`)}`;
   const applyHref = hubspotApplyUrl(program.hubspotUrl);
-  const hasLessons = program.lessons.length > 0;
+  const hasLessons = program._count.lessons > 0;
 
   return (
-    <>
-      <AppHeader active="programs" />
-      <main className="shell">
+    <main className="shell">
         <div className="crumbs">
           <Link href="/programs">Programs</Link> › <b>{program.title}</b>
         </div>
@@ -107,7 +120,6 @@ export default async function ProgramPage({
             </ul>
           ) : null}
         </article>
-      </main>
-    </>
+    </main>
   );
 }

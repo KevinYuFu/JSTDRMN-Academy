@@ -12,7 +12,16 @@ import { formatToronto } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
-export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+export default function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+  return (
+    <>
+      <AppHeader active="teacher" />
+      <AnnouncementsBody searchParams={searchParams} />
+    </>
+  );
+}
+
+async function AnnouncementsBody({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const staff = await requireStaff();
   const query = await searchParams;
   const [announcements, events] = await Promise.all([
@@ -21,8 +30,6 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
   ]);
 
   return (
-    <>
-      <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
           <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Announcements</b>
@@ -87,6 +94,5 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
           </form>
         </div>
       </main>
-    </>
   );
 }

@@ -24,6 +24,7 @@ export async function AppHeader({ active }: { active?: string | null }) {
           <Link
             key={link.key}
             href={link.href}
+            prefetch
             className={itemClass(link, active)}
             aria-current={link.key === active ? "page" : undefined}
           >

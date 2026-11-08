@@ -11,7 +11,16 @@ import { formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
-export default async function EventManagerPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+export default function EventManagerPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+  return (
+    <>
+      <AppHeader active="teacher" />
+      <EventsBody searchParams={searchParams} />
+    </>
+  );
+}
+
+async function EventsBody({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const staff = await requireStaff();
   const query = await searchParams;
   const now = new Date();
@@ -21,8 +30,6 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
   ]);
 
   return (
-    <>
-      <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
           <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Events</b>
@@ -88,6 +95,5 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
           </section>
         </div>
       </main>
-    </>
   );
 }

@@ -13,16 +13,29 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditorPage({
+export default function EditorPage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string; added?: string }>;
 }) {
-  const staff = await requireStaff();
-  const { slug } = await params;
-  const query = await searchParams;
+  return (
+    <>
+      <AppHeader active="teacher" />
+      <EditorBody params={params} searchParams={searchParams} />
+    </>
+  );
+}
+
+async function EditorBody({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ error?: string; added?: string }>;
+}) {
+  const [{ slug }, query, staff] = await Promise.all([params, searchParams, requireStaff()]);
   const course = await prisma.course.findUnique({
     where: { slug },
     include: {
@@ -33,8 +46,6 @@ export default async function EditorPage({
   });
   if (!course) notFound();
   return (
-    <>
-      <AppHeader active="teacher" />
       <main className="shell">
         <div className="crumbs">
           <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>{course.title}</b>
@@ -123,6 +134,5 @@ export default async function EditorPage({
           </form>
         </div>
       </main>
-    </>
   );
 }

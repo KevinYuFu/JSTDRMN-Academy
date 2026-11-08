@@ -6,7 +6,20 @@ import { unpackMentorList } from "@/lib/mentors";
 
 export const dynamic = "force-dynamic";
 
-export default async function PrivateSessionsPage({
+export default function PrivateSessionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sent?: string; error?: string; mentor?: string }>;
+}) {
+  return (
+    <>
+      <AppHeader active="sessions" />
+      <SessionsBody searchParams={searchParams} />
+    </>
+  );
+}
+
+async function SessionsBody({
   searchParams,
 }: {
   searchParams: Promise<{ sent?: string; error?: string; mentor?: string }>;
@@ -14,13 +27,11 @@ export default async function PrivateSessionsPage({
   const query = await searchParams;
   const [mentors, course, user] = await Promise.all([
     prisma.mentor.findMany({ where: { active: true }, orderBy: { sort: "asc" } }),
-    prisma.course.findFirst({ where: { billing: "request" } }),
+    prisma.course.findFirst({ where: { billing: "request" }, select: { id: true } }),
     getUser(),
   ]);
 
   return (
-    <>
-      <AppHeader active="sessions" />
       <main className="sessions-page">
         <section className="sessions-hero">
           <h1>Private Sessions</h1>
@@ -50,6 +61,5 @@ export default async function PrivateSessionsPage({
           }))}
         />
       </main>
-    </>
   );
 }

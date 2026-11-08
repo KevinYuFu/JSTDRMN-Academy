@@ -8,15 +8,28 @@ import { entitlementRecords } from "@/lib/learn";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <>
+      <AppHeader active="courses" />
+      <DashboardBody />
+    </>
+  );
+}
+
+async function DashboardBody() {
+  const coursesPromise = prisma.course.findMany({
+    orderBy: { sort: "asc" },
+    include: {
+      cohorts: { orderBy: { sort: "asc" }, select: { id: true, slug: true, name: true, startsLabel: true } },
+      lessons: { select: { id: true, headliner: true, cohortId: true } },
+    },
+  });
   const user = await requireUser();
   const [courses, records, progress] = await Promise.all([
-    prisma.course.findMany({
-      orderBy: { sort: "asc" },
-      include: { cohorts: { orderBy: { sort: "asc" } }, lessons: true },
-    }),
+    coursesPromise,
     entitlementRecords(user.id),
-    prisma.progress.findMany({ where: { userId: user.id } }),
+    prisma.progress.findMany({ where: { userId: user.id }, select: { lessonId: true, status: true } }),
   ]);
   const done = new Set(progress.filter((item) => item.status === "completed").map((item) => item.lessonId));
 
@@ -98,9 +111,7 @@ export default async function DashboardPage() {
   const locked = cards.filter((card) => !card.allowed);
 
   return (
-    <>
-      <AppHeader active="courses" />
-      <main className="shell">
+    <main className="shell">
         <h1 className="page-title" style={{ marginBottom: 6 }}>My Courses</h1>
         <p className="note" style={{ marginBottom: 18 }}>
           {user.name.split(" ")[0]}, this shelf is only what your account can open.
@@ -141,6 +152,5 @@ export default async function DashboardPage() {
           ))}
         </div>
       </main>
-    </>
   );
 }
