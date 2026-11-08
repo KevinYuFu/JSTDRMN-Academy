@@ -41,15 +41,15 @@ export function LeadActionRow({
       data-lead-editor={editing ? "edit" : "view"}
       data-program-editor={marker}
     >
+      {editing ? (
+        <span className={styles.sr} aria-live="polite">
+          {saving ? programEditCopy.saving : dirty ? programEditCopy.dirty : programEditCopy.clean}
+        </span>
+      ) : null}
       {editing && message ? (
         <div className={styles.alert} role="alert">
           {message}
         </div>
-      ) : null}
-      {editing ? (
-        <span className={styles.status} aria-live="polite">
-          {saving ? programEditCopy.saving : dirty ? programEditCopy.dirty : programEditCopy.clean}
-        </span>
       ) : null}
       {editing ? (
         <>
@@ -57,7 +57,7 @@ export function LeadActionRow({
             {programEditCopy.cancel}
           </button>
           <button type="button" className={`pill pill-purple ${styles.action}`} onClick={onSave} disabled={saving || !dirty}>
-            {saving ? programEditCopy.saving : programEditCopy.save}
+            {programEditCopy.save}
           </button>
         </>
       ) : (

@@ -128,7 +128,8 @@ describe("edit control shape", () => {
     assert.match(css, /\.actionRow \{[^}]*position: absolute;/);
     assert.match(css, /\.actionRow \{[^}]*top: 20px;/);
     assert.match(css, /\.actionRow \{[^}]*display: flex;/);
-    assert.match(css, /\.actionRow \{[^}]*flex-wrap: wrap;/);
+    assert.match(css, /\.actionRow \{[^}]*flex-wrap: nowrap;/);
+    assert.match(css, /\.actionRow \.alert \{[^}]*position: absolute;/);
     assert.match(css, /\.actionRow \{[^}]*background: transparent;/);
     assert.match(css, /\.actionRow \{[^}]*width: max-content;/);
     assert.match(css, /\.editorColumn \{[^}]*display: contents;/);
@@ -137,6 +138,10 @@ describe("edit control shape", () => {
     assert.match(css, /\.actionRow \.action \{[^}]*border-radius: 6px;/);
     assert.match(css, /\.actionRow \.action \{[^}]*padding: 12px 16px;/);
     const frame = readFileSync("components/lead-edit.tsx", "utf8");
+    assert.match(frame, /styles\.sr/);
+    assert.doesNotMatch(frame, /styles\.status/);
+    assert.match(frame, /\{programEditCopy\.save\}/);
+    assert.doesNotMatch(frame, /saving \? programEditCopy\.saving : programEditCopy\.save/);
     assert.match(frame, /styles\.anchor/);
     assert.match(frame, /data-lead-editor/);
     assert.doesNotMatch(frame, /createPortal/);
