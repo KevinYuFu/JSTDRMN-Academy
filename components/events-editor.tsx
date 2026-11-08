@@ -152,7 +152,7 @@ export function EventsBoard({
               <Field className={styles.heroTitle} label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
             </h1>
             <p>
-              <Field label="Short line" value={draftCopy.lede} onChange={(lede) => setDraftCopy({ ...draftCopy, lede })} />
+              <Field className={`${styles.heroTitle} ${styles.heroLine}`} label="Short line" value={draftCopy.lede} onChange={(lede) => setDraftCopy({ ...draftCopy, lede })} />
             </p>
           </>
         ) : (

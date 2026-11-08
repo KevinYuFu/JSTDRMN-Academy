@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { commitEventCopy } from "./event-copy";
 import { commitMentorCopy } from "./mentor-copy";
 import { commitPageCopy, pageCopyDefaults, readPageCopy } from "./page-copy";
-import { commitSkillCopy } from "./skill-copy";
+import { applySkillDraftChange, commitSkillCopy } from "./skill-copy";
 import type { SkillNode } from "./skill-tree";
 
 const mentor = {
@@ -105,6 +105,18 @@ describe("skill tree copy", () => {
       assert.equal(saved.tree.hint, "Start here.");
       assert.equal(tree.children[0]?.card.title, "DJ");
     }
+  });
+});
+
+describe("skill draft changes", () => {
+  it("drops a field that matches the original and keeps a field that does not", () => {
+    const typed = applySkillDraftChange({}, "n:dj:card:title", "Decks", "DJ");
+    assert.deepEqual(typed, { "n:dj:card:title": "Decks" });
+    const reverted = applySkillDraftChange(typed, "n:dj:card:title", "DJ", "DJ");
+    assert.deepEqual(reverted, {});
+    const both = applySkillDraftChange(typed, "n:dj:card:sub", "New line", "Advanced");
+    const oneBack = applySkillDraftChange(both, "n:dj:card:title", "DJ", "DJ");
+    assert.deepEqual(oneBack, { "n:dj:card:sub": "New line" });
   });
 });
 

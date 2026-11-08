@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveSkillCopy } from "@/app/lead-copy-actions";
+import { applySkillDraftChange } from "@/lib/skill-copy";
 import { LeadEditFrame } from "@/components/lead-edit";
 import type { SkillNode } from "@/lib/skill-tree";
 import { SkillCopyContext } from "./copy-context";
@@ -30,7 +31,7 @@ export function SkillCopyEditor({
         value={{
           editing,
           value: (path, fallback) => (path in drafts ? drafts[path] : fallback),
-          change: (path, value) => setDrafts((current) => ({ ...current, [path]: value })),
+          change: (path, value, original) => setDrafts((current) => applySkillDraftChange(current, path, value, original)),
           error: (path) => errors[path],
         }}
       >

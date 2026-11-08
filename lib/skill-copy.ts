@@ -170,6 +170,14 @@ function setListItem(tree: SkillNode, nodeId: string, indexPath: string, kind: "
   return "That line is not on this page.";
 }
 
+/** Drop a field once it matches the original so Save can turn off again. */
+export function applySkillDraftChange(drafts: Record<string, string>, path: string, value: string, original: string) {
+  const next = { ...drafts };
+  if (value === original) delete next[path];
+  else next[path] = value;
+  return next;
+}
+
 export function commitSkillCopy(args: { role: string | null | undefined; tree: SkillNode; patches: unknown }) {
   if (!canEditPrograms(args.role)) {
     return { ok: false as const, message: "Only a Lead can save this.", fieldErrors: {} as Record<string, string> };
