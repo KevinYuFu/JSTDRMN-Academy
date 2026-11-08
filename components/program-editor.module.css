@@ -1,20 +1,29 @@
+.toolbar,
+.notice {
+  position: fixed;
+  right: 40px;
+  z-index: 30;
+  margin: 0;
+}
+
 .toolbar {
+  top: 84px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 80px);
 }
 
-.page {
-  margin: 20px 40px 0;
+.notice {
+  top: 140px;
+  width: 240px;
+  max-width: calc(100vw - 80px);
 }
 
-.inset {
-  margin: 18px 0 0;
-}
-
-.shell {
-  margin: 0 0 10px;
+.reserve {
+  height: 64px;
 }
 
 .status {
@@ -46,14 +55,6 @@
   padding: 8px 12px;
   font-size: 14px;
   line-height: 1.4;
-}
-
-.alertPage {
-  margin: 8px 40px 0;
-}
-
-.alertShell {
-  margin: 0 0 10px;
 }
 
 .sr {
@@ -120,6 +121,13 @@ textarea.box {
   field-sizing: content;
 }
 
+/* Page titles share a row with the action cluster. Stop the field before it. */
+.box.heroTitle {
+  width: min(100%, calc(100vw - 296px - max(40px, (100vw - 1200px) / 2 + 40px)));
+  max-width: min(100%, calc(100vw - 296px - max(40px, (100vw - 1200px) / 2 + 40px)));
+  field-sizing: fixed;
+}
+
 .priceLine {
   display: inline-flex;
   align-items: baseline;
@@ -147,9 +155,13 @@ textarea.box {
 }
 
 @media (max-width: 980px) {
-  .page,
-  .alertPage {
-    margin-left: 16px;
-    margin-right: 16px;
+  .toolbar,
+  .notice {
+    right: 16px;
+  }
+
+  .box.heroTitle {
+    width: min(100%, calc(100vw - 288px));
+    max-width: min(100%, calc(100vw - 288px));
   }
 }

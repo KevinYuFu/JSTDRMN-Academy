@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   createProgramEditorState,
@@ -102,8 +103,44 @@ export function ProgramEditor({
   }
 
   const dirty = editorIsDirty(state);
-  const toolbarClass = align === "page" ? `${styles.toolbar} ${styles.page}` : `${styles.toolbar} ${styles.shell}`;
-  const alertClass = align === "page" ? `${styles.alert} ${styles.alertPage}` : `${styles.alert} ${styles.alertShell}`;
+  const toolbar = (
+    <div className={styles.toolbar} role="group" aria-label="Program editing" data-program-editor={state.mode} data-lead-editor={state.mode}>
+      {state.mode === "edit" ? (
+        <span className={styles.status} aria-live="polite">
+          {state.saving ? programEditCopy.saving : dirty ? programEditCopy.dirty : programEditCopy.clean}
+        </span>
+      ) : null}
+      {state.mode === "view" ? (
+        <button type="button" className={`pill pill-purple ${styles.action}`} onClick={() => dispatch({ type: "edit" })}>
+          {programEditCopy.edit}
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            className={`pill pill-black ${styles.action}`}
+            onClick={() => dispatch({ type: "cancel" })}
+            disabled={state.saving}
+          >
+            {programEditCopy.cancel}
+          </button>
+          <button
+            type="button"
+            className={`pill pill-purple ${styles.action}`}
+            onClick={() => void onSave()}
+            disabled={state.saving || !dirty}
+          >
+            {state.saving ? programEditCopy.saving : programEditCopy.save}
+          </button>
+        </>
+      )}
+    </div>
+  );
+  const alert = state.mode === "edit" && state.message ? (
+    <div className={`${styles.alert} ${styles.notice}`} role="alert">
+      {state.message}
+    </div>
+  ) : null;
   const value: EditorContextValue = {
     mode: state.mode,
     saving: state.saving,
@@ -127,44 +164,17 @@ export function ProgramEditor({
       children
     );
 
+  const dock = typeof document === "undefined" ? null : createPortal(
+    <>
+      {toolbar}
+      {alert}
+    </>,
+    document.body,
+  );
   return (
     <ProgramEditorContext.Provider value={value}>
-      <div className={toolbarClass} role="group" aria-label="Program editing" data-program-editor={state.mode} data-lead-editor={state.mode}>
-        {state.mode === "edit" ? (
-          <span className={styles.status} aria-live="polite">
-            {state.saving ? programEditCopy.saving : dirty ? programEditCopy.dirty : programEditCopy.clean}
-          </span>
-        ) : null}
-        {state.mode === "view" ? (
-          <button type="button" className={`pill pill-purple ${styles.action}`} onClick={() => dispatch({ type: "edit" })}>
-            {programEditCopy.edit}
-          </button>
-        ) : (
-          <>
-            <button
-              type="button"
-              className={`pill pill-black ${styles.action}`}
-              onClick={() => dispatch({ type: "cancel" })}
-              disabled={state.saving}
-            >
-              {programEditCopy.cancel}
-            </button>
-            <button
-              type="button"
-              className={`pill pill-purple ${styles.action}`}
-              onClick={() => void onSave()}
-              disabled={state.saving || !dirty}
-            >
-              {state.saving ? programEditCopy.saving : programEditCopy.save}
-            </button>
-          </>
-        )}
-      </div>
-      {state.mode === "edit" && state.message ? (
-        <div className={alertClass} role="alert">
-          {state.message}
-        </div>
-      ) : null}
+      {dock}
+      {align === "page" ? <div className={styles.reserve} aria-hidden="true" /> : null}
       {body}
     </ProgramEditorContext.Provider>
   );

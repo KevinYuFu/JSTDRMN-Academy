@@ -34,7 +34,6 @@ export function SkillCopyEditor({
     >
       {lead ? (
         <LeadEditFrame
-          placement="inset"
           editing={editing}
           saving={saving}
           dirty={dirty}

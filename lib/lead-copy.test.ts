@@ -124,9 +124,16 @@ describe("lead copy actions", () => {
 describe("edit control shape", () => {
   it("uses a lower rounded rectangle for Edit, Save, and Cancel", () => {
     const css = readFileSync("components/program-editor.module.css", "utf8");
+    assert.match(css, /position: fixed;/);
+    assert.match(css, /top: 84px;/);
+    assert.match(css, /right: 40px;/);
+    assert.match(css, /\.box\.heroTitle \{/);
+    const frame = readFileSync("components/lead-edit.tsx", "utf8");
+    assert.match(frame, /createPortal/);
+    assert.match(frame, /styles\.toolbar/);
+    assert.doesNotMatch(frame, /placement/);
     assert.match(css, /\.toolbar \.action \{[^}]*border-radius: 6px;/);
     assert.match(css, /\.toolbar \.action \{[^}]*padding: 12px 16px;/);
-    assert.match(css, /\.page \{[^}]*margin: 20px 40px 0;/);
     const programs = readFileSync("components/program-editor.tsx", "utf8");
     assert.match(programs, /styles\.action/);
     assert.match(programs, /data-lead-editor/);
