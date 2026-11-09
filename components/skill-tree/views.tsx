@@ -6,6 +6,7 @@ import {
   drillHref,
   overviewColumns,
   panelItems,
+  resolvedSkillPath,
   unlinkedChildren,
   type SkillBlock,
   type SkillCard,
@@ -249,8 +250,11 @@ function Block({
       return <ChipBlock nodeId={node.id} index={index} block={block} />;
     case "cards":
       return <CardsBlock node={node} stack={stack} block={block} index={index} />;
-    case "flow":
+    case "flow": {
+      const path = resolvedSkillPath(node);
+      if (path) return <PathGraph node={node} stack={stack} path={path} showRoot={false} />;
       return <Flow node={node} stack={stack} place="hub" />;
+    }
     case "group":
       return <GroupBlock node={node} stack={stack} block={block} index={index} />;
     default: {
@@ -258,6 +262,129 @@ function Block({
       return unused;
     }
   }
+}
+
+function relationLines(root: SkillNode, path: NonNullable<ReturnType<typeof resolvedSkillPath>>) {
+  const name = (node: SkillNode) => node.card.title;
+  const firstLeft = path.left[0];
+  const firstRight = path.right[0];
+  const lines: string[] = [];
+  if (firstLeft && firstRight) lines.push(`${name(root)} branches to ${name(firstLeft)} and ${name(firstRight)}.`);
+  if (path.across && firstLeft && firstRight) lines.push(`${name(firstLeft)} also points to ${name(firstRight)}.`);
+  for (let index = 1; index < path.left.length; index += 1) {
+    const from = path.left[index - 1];
+    const to = path.left[index];
+    if (from && to) lines.push(`${name(from)} continues to ${name(to)}.`);
+  }
+  for (let index = 1; index < path.right.length; index += 1) {
+    const from = path.right[index - 1];
+    const to = path.right[index];
+    if (from && to) lines.push(`${name(from)} continues to ${name(to)}.`);
+  }
+  const lastLeft = path.left[path.left.length - 1];
+  const lastRight = path.right[path.right.length - 1];
+  if (path.join && lastLeft && lastRight) lines.push(`${name(lastLeft)} also connects to ${name(lastRight)}.`);
+  return lines;
+}
+
+function PathCell({
+  node,
+  stack,
+  stemBelow,
+  index,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  stemBelow: boolean;
+  index: number;
+}) {
+  return (
+    <div className="stree-path-cell">
+      <Card node={node} stack={stack} place="map" index={index} />
+      {stemBelow ? <div className="stree-path-stem is-grow" aria-hidden="true" /> : null}
+    </div>
+  );
+}
+
+function PathJoin() {
+  return (
+    <div className="stree-path-cell">
+      <div className="stree-path-join" aria-hidden="true">
+        <span className="stree-path-join-elbow">
+          <span className="stree-path-join-down" />
+          <span className="stree-path-join-across" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PathGraph({
+  node,
+  stack,
+  path,
+  showRoot,
+}: {
+  node: SkillNode;
+  stack: readonly SkillNode[];
+  path: NonNullable<ReturnType<typeof resolvedSkillPath>>;
+  showRoot: boolean;
+}) {
+  const childStack = stack[stack.length - 1]?.id === node.id ? stack : [...stack, node];
+  const rows = Math.max(path.left.length, path.right.length);
+  return (
+    <div className="stree-path">
+      {showRoot ? (
+        <div className="stree-path-intro">
+          <Card node={node} stack={stack} place="map" index={0} />
+        </div>
+      ) : null}
+      <div className="stree-path-stem stree-path-stem-top" aria-hidden="true" />
+      <div className="stree-path-rail" aria-hidden="true">
+        <span />
+        <span />
+      </div>
+      <div className="stree-path-board">
+          {Array.from({ length: rows }, (_, index) => {
+            const left = path.left[index];
+            const right = path.right[index];
+            const leftEnded = index >= path.left.length;
+            const leftContinues = Boolean(left) && (index < path.left.length - 1 || (path.join && path.right.length > path.left.length));
+            const rightContinues = Boolean(right) && index < path.right.length - 1;
+            return (
+              <div key={index} className={index === 0 ? "stree-path-row is-first" : "stree-path-row"}>
+                {left ? (
+                  <PathCell node={left} stack={childStack} stemBelow={leftContinues} index={index + 1} />
+                ) : leftEnded && path.join ? (
+                  index === rows - 1 ? (
+                    <PathJoin />
+                  ) : (
+                    <div className="stree-path-cell" aria-hidden="true">
+                      <div className="stree-path-stem is-grow" />
+                    </div>
+                  )
+                ) : (
+                  <div className="stree-path-cell" />
+                )}
+                <div className="stree-path-gap" aria-hidden="true">
+                  {index === 0 && path.across ? <span className="stree-path-across" /> : null}
+                </div>
+                {right ? (
+                  <PathCell node={right} stack={childStack} stemBelow={rightContinues} index={index + path.left.length + 1} />
+                ) : (
+                  <div className="stree-path-cell" />
+                )}
+              </div>
+            );
+          })}
+      </div>
+      <ul className="stree-sr">
+        {relationLines(node, path).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function Overview({ stack }: { stack: readonly SkillNode[] }) {
@@ -278,12 +405,21 @@ function Overview({ stack }: { stack: readonly SkillNode[] }) {
           ))}
         </div>
         <div className="stree-primary">
-          {root.children.map((branch, index) => (
-            <div key={branch.id} className={branch.mapFlow ? "stree-col stree-col-dj" : "stree-col"}>
-              <Card node={branch} stack={stack} place="map" index={index} />
-              {branch.mapFlow ? <Flow node={branch} stack={stack} place="map" /> : null}
-            </div>
-          ))}
+          {root.children.map((branch, index) => {
+            const path = resolvedSkillPath(branch);
+            return (
+              <div key={branch.id} className={branch.mapFlow || path ? "stree-col stree-col-dj" : "stree-col"}>
+                {path ? (
+                  <PathGraph node={branch} stack={stack} path={path} showRoot />
+                ) : (
+                  <>
+                    <Card node={branch} stack={stack} place="map" index={index} />
+                    {branch.mapFlow ? <Flow node={branch} stack={stack} place="map" /> : null}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       {root.hint ? (
