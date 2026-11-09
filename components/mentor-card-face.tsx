@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { mentorInitial } from "@/lib/mentors";
 import styles from "./mentor-draft-review.module.css";
 
@@ -21,6 +22,7 @@ export function MentorCardFace({
   placeholder = false,
   instagramUrl,
   instagramLabel,
+  edit,
 }: {
   name: string;
   photoSrc: string | null;
@@ -35,6 +37,15 @@ export function MentorCardFace({
   placeholder?: boolean;
   instagramUrl?: string | null;
   instagramLabel?: string | null;
+  edit?: {
+    name: ReactNode;
+    roleLine: ReactNode;
+    rate: ReactNode;
+    bio: ReactNode;
+    topics: ReactNode;
+    genres: ReactNode;
+    instagram: ReactNode;
+  };
 }) {
   const price = textOrNull(rateLabel);
   const note = textOrNull(rateNote);
@@ -54,21 +65,21 @@ export function MentorCardFace({
           </span>
         )}
         <div className={styles.head}>
-          <h2 className={styles.name}>{name}</h2>
-          {roleLine ? <p className={styles.role}>{roleLine}</p> : null}
+          <h2 className={styles.name}>{edit ? edit.name : name}</h2>
+          {edit || roleLine ? <p className={styles.role}>{edit ? edit.roleLine : roleLine}</p> : null}
           {showMeta ? (
             <div>
-              {price ? <span className={styles.price}>{price}</span> : null}
+              {edit ? edit.rate : price ? <span className={styles.price}>{price}</span> : null}
               {note ? <span className={styles.provisional}>{note}</span> : null}
               {placeholder ? <span className={styles.soon}>Coming soon</span> : null}
             </div>
           ) : null}
         </div>
       </div>
-      <p className={styles.bio}>{bio}</p>
-      <TagGroup label="Teaching topics" items={specialties} tone="topic" />
-      <TagGroup label="Genres" items={genres} tone="genre" />
-      {instagramHref && instagramText ? (
+      {edit ? <div className={styles.bio}>{edit.bio}</div> : <p className={styles.bio}>{bio}</p>}
+      {edit ? edit.topics : <TagGroup label="Teaching topics" items={specialties} tone="topic" />}
+      {edit ? edit.genres : <TagGroup label="Genres" items={genres} tone="genre" />}
+      {edit ? edit.instagram : instagramHref && instagramText ? (
         <p className={styles.meta}>
           <strong>Instagram:</strong>{" "}
           <a className={styles.link} href={instagramHref} target="_blank" rel="noopener noreferrer">

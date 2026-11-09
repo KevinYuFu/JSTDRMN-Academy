@@ -91,6 +91,9 @@
   gap: 0.65rem 1.2rem;
   margin-bottom: 0.85rem;
 }
+[data-lead-editor-layout] .stree-topbar {
+  padding-right: 240px;
+}
 .stree-brand {
   margin: 0;
   font-family: var(--font-stree-display), var(--font-unbounded), sans-serif;

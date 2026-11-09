@@ -20,7 +20,8 @@ describe("home and programs routes", () => {
     assert.match(programs, /headliner-banner/);
     assert.match(programs, /active="programs"/);
     assert.equal(programs.includes("WelcomeHero"), false);
-    assert.equal(programs.includes("ProgramEditor"), false);
+    assert.match(programs, /ProgramEditor/);
+    assert.equal(home.includes("ProgramEditor"), false);
   });
 
   it("sends the logo home and the Programs tab to the catalog", () => {

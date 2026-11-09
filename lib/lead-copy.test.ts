@@ -1,0 +1,168 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { describe, it } from "node:test";
+import { commitEventCopy } from "./event-copy";
+import { commitMentorCopy } from "./mentor-copy";
+import { commitPageCopy, pageCopyDefaults, readPageCopy } from "./page-copy";
+import { applySkillDraftChange, commitSkillCopy } from "./skill-copy";
+import type { SkillNode } from "./skill-tree";
+
+const mentor = {
+  id: "men_a",
+  name: "Ava",
+  roleLine: "Mentor",
+  bio: "Beats.",
+  specialties: JSON.stringify(["Drums"]),
+  genres: JSON.stringify(["House"]),
+  rateLabel: "$80",
+  instagramLabel: "ava",
+};
+
+describe("page copy", () => {
+  it("uses the current sentences until a Lead saves new ones", () => {
+    assert.deepEqual(readPageCopy("sessions", null), pageCopyDefaults.sessions);
+    assert.equal(commitPageCopy({ role: "student", page: "sessions", input: { title: "X", lede: "Y" } }).ok, false);
+    const saved = commitPageCopy({ role: "lead", page: "events", input: { title: "Nights", lede: "Academy only." } });
+    assert.equal(saved.ok, true);
+    if (saved.ok) assert.deepEqual(readPageCopy("events", saved.value), { title: "Nights", lede: "Academy only." });
+    assert.equal(commitPageCopy({ role: "lead", page: "events", input: { title: "", lede: "Y" } }).ok, false);
+  });
+});
+
+describe("mentor and event copy", () => {
+  it("lets a Lead edit visible mentor text and leaves other roles unchanged", () => {
+    const denied = commitMentorCopy({
+      role: "mentor",
+      input: { mentors: [{ ...mentor, name: "Nope" }] },
+      rows: [mentor],
+    });
+    assert.equal(denied.ok, false);
+    const saved = commitMentorCopy({
+      role: "lead",
+      input: { mentors: [{ id: "men_a", name: "Ava B", roleLine: "Mentor", bio: "Songs.", specialties: "Drums", genres: "House", rateLabel: "$80", instagramLabel: "ava" }] },
+      rows: [mentor],
+    });
+    assert.equal(saved.ok, true);
+    if (saved.ok) {
+      assert.equal(saved.writes[0]?.data.name, "Ava B");
+      assert.equal(Object.hasOwn(saved.writes[0]?.data ?? {}, "instagramUrl"), false);
+      assert.equal(Object.hasOwn(saved.writes[0]?.data ?? {}, "active"), false);
+    }
+    const blank = commitMentorCopy({
+      role: "lead",
+      input: { mentors: [{ id: "men_a", name: " ", roleLine: "", bio: "", specialties: "", genres: "", rateLabel: "", instagramLabel: "" }] },
+      rows: [mentor],
+    });
+    assert.equal(blank.ok, false);
+    if (!blank.ok) assert.equal(blank.fieldErrors["men_a.name"], "Add a name.");
+  });
+
+  it("edits event title and description only", () => {
+    const row = { id: "evt_a", title: "Open decks", description: "Bring a track." };
+    assert.equal(commitEventCopy({ role: "student", input: { events: [{ id: "evt_a", title: "X", description: "Y" }] }, rows: [row] }).ok, false);
+    const blocked = commitEventCopy({
+      role: "lead",
+      input: { events: [{ id: "evt_a", title: "X", description: "Y", audience: "all" }] },
+      rows: [row],
+    });
+    assert.equal(blocked.ok, false);
+    const saved = commitEventCopy({
+      role: "lead",
+      input: { events: [{ id: "evt_a", title: "Open decks night", description: "Bring a track." }] },
+      rows: [row],
+    });
+    assert.equal(saved.ok, true);
+    if (saved.ok) assert.deepEqual(saved.writes[0]?.data, { title: "Open decks night", description: "Bring a track." });
+  });
+});
+
+describe("skill tree copy", () => {
+  const tree: SkillNode = {
+    id: "root",
+    slug: [],
+    crumb: "Map",
+    card: { title: "Academy" },
+    hint: "Click a branch.",
+    children: [
+      {
+        id: "dj",
+        slug: ["dj"],
+        crumb: "DJ",
+        card: { title: "DJ", sub: "Decks" },
+        children: [],
+      },
+    ],
+  };
+
+  it("changes a visible card title and refuses a student or a blank title", () => {
+    assert.equal(commitSkillCopy({ role: "student", tree, patches: [{ path: "n:dj:card:title", value: "Decks" }] }).ok, false);
+    const blank = commitSkillCopy({ role: "lead", tree, patches: [{ path: "n:root:card:title", value: " " }] });
+    assert.equal(blank.ok, false);
+    const saved = commitSkillCopy({ role: "lead", tree, patches: [{ path: "n:dj:card:title", value: "DJ Lab" }, { path: "n:root:hint", value: "Start here." }] });
+    assert.equal(saved.ok, true);
+    if (saved.ok) {
+      assert.equal(saved.tree.children[0]?.card.title, "DJ Lab");
+      assert.equal(saved.tree.hint, "Start here.");
+      assert.equal(tree.children[0]?.card.title, "DJ");
+    }
+  });
+});
+
+describe("skill draft changes", () => {
+  it("drops a field that matches the original and keeps a field that does not", () => {
+    const typed = applySkillDraftChange({}, "n:dj:card:title", "Decks", "DJ");
+    assert.deepEqual(typed, { "n:dj:card:title": "Decks" });
+    const reverted = applySkillDraftChange(typed, "n:dj:card:title", "DJ", "DJ");
+    assert.deepEqual(reverted, {});
+    const both = applySkillDraftChange(typed, "n:dj:card:sub", "New line", "Advanced");
+    const oneBack = applySkillDraftChange(both, "n:dj:card:title", "DJ", "DJ");
+    assert.deepEqual(oneBack, { "n:dj:card:sub": "New line" });
+  });
+});
+
+describe("lead copy actions", () => {
+  it("checks the signed-in user before every write", () => {
+    const actions = readFileSync("app/lead-copy-actions.ts", "utf8");
+    for (const name of ["saveSessionsCopy", "saveEventsCopy", "saveSkillCopy"]) {
+      assert.match(actions, new RegExp(`export async function ${name}[\\s\\S]*getUser\\(`));
+    }
+    assert.match(actions, /commitPageCopy/);
+    assert.match(actions, /commitMentorCopy/);
+    assert.match(actions, /commitEventCopy/);
+    assert.match(actions, /commitSkillCopy/);
+  });
+});
+
+describe("edit control shape", () => {
+  it("floats Edit, Save, and Cancel under the header without a full-width band", () => {
+    const css = readFileSync("components/program-editor.module.css", "utf8");
+    assert.match(css, /\.anchor \{[^}]*height: 0;/);
+    assert.match(css, /\.actionRow \{[^}]*position: absolute;/);
+    assert.match(css, /\.actionRow \{[^}]*top: 20px;/);
+    assert.match(css, /\.actionRow \{[^}]*display: flex;/);
+    assert.match(css, /\.actionRow \{[^}]*flex-wrap: nowrap;/);
+    assert.match(css, /\.actionRow \.alert \{[^}]*position: absolute;/);
+    assert.match(css, /\.actionRow \{[^}]*background: transparent;/);
+    assert.match(css, /\.actionRow \{[^}]*width: max-content;/);
+    assert.match(css, /\.editorColumn \{[^}]*display: contents;/);
+    assert.doesNotMatch(css, /position:\s*fixed/);
+    assert.doesNotMatch(css, /editorColumn:has/);
+    assert.match(css, /\.actionRow \.action \{[^}]*border-radius: 6px;/);
+    assert.match(css, /\.actionRow \.action \{[^}]*padding: 12px 16px;/);
+    const frame = readFileSync("components/lead-edit.tsx", "utf8");
+    assert.match(frame, /styles\.sr/);
+    assert.doesNotMatch(frame, /styles\.status/);
+    assert.match(frame, /\{programEditCopy\.save\}/);
+    assert.doesNotMatch(frame, /saving \? programEditCopy\.saving : programEditCopy\.save/);
+    assert.match(frame, /styles\.anchor/);
+    assert.match(frame, /data-lead-editor/);
+    assert.doesNotMatch(frame, /createPortal/);
+    const programs = readFileSync("components/program-editor.tsx", "utf8");
+    assert.match(programs, /LeadActionRow/);
+    assert.match(programs, /align === "page"/);
+    assert.doesNotMatch(programs, /createPortal/);
+    const skill = readFileSync("components/skill-tree/skill-tree.css", "utf8");
+    assert.doesNotMatch(skill, /data-lead-editor-layout\] \.stree-field/);
+    assert.match(skill, /\[data-lead-editor-layout\] \.stree-topbar \{[^}]*padding-right: 240px;/);
+  });
+});
