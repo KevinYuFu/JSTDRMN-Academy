@@ -2,7 +2,7 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "CourseDelivery" AS ENUM ('prerecorded', 'in_person');
+CREATE TYPE "CourseDelivery" AS ENUM ('prerecorded', 'in_person', 'live_online');
 
 -- CreateEnum
 CREATE TYPE "CourseAccess" AS ENUM ('free', 'subscription', 'purchase');
@@ -66,6 +66,8 @@ CREATE TABLE "Student" (
 CREATE TABLE "Instructor" (
     "id" UUID NOT NULL,
     "accountId" UUID NOT NULL,
+    "name" TEXT NOT NULL,
+    "photoUrl" TEXT,
     "bio" TEXT NOT NULL,
     "soundcloudUrl" TEXT,
     "spotifyUrl" TEXT,
@@ -272,6 +274,13 @@ CREATE TABLE "Announcement" (
     "isPinned" BOOLEAN NOT NULL DEFAULT false,
     "publishedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "channelId" TEXT NOT NULL,
+    "roleMention" TEXT,
+    "sendAt" TIMESTAMP(3) NOT NULL,
+    "eventId" UUID,
+    "leadMinutes" INTEGER,
+    "status" TEXT NOT NULL,
+    "note" TEXT,
 
     CONSTRAINT "Announcement_pkey" PRIMARY KEY ("id")
 );
@@ -403,6 +412,9 @@ ALTER TABLE "EventRsvp" ADD CONSTRAINT "EventRsvp_studentId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "Announcement" ADD CONSTRAINT "Announcement_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "Account"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Announcement" ADD CONSTRAINT "Announcement_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE CASCADE ON UPDATE CASCADE;
