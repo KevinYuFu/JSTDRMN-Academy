@@ -897,12 +897,13 @@ button.slides:hover { filter: brightness(1.12); }
   }
   .site-header[data-menu="open"] .site-nav a.nav-staff {
     align-self: flex-start;
-    margin: 8px 0 4px;
+    margin: 8px 0 4px 8px;
     min-height: 44px;
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
-    padding-left: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
   .site-header[data-menu="open"] .public-auth {
     flex-direction: column;
