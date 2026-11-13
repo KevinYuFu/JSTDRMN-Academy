@@ -69,24 +69,25 @@ img { max-width: 100%; }
   border-left: 1px solid var(--tint-2);
   padding-left: 14px;
 }
-.nav-desktop { display: flex; gap: 14px; align-items: center; }
-.nav-desktop a {
+.header-menu { display: contents; }
+.site-nav { display: flex; gap: 14px; align-items: center; }
+.site-nav a {
   font-size: 13px;
   color: var(--soft);
   padding-bottom: 4px;
   white-space: nowrap;
   border-radius: 2px;
 }
-.nav-desktop a:focus-visible {
+.site-nav a:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 3px;
 }
-.nav-desktop a.active {
+.site-nav a.active {
   color: var(--text);
   font-weight: 500;
   box-shadow: inset 0 -2px 0 var(--accent);
 }
-.nav-desktop a.nav-staff {
+.site-nav a.nav-staff {
   color: var(--text);
   font-weight: 600;
   padding: 5px 12px 7px;
@@ -94,14 +95,14 @@ img { max-width: 100%; }
   background: rgba(168, 55, 230, 0.16);
   box-shadow: inset 0 0 0 1px rgba(168, 55, 230, 0.7);
 }
-.nav-desktop a.nav-staff:hover {
+.site-nav a.nav-staff:hover {
   background: rgba(168, 55, 230, 0.26);
 }
-.nav-desktop a.nav-staff.active {
+.site-nav a.nav-staff.active {
   background: rgba(168, 55, 230, 0.34);
   box-shadow: inset 0 0 0 1px var(--purple-light), inset 0 -2px 0 var(--cream);
 }
-.nav-desktop a.nav-staff:focus-visible {
+.site-nav a.nav-staff:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 3px;
 }
@@ -157,43 +158,6 @@ img { max-width: 100%; }
 .menu-btn:focus-visible {
   outline: 2px solid var(--cream);
   outline-offset: 2px;
-}
-.mobile-panel {
-  display: none;
-  border-bottom: 1px solid var(--tint-1);
-  background: #161616;
-  padding: 8px 16px 16px;
-}
-.mobile-panel a, .mobile-panel button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 12px 8px;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--tint-1);
-  border-radius: 8px;
-  cursor: pointer;
-}
-.mobile-panel a:focus-visible,
-.mobile-panel button:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 2px;
-}
-.mobile-panel a.active {
-  color: var(--text);
-  font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.mobile-panel a.nav-staff {
-  color: var(--text);
-  font-weight: 600;
-  background: rgba(168, 55, 230, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(168, 55, 230, 0.7);
-}
-.mobile-panel a.nav-staff.active {
-  background: rgba(168, 55, 230, 0.34);
-  box-shadow: inset 0 0 0 1px var(--purple-light), inset 3px 0 0 var(--cream);
 }
 
 .shell { max-width: 1200px; margin: 0 auto; padding: 22px 40px 64px; }
@@ -892,19 +856,48 @@ button.slides:hover { filter: brightness(1.12); }
 .check-row label { display: flex; gap: 6px; align-items: center; }
 
 @media (max-width: 980px) {
-  .nav-desktop { display: none; }
-  .public-auth { display: none; }
   .menu-btn { display: inline-flex; }
   .brand .tag { display: none; }
   .site-header { gap: 8px; }
-  .mobile-panel.open {
-  display: block;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 64px;
-  z-index: 30;
-}
+  .header-menu { display: none; }
+  .site-header[data-menu="open"] .header-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 64px;
+    z-index: 30;
+    background: #161616;
+    border-bottom: 1px solid var(--tint-1);
+    padding: 8px 16px 16px;
+    gap: 0;
+  }
+  .site-header[data-menu="open"] .site-nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .site-header[data-menu="open"] .site-nav a:not(.nav-staff) {
+    padding: 12px 8px;
+  }
+  .site-header[data-menu="open"] .site-nav a.nav-staff {
+    align-self: flex-start;
+    margin: 8px 8px 4px;
+  }
+  .site-header[data-menu="open"] .public-auth,
+  .site-header[data-menu="open"] .user {
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--tint-1);
+  }
+  .site-header[data-menu="open"] .public-auth {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .site-header[data-menu="open"] .user-name { display: inline; }
   .public-nav { display: none; }
   .learn-grid, .price-grid, .shelf, .split, .stat-row, .boot-grid { grid-template-columns: 1fr; }
   .headliner-banner { flex-direction: column; align-items: flex-start; margin: 8px 16px 0; }
