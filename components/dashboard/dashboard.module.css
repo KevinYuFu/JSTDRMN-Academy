@@ -145,6 +145,13 @@
 }
 
 @media (max-width: 720px) {
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+
   .tableWrap {
     overflow: visible;
     border: 0;
