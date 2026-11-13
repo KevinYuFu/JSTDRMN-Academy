@@ -902,6 +902,7 @@ button.slides:hover { filter: brightness(1.12); }
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
+    padding-left: 8px;
   }
   .site-header[data-menu="open"] .public-auth {
     flex-direction: column;
