@@ -173,20 +173,18 @@
 .grid.liveGrid {
   margin-top: 1.5rem;
   justify-content: center;
-  grid-template-columns: minmax(0, 438px);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 438px), 438px));
   gap: 1.5rem 2.5rem;
-}
-
-@media (min-width: 700px) {
-  .grid.liveGrid {
-    grid-template-columns: 438px 438px;
-  }
 }
 
 .liveCard {
   position: relative;
   width: 100%;
   max-width: 438px;
+  min-width: 0;
 }
 
 .cardButton {
