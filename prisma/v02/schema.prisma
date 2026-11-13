@@ -89,11 +89,7 @@ model Account {
   passwordHash String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  /// added for login, not in Notion. Google account id (the sub claim).
-  googleSub String? @unique
-  /// added for login, not in Notion. Today's login reads this. student, mentor, instructor, or lead.
-  role      String  @default("student")
+  googleSub    String?  @unique
 
   student       Student?
   instructor    Instructor?
@@ -105,7 +101,6 @@ model Account {
 model Student {
   id                   String    @id @default(uuid()) @db.Uuid
   accountId            String    @unique @db.Uuid
-  isSubscribed         Boolean   @default(false)
   subscriptionStatus   String    @default("none")
   currentPeriodEnd     DateTime?
   stripeCustomerId     String?   @unique
@@ -167,6 +162,7 @@ model InstructorSkill {
   skill      Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@id([instructorId, skillId])
+  @@index([skillId])
 }
 
 model Course {
@@ -188,6 +184,8 @@ model Course {
   linksAsNext     CourseLink[]    @relation("CourseLinkNext")
   linksAsRequired CourseLink[]    @relation("CourseLinkRequired")
   payments        Payment[]
+
+  @@index([instructorId])
 }
 
 model Lesson {
@@ -208,6 +206,7 @@ model CourseLesson {
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
 
   @@id([courseId, lessonId])
+  @@index([lessonId])
 }
 
 model Material {
@@ -219,6 +218,8 @@ model Material {
   sortOrder Int
 
   lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@index([lessonId])
 }
 
 model CourseLink {
@@ -229,6 +230,7 @@ model CourseLink {
   requires Course @relation("CourseLinkRequired", fields: [requiresCourseId], references: [id], onDelete: Cascade)
 
   @@id([courseId, requiresCourseId])
+  @@index([requiresCourseId])
 }
 
 model CourseSkill {
@@ -239,6 +241,7 @@ model CourseSkill {
   skill  Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@id([courseId, skillId])
+  @@index([skillId])
 }
 
 model StudentCourse {
@@ -250,6 +253,7 @@ model StudentCourse {
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
   @@id([studentId, courseId])
+  @@index([courseId])
 }
 
 model LessonProgress {
@@ -263,6 +267,7 @@ model LessonProgress {
   lesson  Lesson  @relation(fields: [lessonId], references: [id], onDelete: Restrict)
 
   @@id([studentId, lessonId])
+  @@index([lessonId])
 }
 
 model StudentSkill {
@@ -274,6 +279,7 @@ model StudentSkill {
   skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Restrict)
 
   @@id([studentId, skillId])
+  @@index([skillId])
 }
 
 model Booking {
@@ -291,6 +297,9 @@ model Booking {
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Restrict)
   instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Restrict)
   payments   Payment[]
+
+  @@index([studentId])
+  @@index([instructorId])
 }
 
 model SiteSetting {
@@ -314,6 +323,10 @@ model Payment {
   student Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
   course  Course?  @relation(fields: [courseId], references: [id], onDelete: Restrict)
   booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([bookingId])
 }
 
 model Event {
@@ -343,6 +356,7 @@ model EventRsvp {
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
 
   @@id([eventId, studentId])
+  @@index([studentId])
 }
 
 model Announcement {
@@ -355,22 +369,23 @@ model Announcement {
   publishedAt DateTime?
   createdAt   DateTime             @default(now())
 
-  /// Discord posting fields copied from today's Announcement. Not in the Notion table.
-  channelId   String
+  channelId   String?
   roleMention String?
-  sendAt      DateTime
-  eventId     String?  @db.Uuid
+  sendAt      DateTime?
+  eventId     String?   @db.Uuid
   /// Minutes before the event start. Empty means sendAt was chosen on its own.
   leadMinutes Int?
-  status      String
+  status      String?
   note        String?
 
   author Account @relation(fields: [authorId], references: [id], onDelete: Restrict)
   event  Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([authorId])
+  @@index([eventId])
 }
 
-/// added for login, not in Notion. Same job as today's Session table.
-/// accountId is today's userId. token is the login cookie.
+/// Deleting the account deletes its sessions.
 model Session {
   id        String   @id @default(uuid()) @db.Uuid
   token     String   @unique
@@ -379,4 +394,6 @@ model Session {
   createdAt DateTime @default(now())
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
 }

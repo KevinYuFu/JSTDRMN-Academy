@@ -28,6 +28,8 @@ npm run db:v02:validate
 
 ## Choices made
 
+An Instructor row means instructor or mentor. A Staff row means staff. Everyone else is a student. There is no `Account.role`.
+
 **Ids**
 
 - Every id is a uuid, including tables the page only called `id`.
@@ -42,57 +44,70 @@ npm run db:v02:validate
 - `boolean` and `bool` are Boolean.
 - `url` is text.
 - `int` is a whole number.
+- `subscriptionStatus` and Announcement `status` stay text. The page does not make them enums.
 
 **Required or empty**
 
-- Ids, foreign keys, and the unique pairs are required.
-- Empty is allowed where the page says Optional, empty, or only-for-one-kind: `passwordHash`, `stripeCustomerId`, `stripeSubscriptionId`, `Instructor.photoUrl`, the four instructor links, `sessionPriceCents`, `Course.priceCents`, `series`, `completedAt`, `Payment.courseId`, `Payment.bookingId`, `capacity`, `publishedAt`.
-- Announcement Discord fields that can be empty, same as today: `roleMention`, `eventId`, `leadMinutes`, `note`. `channelId`, `sendAt`, and `status` are required.
-- These can also be empty: `currentPeriodEnd` (no paid end date yet), `Booking.note` (nothing written), `meetingUrl` (link comes later), `stripeId` (unique, empty until Stripe sends one), `paidAt` (empty until paid).
+- The page says these can be empty: `googleSub`, `currentPeriodEnd`, `stripeCustomerId`, `stripeSubscriptionId`, `photoUrl`, the four instructor links, `sessionPriceCents`, `Course.priceCents`, `series`, `completedAt`, `Booking.note`, `meetingUrl`, `Payment.courseId`, `Payment.bookingId`, `stripeId`, `paidAt`, `capacity`, `publishedAt`, `channelId`, `roleMention`, `sendAt`, `eventId`, `leadMinutes`, Announcement `status`, and Announcement `note`.
+- `passwordHash` can be empty. The page does not say Optional. The note says an auth provider can be used instead.
+- `subscriptionStatus` is required. The page does not say Optional.
 - Other text is required, including `bio` and `Event.location`. The app can save `""`.
-- `Course.instructorId` is required.
+- `Course.instructorId` is required. The page does not say Optional.
 
 **Defaults**
 
-- `createdAt` is now.
-- `isSubscribed` is false.
-- `subscriptionStatus` is the text `none`.
-- `Instructor.active` and `Staff.active` are true.
-- `isPublished` is false on Course and Event.
-- `Event.priceCents` is 0.
-- `isPinned` is false.
-- `Account.role` stays. Default is `student`.
-- Status enums, sort order, copied prices, durations, audience, and skill source have no default. The app must set them. Announcement `status` has no default.
+- `createdAt` is now. The page does not give a default.
+- `subscriptionStatus` is the text `none`. The page does not give a default.
+- `Instructor.active` and `Staff.active` are true. The page does not give a default.
+- `isPublished` is false on Course and Event. The page says false means staff only.
+- `Event.priceCents` is 0. The page says 0 means free.
+- `isPinned` is false. The page does not give a default.
+- Status enums, sort order, copied prices, durations, audience, and skill source have no default. The app must set them.
 
 **Delete**
 
-- Cascade only on pure link tables: InstructorSkill, CourseLink, CourseSkill. Those tables store only the two ids.
-- Cascade on Session, same as today's login table.
-- Restrict on every other foreign key. CourseLesson is Restrict because it also stores `sortOrder`.
-- `Announcement.eventId` uses SetNull, same as today's Announcement. Deleting an event clears that link and keeps the announcement.
-- `onUpdate` is Cascade on every foreign key. That is Prisma's default, and it matches the live schema.
+- Deleting an account deletes its sessions. The page says this.
+- Deleting an event clears `Announcement.eventId` and keeps the announcement. The page says this.
+- Cascade on pure link tables: InstructorSkill, CourseLink, CourseSkill. The page does not say.
+- Restrict on every other foreign key. CourseLesson is Restrict because it also stores `sortOrder`. The page does not say.
+- `onUpdate` is Cascade on every foreign key. That is Prisma's default.
 
-**Enums**
+**Indexes**
 
-- Real Postgres enums where the page lists the values.
-- `Course.delivery` is `prerecorded`, `in_person`, or `live_online`.
-- `subscriptionStatus` stays text. `none`, `active`, `past_due`, and `cancelled` are examples, not an enum.
+Indexes only. No new fields. A foreign key is indexed when it is not already the first column of a primary key or a unique key.
+
+- `Session.accountId`
+- `InstructorSkill.skillId`
+- `StudentCourse.courseId`
+- `Course.instructorId`
+- `CourseLesson.lessonId`
+- `Material.lessonId`
+- `CourseLink.requiresCourseId`
+- `LessonProgress.lessonId`
+- `CourseSkill.skillId`
+- `StudentSkill.skillId`
+- `Booking.studentId`
+- `Booking.instructorId`
+- `Payment.studentId`
+- `Payment.courseId`
+- `Payment.bookingId`
+- `EventRsvp.studentId`
+- `Announcement.authorId`
+- `Announcement.eventId`
+
+These already have a unique key, so they have no extra index: `Student.accountId`, `Instructor.accountId`, `Staff.accountId`.
 
 **Other choices**
 
 - No currency column. Amounts are CAD cents.
 - `Payment.bookingId` is not unique. There is no rule that a course payment must have a course, or that a course cannot require itself.
-- Email, slug, and skill name are case-sensitive.
+- Email, slug, skill name, and the Stripe ids are case-sensitive.
 - Table names stay PascalCase, like the live database.
 - Names such as `student` and `linksAsNext` are Prisma links for code. They are not columns.
 - One connection setting: `V02_DATABASE_URL`. There is no second pooled URL.
 - The v0.2 client is generated into `node_modules/.prisma/v02-client`, so it cannot replace the live client.
-- Student keeps `isSubscribed`, `subscriptionStatus`, and `currentPeriodEnd`.
-- `Account.googleSub` stays. It is the Google account id.
-- `Account.role` stays on the account. Today's login stores `student`, `mentor`, `instructor`, or `lead` there. Staff has no role or title column. Instructor has no role or title column. There is no Mentor table, so a mentor cannot be read from an Instructor row or a Staff row.
-- Instructor has required `name` and optional `photoUrl`. It has `sessionPriceCents`. It has no `isLead`, slug, or sort.
+- Student has `subscriptionStatus` and `currentPeriodEnd`. It does not have `isSubscribed`. Subscribed is worked out from those two fields.
+- Instructor has required `name` and optional `photoUrl`. It has no `isLead`, slug, or sort.
 - Lesson is only `id` and `title`. No extra timestamps were added where the page has none.
-- Announcement keeps `authorId` on Account. It also has today's Discord fields: `channelId`, `roleMention`, `sendAt`, `eventId`, `leadMinutes`, `status`, `note`. `eventId` is an optional uuid pointing at Event, because Event ids are uuids.
-- Event end is `startsAt` plus `durationMin`. There is no `endsAt`, type, recurrence, or cohort.
-- Foreign keys come from the field tables. That includes Staff, Booking, SiteSetting, Payment, Event, EventRsvp, and Announcement, which the diagram leaves out.
-- The Notion page, including the latest field edits, is the source for this schema.
+- Event end is `startsAt` plus `durationMin`. There is no `endsAt`.
+- Payment `kind` is `subscription`, `course`, or `session`. The page leaves an `event` kind as an open question, so it is not a value.

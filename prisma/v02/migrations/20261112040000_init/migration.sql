@@ -43,7 +43,6 @@ CREATE TABLE "Account" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "googleSub" TEXT,
-    "role" TEXT NOT NULL DEFAULT 'student',
 
     CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
 );
@@ -52,7 +51,6 @@ CREATE TABLE "Account" (
 CREATE TABLE "Student" (
     "id" UUID NOT NULL,
     "accountId" UUID NOT NULL,
-    "isSubscribed" BOOLEAN NOT NULL DEFAULT false,
     "subscriptionStatus" TEXT NOT NULL DEFAULT 'none',
     "currentPeriodEnd" TIMESTAMP(3),
     "stripeCustomerId" TEXT,
@@ -274,12 +272,12 @@ CREATE TABLE "Announcement" (
     "isPinned" BOOLEAN NOT NULL DEFAULT false,
     "publishedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "channelId" TEXT NOT NULL,
+    "channelId" TEXT,
     "roleMention" TEXT,
-    "sendAt" TIMESTAMP(3) NOT NULL,
+    "sendAt" TIMESTAMP(3),
     "eventId" UUID,
     "leadMinutes" INTEGER,
-    "status" TEXT NOT NULL,
+    "status" TEXT,
     "note" TEXT,
 
     CONSTRAINT "Announcement_pkey" PRIMARY KEY ("id")
@@ -321,16 +319,70 @@ CREATE UNIQUE INDEX "Staff_accountId_key" ON "Staff"("accountId");
 CREATE UNIQUE INDEX "Skill_name_key" ON "Skill"("name");
 
 -- CreateIndex
+CREATE INDEX "InstructorSkill_skillId_idx" ON "InstructorSkill"("skillId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Course_slug_key" ON "Course"("slug");
+
+-- CreateIndex
+CREATE INDEX "Course_instructorId_idx" ON "Course"("instructorId");
+
+-- CreateIndex
+CREATE INDEX "CourseLesson_lessonId_idx" ON "CourseLesson"("lessonId");
+
+-- CreateIndex
+CREATE INDEX "Material_lessonId_idx" ON "Material"("lessonId");
+
+-- CreateIndex
+CREATE INDEX "CourseLink_requiresCourseId_idx" ON "CourseLink"("requiresCourseId");
+
+-- CreateIndex
+CREATE INDEX "CourseSkill_skillId_idx" ON "CourseSkill"("skillId");
+
+-- CreateIndex
+CREATE INDEX "StudentCourse_courseId_idx" ON "StudentCourse"("courseId");
+
+-- CreateIndex
+CREATE INDEX "LessonProgress_lessonId_idx" ON "LessonProgress"("lessonId");
+
+-- CreateIndex
+CREATE INDEX "StudentSkill_skillId_idx" ON "StudentSkill"("skillId");
+
+-- CreateIndex
+CREATE INDEX "Booking_studentId_idx" ON "Booking"("studentId");
+
+-- CreateIndex
+CREATE INDEX "Booking_instructorId_idx" ON "Booking"("instructorId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Payment_stripeId_key" ON "Payment"("stripeId");
 
 -- CreateIndex
+CREATE INDEX "Payment_studentId_idx" ON "Payment"("studentId");
+
+-- CreateIndex
+CREATE INDEX "Payment_courseId_idx" ON "Payment"("courseId");
+
+-- CreateIndex
+CREATE INDEX "Payment_bookingId_idx" ON "Payment"("bookingId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Event_slug_key" ON "Event"("slug");
 
 -- CreateIndex
+CREATE INDEX "EventRsvp_studentId_idx" ON "EventRsvp"("studentId");
+
+-- CreateIndex
+CREATE INDEX "Announcement_authorId_idx" ON "Announcement"("authorId");
+
+-- CreateIndex
+CREATE INDEX "Announcement_eventId_idx" ON "Announcement"("eventId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Session_token_key" ON "Session"("token");
+
+-- CreateIndex
+CREATE INDEX "Session_accountId_idx" ON "Session"("accountId");
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_accountId_fkey" FOREIGN KEY ("accountId") REFERENCES "Account"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
