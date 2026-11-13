@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { logout } from "@/app/actions";
+import { useHeaderMenu } from "./header-frame";
 import { Icon } from "./icons";
 
 export function UserMenu({ name, initial }: { name: string; initial: string }) {
-  const [open, setOpen] = useState(false);
+  const { accountOpen, toggleAccount } = useHeaderMenu();
   const first = name.split(" ")[0] || name;
   return (
     <div className="user">
@@ -13,10 +13,10 @@ export function UserMenu({ name, initial }: { name: string; initial: string }) {
         <Icon name="bell" />
       </span>
       <span className="user-name">Hi, {first}</span>
-      <button className="avatar" type="button" aria-expanded={open} aria-label="Account menu" onClick={() => setOpen((value) => !value)}>
+      <button className="avatar" type="button" aria-expanded={accountOpen} aria-label="Account menu" onClick={toggleAccount}>
         {initial}
       </button>
-      {open ? (
+      {accountOpen ? (
         <div className="user-menu">
           <form action={logout}>
             <button type="submit">Log out</button>
