@@ -1,0 +1,399 @@
+// Academy database v0.2.
+// This file is a new database. The live site still uses prisma/schema.prisma.
+// Apply with: prisma migrate deploy --schema prisma/v02/schema.prisma
+// Set V02_DATABASE_URL to the new database. Do not point it at the live database.
+
+generator client {
+  provider = "prisma-client-js"
+  // Own folder so `prisma generate` cannot overwrite the live app's client.
+  output   = "../../node_modules/.prisma/v02-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("V02_DATABASE_URL")
+}
+
+enum CourseDelivery {
+  prerecorded
+  in_person
+  live_online
+}
+
+enum CourseAccess {
+  free
+  subscription
+  purchase
+}
+
+enum StudentCourseStatus {
+  enrolled
+  taking
+  graduated
+}
+
+enum MaterialType {
+  video
+  infographic
+  slides
+  file
+}
+
+enum LessonProgressStatus {
+  started
+  done
+}
+
+enum StudentSkillSource {
+  manual
+  questionnaire
+  course
+}
+
+enum BookingStatus {
+  requested
+  confirmed
+  done
+  cancelled
+}
+
+enum PaymentKind {
+  subscription
+  course
+  session
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum EventRsvpStatus {
+  going
+  cancelled
+  attended
+}
+
+enum AnnouncementAudience {
+  everyone
+  students
+  subscribers
+}
+
+model Account {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  name         String
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  googleSub    String?  @unique
+
+  student       Student?
+  instructor    Instructor?
+  staff         Staff?
+  sessions      Session[]
+  announcements Announcement[]
+}
+
+model Student {
+  id                   String    @id @default(uuid()) @db.Uuid
+  accountId            String    @unique @db.Uuid
+  subscriptionStatus   String    @default("none")
+  currentPeriodEnd     DateTime?
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  createdAt            DateTime  @default(now())
+
+  account        Account          @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  courses        StudentCourse[]
+  lessonProgress LessonProgress[]
+  skills         StudentSkill[]
+  bookings       Booking[]
+  payments       Payment[]
+  rsvps          EventRsvp[]
+}
+
+model Instructor {
+  id                String   @id @default(uuid()) @db.Uuid
+  accountId         String   @unique @db.Uuid
+  name              String
+  photoUrl          String?
+  bio               String
+  soundcloudUrl     String?
+  spotifyUrl        String?
+  instagramUrl      String?
+  djSetUrl          String?
+  active            Boolean  @default(true)
+  sessionPriceCents Int?
+  createdAt         DateTime @default(now())
+
+  account  Account           @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  skills   InstructorSkill[]
+  courses  Course[]
+  bookings Booking[]
+}
+
+model Staff {
+  id        String   @id @default(uuid()) @db.Uuid
+  accountId String   @unique @db.Uuid
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Restrict)
+}
+
+model Skill {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  instructors InstructorSkill[]
+  courses     CourseSkill[]
+  students    StudentSkill[]
+}
+
+model InstructorSkill {
+  instructorId String @db.Uuid
+  skillId      String @db.Uuid
+
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  skill      Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([instructorId, skillId])
+  @@index([skillId])
+}
+
+model Course {
+  id           String         @id @default(uuid()) @db.Uuid
+  title        String
+  slug         String         @unique
+  description  String
+  delivery     CourseDelivery
+  access       CourseAccess
+  priceCents   Int?
+  instructorId String         @db.Uuid
+  isPublished  Boolean        @default(false)
+  series       String?
+
+  instructor      Instructor      @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  lessons         CourseLesson[]
+  students        StudentCourse[]
+  skills          CourseSkill[]
+  linksAsNext     CourseLink[]    @relation("CourseLinkNext")
+  linksAsRequired CourseLink[]    @relation("CourseLinkRequired")
+  payments        Payment[]
+
+  @@index([instructorId])
+}
+
+model Lesson {
+  id    String @id @default(uuid()) @db.Uuid
+  title String
+
+  courses   CourseLesson[]
+  materials Material[]
+  progress  LessonProgress[]
+}
+
+model CourseLesson {
+  courseId  String @db.Uuid
+  lessonId  String @db.Uuid
+  sortOrder Int
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@id([courseId, lessonId])
+  @@index([lessonId])
+}
+
+model Material {
+  id        String       @id @default(uuid()) @db.Uuid
+  lessonId  String       @db.Uuid
+  type      MaterialType
+  title     String
+  url       String
+  sortOrder Int
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@index([lessonId])
+}
+
+model CourseLink {
+  courseId         String @db.Uuid
+  requiresCourseId String @db.Uuid
+
+  course   Course @relation("CourseLinkNext", fields: [courseId], references: [id], onDelete: Cascade)
+  requires Course @relation("CourseLinkRequired", fields: [requiresCourseId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, requiresCourseId])
+  @@index([requiresCourseId])
+}
+
+model CourseSkill {
+  courseId String @db.Uuid
+  skillId  String @db.Uuid
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  skill  Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, skillId])
+  @@index([skillId])
+}
+
+model StudentCourse {
+  studentId String              @db.Uuid
+  courseId  String              @db.Uuid
+  status    StudentCourseStatus
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@id([studentId, courseId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  studentId   String               @db.Uuid
+  lessonId    String               @db.Uuid
+  status      LessonProgressStatus
+  startedAt   DateTime
+  completedAt DateTime?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  lesson  Lesson  @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+
+  @@id([studentId, lessonId])
+  @@index([lessonId])
+}
+
+model StudentSkill {
+  studentId String             @db.Uuid
+  skillId   String             @db.Uuid
+  source    StudentSkillSource
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@id([studentId, skillId])
+  @@index([skillId])
+}
+
+model Booking {
+  id           String        @id @default(uuid()) @db.Uuid
+  studentId    String        @db.Uuid
+  instructorId String        @db.Uuid
+  startsAt     DateTime
+  durationMin  Int
+  status       BookingStatus
+  note         String?
+  meetingUrl   String?
+  priceCents   Int
+  createdAt    DateTime      @default(now())
+
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  payments   Payment[]
+
+  @@index([studentId])
+  @@index([instructorId])
+}
+
+model SiteSetting {
+  id                       String   @id @default("default")
+  defaultSessionPriceCents Int
+  updatedAt                DateTime @updatedAt
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  studentId   String        @db.Uuid
+  kind        PaymentKind
+  courseId    String?       @db.Uuid
+  bookingId   String?       @db.Uuid
+  amountCents Int
+  status      PaymentStatus
+  stripeId    String?       @unique
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  course  Course?  @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([bookingId])
+}
+
+model Event {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  slug        String   @unique
+  description String
+  startsAt    DateTime
+  durationMin Int
+  location    String
+  priceCents  Int      @default(0)
+  capacity    Int?
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  rsvps         EventRsvp[]
+  announcements Announcement[]
+}
+
+model EventRsvp {
+  eventId   String          @db.Uuid
+  studentId String          @db.Uuid
+  status    EventRsvpStatus
+  createdAt DateTime        @default(now())
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@id([eventId, studentId])
+  @@index([studentId])
+}
+
+model Announcement {
+  id          String               @id @default(uuid()) @db.Uuid
+  title       String
+  body        String
+  audience    AnnouncementAudience
+  authorId    String               @db.Uuid
+  isPinned    Boolean              @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime             @default(now())
+
+  channelId   String?
+  roleMention String?
+  sendAt      DateTime?
+  eventId     String?   @db.Uuid
+  /// Minutes before the event start. Empty means sendAt was chosen on its own.
+  leadMinutes Int?
+  status      String?
+  note        String?
+
+  author Account @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  event  Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([authorId])
+  @@index([eventId])
+}
+
+/// Deleting the account deletes its sessions.
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  accountId String   @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+}

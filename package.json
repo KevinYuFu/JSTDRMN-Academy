@@ -10,7 +10,8 @@
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
     "test": "tsx --test lib/*.test.ts",
-    "review:local": "sh scripts/local-review.sh"
+    "review:local": "sh scripts/local-review.sh",
+    "db:v02:validate": "prisma validate --schema prisma/v02/schema.prisma"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
