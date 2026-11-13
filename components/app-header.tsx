@@ -16,7 +16,7 @@ export async function AppHeader({ active }: { active?: string | null }) {
   return (
     <HeaderFrame>
       <Link href="/" className="brand">
-        <Image src="/logo.png" alt="JSTDRMN" width={156} height={34} priority className="logo" />
+        <Image src="/logo.png" alt="JSTDRMN" width={256} height={57} priority className="logo" />
         <span className="tag">Academy</span>
       </Link>
       <div className="header-menu" id="academy-menu">
