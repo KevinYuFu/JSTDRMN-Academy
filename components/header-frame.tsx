@@ -5,57 +5,53 @@ import { usePathname } from "next/navigation";
 import { Icon } from "./icons";
 
 const MenuContext = createContext<{
-  open: boolean;
-  toggle: () => void;
+  menuOpen: boolean;
+  accountOpen: boolean;
+  toggleMenu: () => void;
+  toggleAccount: () => void;
   buttonRef: RefObject<HTMLButtonElement | null>;
 } | null>(null);
 
 export function HeaderFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    const onAccount = () => setOpen(false);
-    window.addEventListener("academy-account-open", onAccount);
-    return () => window.removeEventListener("academy-account-open", onAccount);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
+    if (!menuOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      setOpen(false);
+      setMenuOpen(false);
       buttonRef.current?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [menuOpen]);
+
+  function toggleMenu() {
+    setMenuOpen((open) => !open);
+    setAccountOpen(false);
+  }
+
+  function toggleAccount() {
+    setAccountOpen((open) => !open);
+    setMenuOpen(false);
+  }
 
   return (
-    <MenuContext.Provider
-      value={{
-        open,
-        toggle: () =>
-          setOpen((value) => {
-            const next = !value;
-            if (next) window.dispatchEvent(new Event("academy-nav-open"));
-            return next;
-          }),
-        buttonRef,
-      }}
-    >
+    <MenuContext.Provider value={{ menuOpen, accountOpen, toggleMenu, toggleAccount, buttonRef }}>
       <header
         className="site-header"
-        data-menu={open ? "open" : "closed"}
+        data-menu={menuOpen ? "open" : "closed"}
         onClick={(event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
-          if (target.closest("a")) setOpen(false);
+          if (target.closest("a")) setMenuOpen(false);
         }}
       >
         {children}
@@ -66,7 +62,7 @@ export function HeaderFrame({ children }: { children: ReactNode }) {
 
 export function MenuButton() {
   const menu = useContext(MenuContext);
-  const open = menu?.open ?? false;
+  const open = menu?.menuOpen ?? false;
   return (
     <button
       ref={menu?.buttonRef}
@@ -75,9 +71,15 @@ export function MenuButton() {
       aria-label={open ? "Close menu" : "Open menu"}
       aria-expanded={open}
       aria-controls="academy-menu"
-      onClick={() => menu?.toggle()}
+      onClick={() => menu?.toggleMenu()}
     >
       <Icon name={open ? "close" : "menu"} />
     </button>
   );
+}
+
+export function useHeaderMenu() {
+  const menu = useContext(MenuContext);
+  if (!menu) throw new Error("Header controls must render inside HeaderFrame.");
+  return menu;
 }
