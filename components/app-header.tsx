@@ -19,9 +19,8 @@ export async function AppHeader({ active }: { active?: string | null }) {
         <Image src="/logo.png" alt="JSTDRMN" width={156} height={34} priority className="logo" />
         <span className="tag">Academy</span>
       </Link>
-      <MenuButton />
-      <div className="header-menu">
-        <nav id="academy-menu" className="site-nav" aria-label="Academy">
+      <div className="header-menu" id="academy-menu">
+        <nav className="site-nav" aria-label="Academy">
           {links.map((link) => (
             <Link
               key={link.key}
@@ -33,15 +32,19 @@ export async function AppHeader({ active }: { active?: string | null }) {
             </Link>
           ))}
         </nav>
-        {user ? (
-          <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} />
-        ) : (
+        {user ? null : (
           <div className="public-auth">
-            <Link href="/login" className="pill pill-black">Log in</Link>
-            <Link href="/signup" className="pill pill-purple">Sign up</Link>
+            <Link href="/login" className="pill pill-black">
+              Log in
+            </Link>
+            <Link href="/signup" className="pill pill-purple">
+              Sign up
+            </Link>
           </div>
         )}
       </div>
+      {user ? <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} /> : null}
+      <MenuButton />
     </HeaderFrame>
   );
 }
