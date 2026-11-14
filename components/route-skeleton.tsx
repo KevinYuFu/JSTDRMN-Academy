@@ -14,11 +14,10 @@ import styles from "./route-skeleton.module.css";
 import "@/components/skill-tree/skill-tree.css";
 
 /**
- * Guest header for loading.tsx.
- * The real header reads the session. Doing that here would make the shell
- * dynamic, so Next.js could not prefetch it. Same frame, classes, and links.
+ * Loading header. It does not read the session, so the shell stays prefetchable.
+ * The right side is an empty slot: no login buttons, avatar, or Dashboard pill.
  */
-function GuestHeader({ active }: { active?: string | null }) {
+function LoadingHeader({ active }: { active?: string | null }) {
   const links = academyNav(null);
   return (
     <HeaderFrame>
@@ -39,15 +38,10 @@ function GuestHeader({ active }: { active?: string | null }) {
             </Link>
           ))}
         </nav>
-        <div className="public-auth">
-          <Link href="/login" className="pill pill-black">
-            Log in
-          </Link>
-          <Link href="/signup" className="pill pill-purple">
-            Sign up
-          </Link>
-        </div>
       </div>
+      <span className={styles.headerSlot} aria-hidden="true">
+        <span className={`${styles.bone} ${styles.headerMark}`} />
+      </span>
       <MenuButton />
     </HeaderFrame>
   );
@@ -73,7 +67,7 @@ function LoadingChrome({
 }) {
   return (
     <div className={className} data-route-skeleton={id}>
-      <GuestHeader active={active} />
+      <LoadingHeader active={active} />
       <div aria-busy="true" aria-live="polite">
         <p className="sr-only">{label}</p>
         {children}
