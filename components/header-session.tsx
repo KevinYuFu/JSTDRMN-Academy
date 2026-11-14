@@ -3,6 +3,7 @@ import { getUser } from "@/lib/auth";
 import { academyNav } from "@/lib/nav";
 import { HeaderNav } from "./header-nav";
 import { UserMenu } from "./user-menu";
+import styles from "./header-session.module.css";
 
 function PublicAuth() {
   return (
@@ -18,15 +19,20 @@ function PublicAuth() {
 }
 
 /**
- * Guest controls. Log in / Sign up are a fixed width, unlike the name in the
- * avatar row, so this is the box that does not jump when a signed-out visit resolves.
+ * Neutral slot. No login links, avatar, or staff item.
+ * On a wide screen it holds the width of Log in / Sign up, so the nav stays put for a guest.
+ * On a phone it is hidden: the closed bar is only the logo and the menu button.
  */
 export function HeaderSessionFallback() {
   return (
-    <div className="header-menu" id="academy-menu">
-      <HeaderNav links={academyNav(null)} />
-      <PublicAuth />
-    </div>
+    <>
+      <div className="header-menu" id="academy-menu">
+        <HeaderNav links={academyNav(null)} />
+      </div>
+      <span className={styles.slot} aria-hidden="true">
+        <span className={styles.mark} />
+      </span>
+    </>
   );
 }
 

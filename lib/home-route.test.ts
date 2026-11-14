@@ -37,6 +37,12 @@ describe("home and programs routes", () => {
     assert.equal(frame.includes("async"), false);
     assert.equal(frame.includes("cookies"), false);
     assert.match(session, /await getUser\(\)/);
+    assert.match(session, /aria-hidden="true"/);
+    const fallback = session.slice(session.indexOf("function HeaderSessionFallback"), session.indexOf("export async function HeaderSession"));
+    assert.equal(fallback.includes("Log in"), false);
+    assert.equal(fallback.includes("Sign up"), false);
+    assert.equal(fallback.includes("UserMenu"), false);
+    assert.equal(fallback.includes("Dashboard"), false);
     assert.match(nav, /usePathname/);
     assert.match(nav, /activeNavKey/);
     assert.equal(activeNavKey("/"), null);
