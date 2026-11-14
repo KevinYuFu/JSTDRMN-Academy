@@ -185,7 +185,8 @@ describe("mentor draft profiles", () => {
     assert.match(face, /instagramHref && instagramText/);
     assert.match(face, /<strong>Instagram:<\/strong>/);
     const css = readFileSync(path.join(root, "components/mentor-draft-review.module.css"), "utf8");
-    assert.match(css, /grid-template-columns:\s*438px 438px/);
+    assert.match(css, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*438px\),\s*438px\)\)/);
+    assert.equal(css.includes("438px 438px"), false);
     assert.match(css, /max-width:\s*438px/);
   });
 });

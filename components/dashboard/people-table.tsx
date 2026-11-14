@@ -48,30 +48,23 @@ export function PeopleTable({
           ? "Select rows for a later bulk export or bulk change. Those actions are not built, and nothing is sent."
           : `${selected.length} selected. Bulk export and bulk changes are not built, so this selection changes nothing.`}
       </p>
-      <div className={styles.mobileTools}>
-        <label className={styles.checkHit}>
+      <label className={styles.selectAll}>
+        <span className={styles.checkHit}>
           <input
             type="checkbox"
             checked={allSelected}
             aria-label="Select all accounts"
             onChange={(event) => setSelected(event.target.checked ? people.map((person) => person.id) : [])}
           />
-        </label>
+        </span>
         <span className={styles.future}>Select all</span>
-      </div>
+      </label>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
               <th>
-                <label className={styles.checkHit}>
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    aria-label="Select all accounts"
-                    onChange={(event) => setSelected(event.target.checked ? people.map((person) => person.id) : [])}
-                  />
-                </label>
+                <span className="sr-only">Select</span>
               </th>
               <th>Name</th>
               <th>Email</th>

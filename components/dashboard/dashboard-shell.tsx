@@ -26,14 +26,6 @@ export function DashboardShell({
   const panels = { content, people, events };
   return (
     <div className={styles.shell}>
-      <label className={styles.picker}>
-        Section
-        <select aria-label="Dashboard section" value={tab} onChange={(event) => setTab(event.target.value as DashboardTab)}>
-          {tabs.map((item) => (
-            <option key={item.id} value={item.id}>{item.label}</option>
-          ))}
-        </select>
-      </label>
       <div className={styles.tabs} role="tablist" aria-label="Dashboard">
         {tabs.map((item) => (
           <button
