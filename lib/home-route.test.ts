@@ -8,6 +8,8 @@ describe("home and programs routes", () => {
   const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
   const programs = readFileSync("app/(academy)/(main)/programs/page.tsx", "utf8");
   const header = readFileSync("components/app-header.tsx", "utf8");
+  const session = readFileSync("components/header-session.tsx", "utf8");
+  const frame = readFileSync("components/header-frame.tsx", "utf8");
   const nav = readFileSync("components/header-nav.tsx", "utf8");
   const layout = readFileSync("app/(academy)/(main)/layout.tsx", "utf8");
 
@@ -24,6 +26,17 @@ describe("home and programs routes", () => {
     assert.match(programs, /headliner-banner/);
     assert.equal(programs.includes("AppHeader"), false);
     assert.match(layout, /<AppHeader \/>/);
+    assert.equal(layout.includes("getUser"), false);
+    assert.equal(layout.includes("async"), false);
+    assert.equal(layout.includes("cookies"), false);
+    assert.equal(header.includes("getUser"), false);
+    assert.equal(header.includes("async"), false);
+    assert.equal(header.includes("cookies"), false);
+    assert.match(header, /<Suspense fallback=\{<HeaderSessionFallback \/>\}>/);
+    assert.equal(frame.includes("getUser"), false);
+    assert.equal(frame.includes("async"), false);
+    assert.equal(frame.includes("cookies"), false);
+    assert.match(session, /await getUser\(\)/);
     assert.match(nav, /usePathname/);
     assert.match(nav, /activeNavKey/);
     assert.equal(activeNavKey("/"), null);
