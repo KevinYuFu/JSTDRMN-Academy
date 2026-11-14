@@ -22,7 +22,7 @@ import previousDefault from "./skill-tree-previous-default.json";
  *
  * Temporary name and route — Yu has not picked a final name.
  * - Change `skillTreeNav.label` to rename the menu and the on-page label.
- * - Change `skillTreeNav.href` and move `app/skill-tree` together if the path changes.
+ * - Change `skillTreeNav.href` and move `app/(academy)/(main)/skill-tree` together if the path changes.
  */
 
 export const skillTreeNav = {

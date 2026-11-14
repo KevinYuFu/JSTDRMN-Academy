@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+import { activeNavKey } from "./active-nav";
 import { academyNav } from "./nav";
 
 describe("home and programs routes", () => {
-  const home = readFileSync("app/page.tsx", "utf8");
-  const programs = readFileSync("app/programs/page.tsx", "utf8");
+  const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
+  const programs = readFileSync("app/(academy)/(main)/programs/page.tsx", "utf8");
   const header = readFileSync("components/app-header.tsx", "utf8");
+  const nav = readFileSync("components/header-nav.tsx", "utf8");
+  const layout = readFileSync("app/(academy)/(main)/layout.tsx", "utf8");
 
   it("keeps the story on / and the catalog on /programs", () => {
     assert.match(home, /WelcomeHero/);
@@ -15,10 +18,17 @@ describe("home and programs routes", () => {
     assert.equal(home.includes("programGroups"), false);
     assert.equal(home.includes("headliner-banner"), false);
     assert.equal(home.includes('active="programs"'), false);
+    assert.equal(home.includes("AppHeader"), false);
     assert.match(programs, /programGroups/);
     assert.match(programs, /Learn More/);
     assert.match(programs, /headliner-banner/);
-    assert.match(programs, /active="programs"/);
+    assert.equal(programs.includes("AppHeader"), false);
+    assert.match(layout, /<AppHeader \/>/);
+    assert.match(nav, /usePathname/);
+    assert.match(nav, /activeNavKey/);
+    assert.equal(activeNavKey("/"), null);
+    assert.equal(activeNavKey("/programs"), "programs");
+    assert.equal(activeNavKey("/programs/dj-bootcamp"), "programs");
     assert.equal(programs.includes("WelcomeHero"), false);
     assert.match(programs, /ProgramEditor/);
     assert.equal(home.includes("ProgramEditor"), false);

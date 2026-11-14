@@ -1,16 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getUser } from "@/lib/auth";
-import { academyNav, type AcademyNavItem } from "@/lib/nav";
+import { academyNav } from "@/lib/nav";
 import { HeaderFrame, MenuButton } from "./header-frame";
+import { HeaderNav } from "./header-nav";
 import { UserMenu } from "./user-menu";
 
-function itemClass(link: AcademyNavItem, active?: string | null) {
-  const names = [link.key === active ? "active" : "", link.variant === "staff" ? "nav-staff" : ""].filter(Boolean);
-  return names.length > 0 ? names.join(" ") : undefined;
-}
-
-export async function AppHeader({ active }: { active?: string | null }) {
+export async function AppHeader() {
   const user = await getUser();
   const links = academyNav(user?.role ?? null);
   return (
@@ -20,18 +16,7 @@ export async function AppHeader({ active }: { active?: string | null }) {
         <span className="tag">Academy</span>
       </Link>
       <div className="header-menu" id="academy-menu">
-        <nav className="site-nav" aria-label="Academy">
-          {links.map((link) => (
-            <Link
-              key={link.key}
-              href={link.href}
-              className={itemClass(link, active)}
-              aria-current={link.key === active ? "page" : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <HeaderNav links={links} />
         {user ? null : (
           <div className="public-auth">
             <Link href="/login" className="pill pill-black">

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { activeNavKey } from "./active-nav";
 import { academyNav } from "./nav";
 import { skillTreeNav } from "./skill-tree";
 
@@ -39,5 +40,29 @@ describe("staff tab", () => {
       assert.equal(items[items.indexOf(dashboard) - 1], courses);
       assert.equal(items.at(-1), dashboard);
     }
+  });
+});
+
+describe("active nav highlight", () => {
+  it("follows the highlight each page used to pass in", () => {
+    assert.equal(activeNavKey("/"), null);
+    assert.equal(activeNavKey("/login"), null);
+    assert.equal(activeNavKey("/signup"), null);
+    assert.equal(activeNavKey("/programs"), "programs");
+    assert.equal(activeNavKey("/programs/dj-bootcamp"), "programs");
+    assert.equal(activeNavKey(skillTreeNav.href), skillTreeNav.key);
+    assert.equal(activeNavKey(`${skillTreeNav.href}/dj/mixing`), skillTreeNav.key);
+    assert.equal(activeNavKey("/private-sessions"), "sessions");
+    assert.equal(activeNavKey("/events"), "events");
+    assert.equal(activeNavKey("/dashboard"), "courses");
+    assert.equal(activeNavKey("/courses/intro"), "courses");
+    assert.equal(activeNavKey("/bootcamps/dj/fall"), "courses");
+    assert.equal(activeNavKey("/checkout"), "courses");
+    assert.equal(activeNavKey("/checkout/mock/chk_1"), "courses");
+    assert.equal(activeNavKey("/headliner"), "courses");
+    assert.equal(activeNavKey("/teacher"), "teacher");
+    assert.equal(activeNavKey("/teacher/events"), "teacher");
+    assert.equal(activeNavKey("/teacher/events/new"), "teacher");
+    assert.equal(activeNavKey("/mentor-drafts"), null);
   });
 });
