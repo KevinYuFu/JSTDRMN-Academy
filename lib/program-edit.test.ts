@@ -512,8 +512,8 @@ describe("save", () => {
 });
 
 describe("programs editor does not restore catalog chrome", () => {
-  const listing = readFileSync("app/programs/page.tsx", "utf8");
-  const detail = readFileSync("app/programs/[slug]/page.tsx", "utf8");
+  const listing = readFileSync("app/(academy)/(main)/programs/page.tsx", "utf8");
+  const detail = readFileSync("app/(academy)/(main)/programs/[slug]/page.tsx", "utf8");
   const editor = readFileSync("components/program-editor.tsx", "utf8");
   const edit = readFileSync("lib/program-edit.ts", "utf8");
 

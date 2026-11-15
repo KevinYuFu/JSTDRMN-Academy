@@ -1,6 +1,17 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icons";
 
@@ -9,18 +20,29 @@ const MenuContext = createContext<{
   accountOpen: boolean;
   toggleMenu: () => void;
   toggleAccount: () => void;
+  closeAfterNavigation: () => void;
   buttonRef: RefObject<HTMLButtonElement | null>;
 } | null>(null);
 
 export function HeaderFrame({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
+  const closeAfterNavigation = useCallback(() => {
+    setMenuOpen((open) => (open ? false : open));
+    setAccountOpen((open) => (open ? false : open));
+  }, []);
+
+  const toggleMenu = useCallback(() => {
+    setMenuOpen((open) => !open);
+    setAccountOpen(false);
+  }, []);
+
+  const toggleAccount = useCallback(() => {
+    setAccountOpen((open) => !open);
     setMenuOpen(false);
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -33,18 +55,14 @@ export function HeaderFrame({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  function toggleMenu() {
-    setMenuOpen((open) => !open);
-    setAccountOpen(false);
-  }
-
-  function toggleAccount() {
-    setAccountOpen((open) => !open);
-    setMenuOpen(false);
-  }
+  const menu = useMemo(
+    () => ({ menuOpen, accountOpen, toggleMenu, toggleAccount, closeAfterNavigation, buttonRef }),
+    [menuOpen, accountOpen, toggleMenu, toggleAccount, closeAfterNavigation],
+  );
 
   return (
-    <MenuContext.Provider value={{ menuOpen, accountOpen, toggleMenu, toggleAccount, buttonRef }}>
+    <MenuContext.Provider value={menu}>
+      <CloseMenuOnNavigate />
       <header
         className="site-header"
         data-menu={menuOpen ? "open" : "closed"}
@@ -58,6 +76,20 @@ export function HeaderFrame({ children }: { children: ReactNode }) {
       </header>
     </MenuContext.Provider>
   );
+}
+
+/** Closes open menus when the URL changes, without subscribing the header shell to the path. */
+function CloseMenuOnNavigate() {
+  const pathname = usePathname();
+  const menu = useContext(MenuContext);
+  const closeRef = useRef(menu?.closeAfterNavigation);
+  closeRef.current = menu?.closeAfterNavigation;
+
+  useLayoutEffect(() => {
+    closeRef.current?.();
+  }, [pathname]);
+
+  return null;
 }
 
 export function MenuButton() {

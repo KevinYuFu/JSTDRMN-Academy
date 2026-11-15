@@ -114,7 +114,7 @@ describe("local review entry", () => {
     assert.equal(auth.includes("LOCAL_REVIEW"), false);
     assert.equal(auth.includes("local-lead@example.com"), false);
     assert.match(auth, /const COOKIE = "jstdrmn_session"/);
-    const listing = readFileSync("app/page.tsx", "utf8");
+    const listing = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
     assert.match(listing, /localReviewEntryDecision/);
     assert.equal(listing.includes("ProgramEditor"), false);
     assert.equal(listing.includes("program-edit"), false);
