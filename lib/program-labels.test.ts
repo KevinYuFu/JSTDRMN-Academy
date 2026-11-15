@@ -33,8 +33,8 @@ describe("enrollment price", () => {
 });
 
 describe("programs catalog copy", () => {
-  const listing = readFileSync("app/programs/page.tsx", "utf8");
-  const detail = readFileSync("app/programs/[slug]/page.tsx", "utf8");
+  const listing = readFileSync("app/(academy)/(main)/programs/page.tsx", "utf8");
+  const detail = readFileSync("app/(academy)/(main)/programs/[slug]/page.tsx", "utf8");
 
   it("does not render badges, status tags, listing prices, or the intro subscription line", () => {
     for (const source of [listing, detail]) {

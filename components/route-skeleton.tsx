@@ -1,73 +1,30 @@
 import type { CSSProperties, ReactNode } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { HeaderFrame, MenuButton } from "@/components/header-frame";
 import { SkillTreeShell } from "@/components/skill-tree/shell";
 import home from "@/components/academy-home/home.module.css";
 import dash from "@/components/dashboard/dashboard.module.css";
 import cards from "@/components/mentor-draft-review.module.css";
 import groups from "@/components/program-groups.module.css";
-import { academyNav, type AcademyNavItem } from "@/lib/nav";
 import { pageCopyDefaults } from "@/lib/page-copy";
-import { overviewColumns, skillTree, skillTreeNav, type SkillNode } from "@/lib/skill-tree";
+import { overviewColumns, skillTree, type SkillNode } from "@/lib/skill-tree";
 import styles from "./route-skeleton.module.css";
 import "@/components/skill-tree/skill-tree.css";
 
 /**
- * Loading header. It does not read the session, so the shell stays prefetchable.
- * The right side is an empty slot: no login buttons, avatar, or Dashboard pill.
+ * Page body only. The academy layout already renders AppHeader above this boundary.
  */
-function LoadingHeader({ active }: { active?: string | null }) {
-  const links = academyNav(null);
-  return (
-    <HeaderFrame>
-      <Link href="/" className="brand">
-        <Image src="/logo.png" alt="JSTDRMN" width={256} height={57} priority className="logo" />
-        <span className="tag">Academy</span>
-      </Link>
-      <div className="header-menu" id="academy-menu">
-        <nav className="site-nav" aria-label="Academy">
-          {links.map((link) => (
-            <Link
-              key={link.key}
-              href={link.href}
-              className={itemClass(link, active)}
-              aria-current={link.key === active ? "page" : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
-      <span className={styles.headerSlot} aria-hidden="true">
-        <span className={`${styles.bone} ${styles.headerMark}`} />
-      </span>
-      <MenuButton />
-    </HeaderFrame>
-  );
-}
-
-function itemClass(link: AcademyNavItem, active?: string | null) {
-  const names = [link.key === active ? "active" : "", link.variant === "staff" ? "nav-staff" : ""].filter(Boolean);
-  return names.length > 0 ? names.join(" ") : undefined;
-}
-
 function LoadingChrome({
   id,
   label,
-  active,
   className,
   children,
 }: {
   id: string;
   label: string;
-  active?: string | null;
   className?: string;
   children: ReactNode;
 }) {
   return (
     <div className={className} data-route-skeleton={id}>
-      <LoadingHeader active={active} />
       <div aria-busy="true" aria-live="polite">
         <p className="sr-only">{label}</p>
         {children}
@@ -240,7 +197,7 @@ function ProgramCard({ special = false }: { special?: boolean }) {
 
 export function ProgramsSkeleton() {
   return (
-    <LoadingChrome id="programs" label="Loading programs" active="programs" className="programs-page">
+    <LoadingChrome id="programs" label="Loading programs" className="programs-page">
       <section id="programs" className="program-section" aria-label="Programs">
         <div className={groups.group}>
           <h2 className={groups.heading}>Live Programs</h2>
@@ -265,7 +222,7 @@ export function ProgramsSkeleton() {
 
 export function ProgramDetailSkeleton() {
   return (
-    <LoadingChrome id="program" label="Loading program" active="programs">
+    <LoadingChrome id="program" label="Loading program">
       <main className="shell">
         <div className="crumbs">
           Programs › <Bone width="12ch" height="1em" />
@@ -343,7 +300,7 @@ function PathColumn({ rows }: { rows: number }) {
 export function SkillTreeSkeleton() {
   const columns = overviewColumns(skillTree);
   return (
-    <LoadingChrome id="skill-tree" label="Loading the skill tree" active={skillTreeNav.key}>
+    <LoadingChrome id="skill-tree" label="Loading the skill tree">
       <SkillTreeShell stack={[skillTree]}>
         <section className="stree-view" aria-label="Academy overview">
           <div className="stree-tree" style={{ "--stree-columns": columns } as CSSProperties}>
@@ -391,7 +348,7 @@ function HeroCopy({ title, lede }: { title: string; lede: string }) {
 export function SessionsSkeleton() {
   const copy = pageCopyDefaults.sessions;
   return (
-    <LoadingChrome id="sessions" label="Loading private sessions" active="sessions">
+    <LoadingChrome id="sessions" label="Loading private sessions">
       <main className="sessions-page">
         <HeroCopy title={copy.title} lede={copy.lede} />
         <div className={`${cards.grid} ${cards.liveGrid}`}>
@@ -462,7 +419,7 @@ function EventCard({ featured = false }: { featured?: boolean }) {
 export function EventsSkeleton() {
   const copy = pageCopyDefaults.events;
   return (
-    <LoadingChrome id="events" label="Loading events" active="events">
+    <LoadingChrome id="events" label="Loading events">
       <main className="sessions-page">
         <HeroCopy title={copy.title} lede={copy.lede} />
         <EventCard featured />
@@ -491,7 +448,7 @@ function Shelf({ count }: { count: number }) {
 
 export function MyCoursesSkeleton() {
   return (
-    <LoadingChrome id="courses" label="Loading your courses" active="courses">
+    <LoadingChrome id="courses" label="Loading your courses">
       <main className="shell">
         <h1 className="page-title" style={{ marginBottom: 6 }}>
           My Courses
@@ -533,7 +490,7 @@ export function MyCoursesSkeleton() {
 export function StaffDashboardSkeleton() {
   const headers = ["Title", "Status", "Access", "Delivery", "Lessons", "Links"];
   return (
-    <LoadingChrome id="teacher" label="Loading the dashboard" active="teacher">
+    <LoadingChrome id="teacher" label="Loading the dashboard">
       <main className="shell">
         <h1 className="page-title" style={{ marginBottom: 6 }}>
           <Bone width="6ch" height="1.2em" />
@@ -609,7 +566,7 @@ function LessonRows({ count }: { count: number }) {
 
 export function LessonSkeleton() {
   return (
-    <LoadingChrome id="lesson" label="Loading the lesson" active="courses">
+    <LoadingChrome id="lesson" label="Loading the lesson">
       <main className="shell">
         <div className="crumbs">
           <Bone width="22ch" height="1em" />
@@ -645,7 +602,7 @@ export function LessonSkeleton() {
 
 export function HeadlinerSkeleton() {
   return (
-    <LoadingChrome id="headliner" label="Loading Headliner" active="courses">
+    <LoadingChrome id="headliner" label="Loading Headliner">
       <main className="shell">
         <div className="crumbs">
           <Bone width="16ch" height="1em" />
@@ -705,7 +662,7 @@ export function HeadlinerSkeleton() {
 
 export function BootcampSkeleton() {
   return (
-    <LoadingChrome id="bootcamp" label="Loading the bootcamp" active="courses">
+    <LoadingChrome id="bootcamp" label="Loading the bootcamp">
       <main className="shell">
         <div className="crumbs">
           <Bone width="20ch" height="1em" />
@@ -746,10 +703,10 @@ export function AuthSkeleton({ mode }: { mode: "login" | "signup" }) {
   );
 }
 
-/** Header plus a short content block, so routes outside the main nav do not flash the home page. */
-export function ShellSkeleton({ id, label, active }: { id: string; label: string; active?: string | null }) {
+/** Short content block for staff and checkout pages. The layout already shows the header. */
+export function ShellSkeleton({ id, label }: { id: string; label: string }) {
   return (
-    <LoadingChrome id={id} label={label} active={active}>
+    <LoadingChrome id={id} label={label}>
       <main className="shell">
         <h1 className="page-title">
           <Bone width="14ch" height="1.2em" />

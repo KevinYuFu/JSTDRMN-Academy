@@ -101,7 +101,7 @@ describe("mentor draft profiles", () => {
     const seed = readFileSync(path.join(root, "prisma/seed.ts"), "utf8");
     assert.equal(seed.includes("mentor-drafts"), false);
     assert.equal(seed.includes("MENTOR_DRAFTS"), false);
-    const privateSessions = readFileSync(path.join(root, "app/private-sessions/page.tsx"), "utf8");
+    const privateSessions = readFileSync(path.join(root, "app/(academy)/(main)/private-sessions/page.tsx"), "utf8");
     assert.equal(privateSessions.includes("mentor-drafts"), false);
   });
 
@@ -162,7 +162,7 @@ describe("mentor draft profiles", () => {
   it("shows the draft price, provisional note, and Instagram only when the row has them", () => {
     const roster = readFileSync(path.join(root, "components/mentor-roster.tsx"), "utf8");
     const face = readFileSync(path.join(root, "components/mentor-card-face.tsx"), "utf8");
-    const page = readFileSync(path.join(root, "app/private-sessions/page.tsx"), "utf8");
+    const page = readFileSync(path.join(root, "app/(academy)/(main)/private-sessions/page.tsx"), "utf8");
     assert.equal(roster.includes("MentorCardFace"), true);
     assert.equal(roster.includes("mentor-draft-review.module.css"), true);
     assert.equal(roster.includes("requestSession"), true);
