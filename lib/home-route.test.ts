@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { activeNavKey } from "./active-nav";
 import { academyNav } from "./nav";
 
 describe("home and programs routes", () => {
-  const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
+  const home = readFileSync("app/(academy)/(main)/(home)/page.tsx", "utf8");
   const programs = readFileSync("app/(academy)/(main)/programs/page.tsx", "utf8");
   const header = readFileSync("components/app-header.tsx", "utf8");
   const session = readFileSync("components/header-session.tsx", "utf8");
@@ -51,6 +51,14 @@ describe("home and programs routes", () => {
     assert.equal(programs.includes("WelcomeHero"), false);
     assert.match(programs, /ProgramEditor/);
     assert.equal(home.includes("ProgramEditor"), false);
+  });
+
+  it("scopes the home skeleton so sibling routes do not use it", () => {
+    assert.equal(existsSync("app/(academy)/(main)/loading.tsx"), false);
+    assert.equal(existsSync("app/(academy)/(main)/(home)/layout.tsx"), false);
+    const homeLoading = readFileSync("app/(academy)/(main)/(home)/loading.tsx", "utf8");
+    assert.match(homeLoading, /HomeSkeleton/);
+    assert.match(layout, /<AppHeader \/>/);
   });
 
   it("sends the logo home and the Programs tab to the catalog", () => {
