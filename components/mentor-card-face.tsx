@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { mentorInitial } from "@/lib/mentors";
 import styles from "./mentor-draft-review.module.css";
+
+/** Local review files only. Teacher-entered https URLs stay a plain img. */
+const DRAFT_PORTRAIT = /^\/mentor-draft-portraits\/[^/]+\.jpe?g$/;
 
 /**
  * The reviewed mentor card face: square portrait, name, optional price pill,
@@ -22,6 +26,8 @@ export function MentorCardFace({
   placeholder = false,
   instagramUrl,
   instagramLabel,
+  /** First-screen draft portraits. Ignored for remote photoUrl images. */
+  photoPriority = false,
   edit,
 }: {
   name: string;
@@ -37,6 +43,7 @@ export function MentorCardFace({
   placeholder?: boolean;
   instagramUrl?: string | null;
   instagramLabel?: string | null;
+  photoPriority?: boolean;
   edit?: {
     name: ReactNode;
     roleLine: ReactNode;
@@ -56,9 +63,22 @@ export function MentorCardFace({
     <>
       <div className={styles.top}>
         {photoSrc ? (
-          // Same 96px crop as the reviewed cards. photoSrc may be a local path or a teacher-entered URL.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className={styles.photo} src={photoSrc} alt={photoAlt} width={96} height={96} />
+          DRAFT_PORTRAIT.test(photoSrc) ? (
+            <Image
+              className={styles.photo}
+              src={photoSrc}
+              alt={photoAlt}
+              width={96}
+              height={96}
+              priority={photoPriority}
+              loading="eager"
+              fetchPriority={photoPriority ? "high" : "low"}
+            />
+          ) : (
+            // Teacher-entered remote URLs. No remotePatterns, so this stays an img.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className={styles.photo} src={photoSrc} alt={photoAlt} width={96} height={96} />
+          )
         ) : (
           <span className={`${styles.photo} ${styles.initial}`} aria-hidden="true">
             {mentorInitial(name)}

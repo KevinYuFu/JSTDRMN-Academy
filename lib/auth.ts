@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { compare, hash } from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { prisma } from "./db";
 import { homeForRole, isLead, isStaff } from "./roles";
 
@@ -45,7 +46,12 @@ export async function destroySession() {
   jar.delete(COOKIE);
 }
 
-export async function getUser() {
+/**
+ * One session lookup per request. The header and the page both call this.
+ * React cache() keeps the cookie read, the query, and an expired-session delete
+ * the same, and skips the second database read.
+ */
+export const getUser = cache(async function getUser() {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
@@ -56,7 +62,7 @@ export async function getUser() {
     return null;
   }
   return session.user;
-}
+});
 
 export async function requireUser() {
   const user = await getUser();

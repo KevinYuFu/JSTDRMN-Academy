@@ -36,14 +36,16 @@ export const groupSession: AcademyPhoto = {
 
 export const djPortrait: AcademyPhoto = {
   image: djPortraitImage,
-  sizes: "(max-width: 800px) min(280px, calc(100vw - 32px)), 280px",
+  // Below 800px the pair stacks, capped at 520px. The desktop column is about 292px.
+  sizes: "(max-width: 800px) min(520px, calc(100vw - 32px)), 300px",
   alt: "A DJ at the decks on a lit stage, with a crowd in front. The JSTDRMN watermark is in the lower right.",
   caption: "JSTDRMN bootcamp",
 };
 
 export const djLandscape: AcademyPhoto = {
   image: djLandscapeImage,
-  sizes: "(max-width: 800px) calc(100vw - 32px), 640px",
+  // Same stacked cap as the portrait. The desktop column is about 628px.
+  sizes: "(max-width: 800px) min(520px, calc(100vw - 32px)), 640px",
   alt: "A DJ at the decks under warm stage lights. The JSTDRMN watermark is in the lower right.",
   caption: "JSTDRMN DJ",
 };
