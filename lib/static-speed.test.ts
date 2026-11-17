@@ -82,8 +82,9 @@ describe("image loading", () => {
 
   it("optimizes home photos and keeps eager loading", () => {
     assert.equal(photo.includes("unoptimized"), false);
-    assert.match(photo, /loading="eager"/);
-    assert.match(photo, /fetchPriority=\{priority \? "high" : "low"\}/);
+    assert.match(photo, /priority \? \{\} : \{ loading: "eager" as const, fetchPriority: "low" as const \}/);
+    assert.equal(photo.includes('fetchPriority="high"'), false);
+    assert.equal(photo.includes('fetchPriority: "high"'), false);
     assert.equal(photo.includes('loading="lazy"'), false);
     assert.match(photos, /sizes: "\(max-width: 800px\) calc\(100vw - 64px\), 560px"/);
     assert.match(photos, /sizes: "\(max-width: 800px\) calc\(100vw - 32px\), 1000px"/);
@@ -97,11 +98,10 @@ describe("image loading", () => {
       height: 669,
       sizes: "(max-width: 800px) calc(100vw - 64px), 560px",
       priority: true,
-      loading: "eager",
-      fetchPriority: "high",
     });
-    assert.equal(above.loading, "eager");
-    assert.equal(above.fetchPriority, "high");
+    assert.equal(above.loading, undefined);
+    assert.equal(above.fetchPriority, undefined);
+    assert.equal(above.loading === "lazy", false);
     assert.match(above.src, /^\/_next\/image\?/);
 
     const below = imgProps({
@@ -122,12 +122,13 @@ describe("image loading", () => {
   it("serves the logo and the first draft portraits at high priority", () => {
     assert.match(header, /width=\{256\}/);
     assert.match(header, /priority/);
-    assert.match(header, /loading="eager"/);
-    assert.match(header, /fetchPriority="high"/);
+    assert.equal(header.includes("loading="), false);
+    assert.equal(header.includes("fetchPriority"), false);
     assert.match(face, /width=\{96\}/);
     assert.match(face, /height=\{96\}/);
-    assert.match(face, /loading="eager"/);
-    assert.match(face, /fetchPriority=\{photoPriority \? "high" : "low"\}/);
+    assert.match(face, /photoPriority \? \{\} : \{ loading: "eager" as const, fetchPriority: "low" as const \}/);
+    assert.equal(face.includes('fetchPriority="high"'), false);
+    assert.equal(face.includes('fetchPriority: "high"'), false);
     assert.match(face, /<img className=\{styles\.photo\}/);
     assert.match(review, /photoPriority=\{index < 2\}/);
     assert.match(roster, /backgroundImage: `url\(\$\{mentor\.photoUrl\}\)`/);

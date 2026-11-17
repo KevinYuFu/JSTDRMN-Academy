@@ -71,8 +71,7 @@ export function MentorCardFace({
               width={96}
               height={96}
               priority={photoPriority}
-              loading="eager"
-              fetchPriority={photoPriority ? "high" : "low"}
+              {...(photoPriority ? {} : { loading: "eager" as const, fetchPriority: "low" as const })}
             />
           ) : (
             // Teacher-entered remote URLs. No remotePatterns, so this stays an img.
