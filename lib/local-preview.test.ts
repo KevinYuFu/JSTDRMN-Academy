@@ -52,7 +52,7 @@ describe("named preview addresses", () => {
     const remote = path.join(dir, "remote.git");
     const seed = path.join(dir, "seed");
     const clone = path.join(dir, "clone");
-    const git = (args, cwd) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
+    const git = (args: string[], cwd?: string) => execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
     try {
       git(["init", "--bare", remote]);
       git(["clone", remote, seed]);

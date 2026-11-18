@@ -11,8 +11,6 @@ import {
   verifyHubspotSignature,
 } from "@/lib/hubspot";
 
-export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   if (!hubspotConfigured()) {
     return NextResponse.json({ ok: true, skipped: true, reason: "HUBSPOT_PRIVATE_APP_TOKEN is not set" });

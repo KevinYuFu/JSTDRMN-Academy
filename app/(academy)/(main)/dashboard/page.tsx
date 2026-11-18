@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function DashboardPage() {
   const user = await requireUser();

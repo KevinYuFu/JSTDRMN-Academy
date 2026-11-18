@@ -9,7 +9,7 @@ import { discordCardAccess } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 import { flattenTracks, buildTrackTree } from "@/lib/tracks";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function HeadlinerPage({
   searchParams,

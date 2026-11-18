@@ -13,7 +13,7 @@ import { homePathPreview } from "@/lib/home-path";
 import { localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
 import { loadSkillTree } from "@/lib/skill-tree-store";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export const metadata = {
   title: "JSTDRMN Academy",

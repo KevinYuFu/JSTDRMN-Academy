@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { saveAnnouncement } from "@/app/actions";
+import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { prisma } from "@/lib/db";
 import { roleLabel } from "@/lib/roles";
 import { formatToronto } from "@/lib/events";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const staff = await requireStaff();
@@ -50,7 +51,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
               </article>
             ))}
           </section>
-          <form action={saveAnnouncement} className="card stack" style={{ padding: 18 }}>
+          <Form action={saveAnnouncement} className="card stack" style={{ padding: 18 }}>
             <h2 className="section-label">Compose</h2>
             <div className="field">
               <Label htmlFor="ann-body">Message</Label>
@@ -82,7 +83,7 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
               <Input id="ann-when" name="sendAt" type="datetime-local" />
             </div>
             <Button type="submit">Schedule</Button>
-          </form>
+          </Form>
         </div>
       </main>
     </>

@@ -3,8 +3,6 @@ import { announcementContent } from "@/lib/announcements";
 import { postChannelMessage } from "@/lib/discord";
 import { prisma } from "@/lib/db";
 
-export const runtime = "nodejs";
-
 async function run(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {

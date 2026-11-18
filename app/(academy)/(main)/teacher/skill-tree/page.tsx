@@ -7,7 +7,7 @@ import { findNode } from "@/lib/skill-tree";
 import { loadSkillTree } from "@/lib/skill-tree-store";
 import { roleLabel } from "@/lib/roles";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Skill tree · JSTDRMN Academy",

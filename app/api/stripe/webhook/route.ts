@@ -4,8 +4,6 @@ import { prisma } from "@/lib/db";
 import { stripeClient } from "@/lib/stripe";
 import { syncContact } from "@/lib/hubspot";
 
-export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   const stripe = stripeClient();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;

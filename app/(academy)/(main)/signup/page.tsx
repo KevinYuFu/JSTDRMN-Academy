@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { signup } from "@/app/actions";
+import { Form } from "@/components/form";
 import { GoogleButton } from "@/components/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeNext } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
   const query = await searchParams;
@@ -29,7 +30,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
           {message ? <div className="error">{message}</div> : null}
           <GoogleButton next={next} />
           <div className="auth-divider">or</div>
-          <form action={signup} className="stack">
+          <Form action={signup} className="stack">
             <input type="hidden" name="next" value={next} />
             <div className="stack">
               <Label htmlFor="name">Name</Label>
@@ -46,7 +47,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             <Button type="submit" variant="black">
               Sign up with password
             </Button>
-          </form>
+          </Form>
         </div>
       </div>
     </>

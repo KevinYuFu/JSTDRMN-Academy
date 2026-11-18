@@ -14,8 +14,9 @@ const { getImgProps } = require("next/dist/shared/lib/get-img-props") as {
     options: { defaultLoader: (args: { src: string; width: number; quality?: number }) => string; imgConf: Record<string, unknown> },
   ) => { props: { loading?: string; fetchPriority?: string; src: string; srcSet?: string; sizes?: string; width?: number; height?: number } };
 };
-const { imageConfigDefault } = require("next/dist/shared/lib/image-config") as {
+const { imageConfigDefault, prepareImageConfig } = require("next/dist/shared/lib/image-config") as {
   imageConfigDefault: Record<string, unknown>;
+  prepareImageConfig: (config: Record<string, unknown>) => Record<string, unknown>;
 };
 
 function loader({ src, width, quality }: { src: string; width: number; quality?: number }) {
@@ -23,16 +24,12 @@ function loader({ src, width, quality }: { src: string; width: number; quality?:
 }
 
 function imgProps(props: Record<string, unknown>) {
-  const deviceSizes = imageConfigDefault.deviceSizes as number[];
-  const imageSizes = imageConfigDefault.imageSizes as number[];
   return getImgProps(props, {
     defaultLoader: loader,
-    imgConf: {
+    imgConf: prepareImageConfig({
       ...imageConfigDefault,
-      deviceSizes: [...deviceSizes],
-      imageSizes: [...imageSizes],
       localPatterns: undefined,
-    },
+    }),
   }).props;
 }
 
@@ -116,7 +113,6 @@ describe("image loading", () => {
     });
     assert.equal(below.loading, "eager");
     assert.equal(below.fetchPriority, "low");
-    assert.equal(below.loading === "lazy", false);
   });
 
   it("serves the logo and the first draft portraits at high priority", () => {

@@ -22,8 +22,6 @@ import { applyPendingGrants, syncContact } from "@/lib/hubspot";
 import { homeForRole } from "@/lib/roles";
 import { safeNext } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
 function isUniqueConflict(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "P2002";
 }

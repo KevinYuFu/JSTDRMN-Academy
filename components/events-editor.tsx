@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useResetWhenHidden } from "./form";
 import { saveEventsCopy } from "@/app/lead-copy-actions";
 import { LeadEditFrame } from "./lead-edit";
 import { EventJoin } from "./event-join";
@@ -66,8 +67,13 @@ export function EventsBoard({
   const [drafts, setDrafts] = useState(events);
   const [savedCopy, setSavedCopy] = useState(copy);
   const [savedEvents, setSavedEvents] = useState(events);
+  useResetWhenHidden(() => {
+    setDraftCopy(savedCopy);
+    setDrafts(savedEvents);
+    setMessage(null);
+    setEditing(false);
+  });
   const featured = savedEvents.find((event) => event.featured) ?? savedEvents[0];
-  const rest = savedEvents.filter((event) => event !== featured);
   const editFeatured = drafts.find((event) => event.id === featured?.id);
   const editRest = drafts.filter((event) => event.id !== featured?.id);
 

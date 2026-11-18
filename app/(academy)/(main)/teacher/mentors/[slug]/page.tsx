@@ -5,7 +5,7 @@ import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { roleLabel } from "@/lib/roles";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function EditMentorPage({
   params,

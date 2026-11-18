@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { login } from "@/app/actions";
+import { Form } from "@/components/form";
 import { GoogleButton } from "@/components/google-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeNext } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 const loginErrors: Record<string, string> = {
   "1": "That email and password don’t match.",
@@ -32,7 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           {message ? <div className="error">{message}</div> : null}
           <GoogleButton next={next} />
           <div className="auth-divider">or</div>
-          <form action={login} className="stack">
+          <Form action={login} className="stack">
             <input type="hidden" name="next" value={next} />
             <div className="stack">
               <Label htmlFor="email">Email</Label>
@@ -45,7 +46,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <Button type="submit" variant="black">
               Log in with password
             </Button>
-          </form>
+          </Form>
           <p className="note" style={{ marginTop: 16 }}>
             New here? <Link href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}>Create an account</Link>.
           </p>

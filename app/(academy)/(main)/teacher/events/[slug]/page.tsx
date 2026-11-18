@@ -4,7 +4,7 @@ import { EventForm } from "@/components/event-form";
 import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function EditEventPage({
   params,

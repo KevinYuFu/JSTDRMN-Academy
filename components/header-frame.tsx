@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -69,7 +70,7 @@ export function HeaderFrame({ children }: { children: ReactNode }) {
         onClick={(event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
-          if (target.closest("a")) setMenuOpen(false);
+          if (target.closest("a")) closeAfterNavigation();
         }}
       >
         {children}
@@ -82,11 +83,12 @@ export function HeaderFrame({ children }: { children: ReactNode }) {
 function CloseMenuOnNavigate() {
   const pathname = usePathname();
   const menu = useContext(MenuContext);
-  const closeRef = useRef(menu?.closeAfterNavigation);
-  closeRef.current = menu?.closeAfterNavigation;
+  const close = useEffectEvent(() => {
+    menu?.closeAfterNavigation();
+  });
 
   useLayoutEffect(() => {
-    closeRef.current?.();
+    close();
   }, [pathname]);
 
   return null;

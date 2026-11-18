@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useResetWhenHidden } from "./form";
 import { LeadActionRow, LeadEditorLayout } from "./lead-edit";
 import {
   createProgramEditorState,
@@ -62,6 +63,7 @@ export function ProgramEditor({
 }) {
   const router = useRouter();
   const [state, dispatch] = useReducer(reduceProgramEditor, items, createProgramEditorState);
+  useResetWhenHidden(() => dispatch({ type: "cancel" }));
   const signature = JSON.stringify(items);
   const request = useRef(0);
 

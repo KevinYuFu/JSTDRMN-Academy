@@ -25,35 +25,6 @@ export function VideoPlayer({
   url: string;
 }) {
   const resolved = resolveVideo(provider, url);
-  const total = Math.max(runtimeSeconds(runtime), 1);
-  const [playing, setPlaying] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const elapsedRef = useRef(0);
-
-  useEffect(() => {
-    elapsedRef.current = 0;
-    setPlaying(false);
-    setElapsed(0);
-  }, [url, title]);
-
-  useEffect(() => {
-    if (!playing || resolved.type !== "mock") return;
-    const started = performance.now() - elapsedRef.current * 1000;
-    let frame = 0;
-    const tick = (now: number) => {
-      const next = Math.min(total, (now - started) / 1000);
-      elapsedRef.current = next;
-      setElapsed(next);
-      if (next >= total) {
-        setPlaying(false);
-        return;
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [playing, resolved.type, total, url]);
-
   if (resolved.type === "iframe") {
     return (
       <div className="video">
@@ -68,6 +39,40 @@ export function VideoPlayer({
       </div>
     );
   }
+  return <MockPlayback key={`${url}\0${title}`} title={title} position={position} runtime={runtime} />;
+}
+
+function MockPlayback({
+  title,
+  position,
+  runtime,
+}: {
+  title: string;
+  position: number;
+  runtime: string;
+}) {
+  const total = Math.max(runtimeSeconds(runtime), 1);
+  const [playing, setPlaying] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const elapsedRef = useRef(0);
+
+  useEffect(() => {
+    if (!playing) return;
+    const started = performance.now() - elapsedRef.current * 1000;
+    let frame = 0;
+    const tick = (now: number) => {
+      const next = Math.min(total, (now - started) / 1000);
+      elapsedRef.current = next;
+      setElapsed(next);
+      if (next >= total) {
+        setPlaying(false);
+        return;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing, total]);
 
   const ratio = Math.min(100, (elapsed / total) * 100);
   return (

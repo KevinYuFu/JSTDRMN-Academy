@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { savePersonName } from "@/app/people-actions";
+import { Form, useResetWhenHidden } from "@/components/form";
 import { RoleControls } from "@/components/role-controls";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +33,7 @@ export function PeopleTable({
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  useResetWhenHidden(() => setOpenId(null));
   const titleRef = useRef<HTMLDivElement>(null);
   const open = people.find((person) => person.id === openId) ?? null;
   const allSelected = people.length > 0 && selected.length === people.length;
@@ -122,7 +124,7 @@ export function PeopleTable({
               <p className="note">Discord: {open.discord}</p>
               <p className="note">Role: {open.roleLabel}</p>
               {lead ? (
-                <form action={savePersonName} className={styles.modalFields}>
+                <Form action={savePersonName} className={styles.modalFields}>
                   <input type="hidden" name="userId" value={open.id} />
                   <label>
                     Name
@@ -132,7 +134,7 @@ export function PeopleTable({
                     <Button type="submit">Save name</Button>
                     <DialogClose className="pill pill-black" type="button">Cancel</DialogClose>
                   </div>
-                </form>
+                </Form>
               ) : (
                 <p className="note" style={{ marginTop: 12 }}>
                   A Lead can save a name. This view does not save.

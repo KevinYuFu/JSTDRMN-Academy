@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { requestSession } from "@/app/actions";
+import { Form, useResetWhenHidden } from "./form";
 import { mentorInitial } from "@/lib/mentors";
 import { MentorCardFace } from "./mentor-card-face";
 import styles from "./mentor-draft-review.module.css";
@@ -44,6 +45,10 @@ export function MentorRoster({
   const initial = mentors.find((mentor) => mentor.slug === openSlug) ?? null;
   const [selectedId, setSelectedId] = useState<string | null>(initial?.id ?? null);
   const [mode, setMode] = useState<"profile" | "form">(openForm ? "form" : "profile");
+  useResetWhenHidden(() => {
+    setSelectedId(initial?.id ?? null);
+    setMode(openForm ? "form" : "profile");
+  });
   const selected = mentors.find((mentor) => mentor.id === selectedId) ?? null;
 
   function openMentor(mentor: MentorView) {
@@ -135,7 +140,7 @@ export function MentorRoster({
                   )}
                 </>
               ) : (
-                <form action={requestSession} className="stack">
+                <Form action={requestSession} className="stack">
                   <input type="hidden" name="courseId" value={courseId} />
                   <input type="hidden" name="mentorId" value={selected.id} />
                   <p className="note">With {selected.name}. Scheduling and payment come later.</p>
@@ -159,7 +164,7 @@ export function MentorRoster({
                     <Button type="submit">Send request</Button>
                     <Button type="button" variant="black" onClick={() => setMode("profile")}>Back</Button>
                   </div>
-                </form>
+                </Form>
               )}
             </div>
           </DialogContent>
