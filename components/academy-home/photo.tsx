@@ -10,7 +10,7 @@ export function AcademyFigure({ photo, priority = false }: { photo: AcademyPhoto
         alt={photo.alt}
         sizes={photo.sizes}
         priority={priority}
-        unoptimized
+        {...(priority ? {} : { loading: "eager" as const, fetchPriority: "low" as const })}
         style={{ width: "100%", height: "auto" }}
       />
       <figcaption>{photo.caption}</figcaption>

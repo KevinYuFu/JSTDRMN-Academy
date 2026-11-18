@@ -21,12 +21,13 @@ export function MentorDraftReview() {
         </div>
 
         <div className={styles.grid}>
-          {MENTOR_DRAFTS.map((mentor) => (
+          {MENTOR_DRAFTS.map((mentor, index) => (
             <article key={mentor.slug} className={styles.card} data-mentor={mentor.slug}>
               <MentorCardFace
                 name={mentor.name}
                 photoSrc={mentor.portraitSrc}
                 photoAlt={mentor.portraitAlt}
+                photoPriority={index < 2}
                 rateLabel={MENTOR_DRAFT_RATE_LABEL}
                 rateNote="provisional"
                 bio={mentor.bio}
