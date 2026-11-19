@@ -79,7 +79,7 @@ describe("image loading", () => {
 
   it("optimizes home photos and keeps eager loading", () => {
     assert.equal(photo.includes("unoptimized"), false);
-    assert.match(photo, /priority \? \{\} : \{ loading: "eager" as const, fetchPriority: "low" as const \}/);
+    assert.match(photo, /preload \? \{\} : \{ loading: "eager" as const, fetchPriority: "low" as const \}/);
     assert.equal(photo.includes('fetchPriority="high"'), false);
     assert.equal(photo.includes('fetchPriority: "high"'), false);
     assert.equal(photo.includes('loading="lazy"'), false);
