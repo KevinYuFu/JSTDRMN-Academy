@@ -304,8 +304,17 @@ async function listenProxy(options) {
   const handler = (req, res) => void onRequest(req, res, options).catch(() => {
     if (!res.headersSent) res.writeHead(404).end();
   });
+  const onUpgrade = (req, socket, head) => {
+    if (!guardRequest(req, options, true).ok) {
+      socket.destroy();
+      return;
+    }
+    proxyUpgrade(req, socket, head, options);
+  };
   const v4 = http.createServer(handler);
   const v6 = http.createServer(handler);
+  v4.on("upgrade", onUpgrade);
+  v6.on("upgrade", onUpgrade);
   await new Promise((resolve, reject) => {
     v4.once("error", reject);
     v4.listen(options.appPort, "127.0.0.1", resolve);
@@ -315,6 +324,49 @@ async function listenProxy(options) {
     v6.listen(options.appPort, "::1", resolve);
   });
   return { v4, v6 };
+}
+
+export function proxyUpgrade(req, socket, head, options) {
+  const upstream = http.request({
+    host: "127.0.0.1",
+    port: options.internalPort,
+    method: req.method,
+    path: req.url,
+    headers: upstreamHeaders(req, options),
+    agent: false,
+  });
+  upstream.on("upgrade", (upRes, upSocket, upHead) => {
+    const lines = [`HTTP/1.1 ${upRes.statusCode ?? 101} ${upRes.statusMessage || "Switching Protocols"}`];
+    for (const [key, value] of Object.entries(upRes.headers)) {
+      if (value == null) continue;
+      for (const item of Array.isArray(value) ? value : [value]) lines.push(`${key}: ${item}`);
+    }
+    socket.write(`${lines.join("\r\n")}\r\n\r\n`);
+    if (upHead?.length) socket.write(upHead);
+    if (head?.length) upSocket.write(head);
+    upSocket.pipe(socket);
+    socket.pipe(upSocket);
+    upSocket.on("error", () => socket.destroy());
+    socket.on("error", () => upSocket.destroy());
+    upSocket.on("close", () => socket.destroy());
+    socket.on("close", () => upSocket.destroy());
+  });
+  upstream.on("response", (up) => {
+    up.resume();
+    socket.destroy();
+  });
+  upstream.on("error", () => socket.destroy());
+  upstream.end();
+}
+
+function upstreamHeaders(req, options) {
+  const headers = { ...req.headers, host: `127.0.0.1:${options.internalPort}` };
+  delete headers["accept-encoding"];
+  delete headers["x-forwarded-host"];
+  delete headers["x-forwarded-for"];
+  delete headers.forwarded;
+  delete headers["x-real-ip"];
+  return headers;
 }
 
 async function onRequest(req, res, options) {
@@ -398,12 +450,7 @@ function isDocument(req) {
 }
 
 async function forward(req, res, options) {
-  const headers = { ...req.headers, host: `127.0.0.1:${options.internalPort}` };
-  delete headers["accept-encoding"];
-  delete headers["x-forwarded-host"];
-  delete headers["x-forwarded-for"];
-  delete headers.forwarded;
-  delete headers["x-real-ip"];
+  const headers = upstreamHeaders(req, options);
   const upstream = http.request(
     {
       host: "127.0.0.1",
