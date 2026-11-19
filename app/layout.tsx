@@ -7,13 +7,13 @@ export const instant = false;
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  weight: ["300", "400", "500", "700"],
+  weight: ["400", "500", "700"],
 });
 
 const unbounded = Unbounded({
   subsets: ["latin"],
   variable: "--font-unbounded",
-  weight: ["400", "600"],
+  weight: ["600", "400"],
 });
 
 export const metadata: Metadata = {
