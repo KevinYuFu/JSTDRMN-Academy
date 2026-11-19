@@ -4,11 +4,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
+import { JSDOM } from "jsdom";
 import {
   blockedPreviewPort,
   classifyLoopbackLookup,
+  injectPreviewLabel,
   lookupFailureIsFatal,
   parsePreviewArgs,
+  previewLabelScript,
   remoteBranchRequest,
   resolvePreviewCommit,
 } from "../scripts/local-preview.mjs";
@@ -80,6 +83,36 @@ describe("named preview addresses", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it("adds the preview label outside the React body and only after load", () => {
+    const body = `<body><div hidden id="S:0"></div><h1>Programs</h1></body>`;
+    const html = `<html><head><title>Academy</title></head>${body}</html>`;
+    const options = { label: "editor", branch: "cursor/program-lead-edit-9d9b", commit: "98bcc2386516" };
+    const next = injectPreviewLabel(html, options);
+    assert.equal(next.slice(next.indexOf("<body>")), `${body}</html>`);
+    assert.match(next.slice(0, next.indexOf("<body>")), /data-local-preview-boot/);
+    const bare = "<html><body><div hidden></div></body></html>";
+    assert.equal(injectPreviewLabel(bare, { label: "a", branch: "b", commit: "c" }), bare);
+
+    const script = previewLabelScript(options);
+    assert.equal(script.includes("MutationObserver"), false);
+    assert.equal(script.includes("body.prepend"), false);
+    assert.match(script, /addEventListener\("load"/);
+    assert.match(script, /documentElement\.insertBefore/);
+
+    const { window } = new JSDOM(next, { runScripts: "dangerously", url: "http://127.0.0.1/" });
+    const { document } = window;
+    if (!document.getElementById("local-preview-label")) window.dispatchEvent(new window.Event("load"));
+    const bar = document.getElementById("local-preview-label");
+    assert.ok(bar);
+    assert.equal(bar.parentElement, document.documentElement);
+    assert.equal(bar.nextElementSibling, document.body);
+    assert.equal(bar.textContent, "Preview editor · cursor/program-lead-edit-9d9b · 98bcc23");
+    assert.equal(document.body.querySelector("[data-local-preview]"), null);
+    assert.equal(document.body.firstElementChild?.id, "S:0");
+    assert.equal(document.body.firstElementChild?.hasAttribute("hidden"), true);
+    assert.equal(document.body.querySelector("h1")?.textContent, "Programs");
   });
 
   it("requires a label and a branch, and does not invent one", () => {
