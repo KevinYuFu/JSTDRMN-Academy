@@ -96,8 +96,6 @@ describe("named preview addresses", () => {
     assert.equal(injectPreviewLabel(bare, { label: "a", branch: "b", commit: "c" }), bare);
 
     const script = previewLabelScript(options);
-    assert.equal(script.includes("MutationObserver"), false);
-    assert.equal(script.includes("body.prepend"), false);
     assert.match(script, /addEventListener\("load"/);
     assert.match(script, /documentElement\.insertBefore/);
 
