@@ -150,6 +150,11 @@ describe("image loading", () => {
     );
   });
 
+  it("does not preload the skill tree monospace font", () => {
+    const shell = readFileSync("components/skill-tree/shell.tsx", "utf8");
+    assert.match(shell, /const mono = Space_Mono\(\{[\s\S]*preload: false/);
+  });
+
   it("does not lazy-load images or video embeds", () => {
     for (const source of [photo, header, face, video, slides]) {
       assert.equal(source.includes('loading="lazy"'), false);

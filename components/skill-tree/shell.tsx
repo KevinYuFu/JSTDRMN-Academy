@@ -9,6 +9,7 @@ const mono = Space_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-stree-mono",
+  preload: false,
 });
 
 const display = Unbounded({
