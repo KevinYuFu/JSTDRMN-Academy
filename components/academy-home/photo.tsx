@@ -9,7 +9,7 @@ export function AcademyFigure({ photo, priority = false }: { photo: AcademyPhoto
         src={photo.image}
         alt={photo.alt}
         sizes={photo.sizes}
-        priority={priority}
+        preload={priority}
         {...(priority ? {} : { loading: "eager" as const, fetchPriority: "low" as const })}
         style={{ width: "100%", height: "auto" }}
       />

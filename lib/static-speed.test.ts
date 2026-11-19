@@ -94,7 +94,7 @@ describe("image loading", () => {
       width: 1000,
       height: 669,
       sizes: "(max-width: 800px) calc(100vw - 64px), 560px",
-      priority: true,
+      preload: true,
     });
     assert.equal(above.loading, undefined);
     assert.equal(above.fetchPriority, undefined);
@@ -107,7 +107,7 @@ describe("image loading", () => {
       width: 1000,
       height: 669,
       sizes: "(max-width: 800px) calc(100vw - 32px), 1000px",
-      priority: false,
+      preload: false,
       loading: "eager",
       fetchPriority: "low",
     });
@@ -117,7 +117,8 @@ describe("image loading", () => {
 
   it("serves the logo and the first draft portraits at high priority", () => {
     assert.match(header, /width=\{256\}/);
-    assert.match(header, /priority/);
+    assert.match(header, /\bpreload\b/);
+    assert.equal(/\bpriority\b/.test(header), false);
     assert.equal(header.includes("loading="), false);
     assert.equal(header.includes("fetchPriority"), false);
     assert.match(face, /width=\{96\}/);
@@ -136,7 +137,7 @@ describe("image loading", () => {
       alt: "Yuzu",
       width: 96,
       height: 96,
-      priority: false,
+      preload: false,
       loading: "eager",
       fetchPriority: "low",
     });

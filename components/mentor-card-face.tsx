@@ -70,7 +70,7 @@ export function MentorCardFace({
               alt={photoAlt}
               width={96}
               height={96}
-              priority={photoPriority}
+              preload={photoPriority}
               {...(photoPriority ? {} : { loading: "eager" as const, fetchPriority: "low" as const })}
             />
           ) : (

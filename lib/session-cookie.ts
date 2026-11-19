@@ -1,7 +1,6 @@
 export const SESSION_COOKIE = "jstdrmn_session";
 
-export function dashboardRequestNeedsLogin(pathname: string, cookieHeader: string | null) {
-  if (pathname !== "/dashboard") return false;
+export function requestNeedsLogin(cookieHeader: string | null) {
   return sessionValue(cookieHeader) === "";
 }
 

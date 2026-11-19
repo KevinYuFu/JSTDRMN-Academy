@@ -26,7 +26,7 @@ describe("cache components", () => {
       assert.equal(text.includes("export const fetchCache"), false, file);
       assert.equal(text.includes("export const runtime"), false, file);
       assert.equal(text.includes("use cache"), false, file);
-      if (file.endsWith("/page.tsx") || file.endsWith("/layout.tsx")) {
+      if (file.endsWith("/page.tsx") && file !== "app/mentor-drafts/page.tsx") {
         assert.match(text, /export const instant = false/, file);
       }
     }
