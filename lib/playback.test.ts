@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { runtimeSeconds } from "./runtime";
+import { runtimeSeconds } from "./playback";
 
 describe("runtimeSeconds", () => {
   it("reads hours, minutes, and a single number", () => {

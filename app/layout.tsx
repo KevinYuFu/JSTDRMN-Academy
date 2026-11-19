@@ -13,7 +13,7 @@ const inter = Inter({
 const unbounded = Unbounded({
   subsets: ["latin"],
   variable: "--font-unbounded",
-  weight: ["600", "400"],
+  weight: ["400", "600"],
 });
 
 export const metadata: Metadata = {

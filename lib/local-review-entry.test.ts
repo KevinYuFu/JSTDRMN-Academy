@@ -113,7 +113,7 @@ describe("local review entry", () => {
     const auth = readFileSync("lib/auth.ts", "utf8");
     assert.equal(auth.includes("LOCAL_REVIEW"), false);
     assert.equal(auth.includes("local-lead@example.com"), false);
-    assert.match(auth, /const COOKIE = "jstdrmn_session"/);
+    assert.match(auth, /import \{ SESSION_COOKIE \} from "\.\/session-cookie"/);
     const listing = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
     assert.match(listing, /localReviewEntryDecision/);
     assert.equal(listing.includes("ProgramEditor"), false);

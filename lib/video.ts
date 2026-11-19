@@ -1,8 +1,8 @@
 import "server-only";
 import { createHash } from "crypto";
-import type { ResolvedVideo } from "./runtime";
+import type { ResolvedVideo } from "./playback";
 
-/** Providers the lesson form and the player both read. Adding one is a row here plus a branch in resolveVideo. */
+/** Providers the lesson form and resolveVideo read. Adding one is a row here plus a branch in resolveVideo. */
 export const videoProviders = [
   { id: "drive", label: "Google Drive" },
   { id: "mock", label: "Mock player" },

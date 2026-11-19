@@ -1,19 +1,7 @@
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
 import { describe, it } from "node:test";
 import { createElement } from "react";
-
-const { JSDOM } = createRequire(import.meta.url)("jsdom") as {
-  JSDOM: new (html: string, options?: { url?: string }) => {
-    window: {
-      document: Document;
-      HTMLElement: typeof HTMLElement;
-      HTMLFormElement: typeof HTMLFormElement;
-      HTMLInputElement: typeof HTMLInputElement;
-      Node: typeof Node;
-    };
-  };
-};
+import { JSDOM } from "jsdom";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://127.0.0.1/" });
 const { window } = dom;
@@ -47,11 +35,11 @@ describe("form reset when a page is hidden", () => {
     }
 
     function Page({ hidden }: { hidden: boolean }) {
-      const Activity = React.Activity as unknown as (props: {
-        mode: "hidden" | "visible";
-        children?: ReturnType<typeof createElement>;
-      }) => ReturnType<typeof createElement>;
-      return createElement(Activity, { mode: hidden ? "hidden" : "visible" }, createElement(Draft));
+      const props: React.ComponentProps<typeof React.Activity> = {
+        mode: hidden ? "hidden" : "visible",
+        children: createElement(Draft),
+      };
+      return createElement(React.Activity, props);
     }
 
     await React.act(async () => {

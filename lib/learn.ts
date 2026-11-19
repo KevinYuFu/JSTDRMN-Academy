@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { User } from "@prisma/client";
 import { prisma } from "./db";
-import type { ResolvedVideo } from "./runtime";
+import type { ResolvedVideo } from "./playback";
 import { resolveVideo } from "./video";
 import {
   asCourseAccess,

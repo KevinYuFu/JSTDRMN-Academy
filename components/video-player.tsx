@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { runtimeSeconds, type ResolvedVideo } from "@/lib/runtime";
+import { runtimeSeconds, type ResolvedVideo } from "@/lib/playback";
 import { Icon } from "./icons";
 
 function clock(seconds: number) {
