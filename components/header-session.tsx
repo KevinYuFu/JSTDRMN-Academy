@@ -8,10 +8,10 @@ import styles from "./header-session.module.css";
 function PublicAuth() {
   return (
     <div className="public-auth">
-      <Link href="/login" prefetch={false} className="pill pill-black">
+      <Link href="/login" className="pill pill-black">
         Log in
       </Link>
-      <Link href="/signup" prefetch={false} className="pill pill-purple">
+      <Link href="/signup" className="pill pill-purple">
         Sign up
       </Link>
     </div>

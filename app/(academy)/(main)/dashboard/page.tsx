@@ -118,7 +118,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="shelf" style={{ marginBottom: 28 }}>
             {mine.map((card) => (
-              <Link key={card.key} href={card.href} prefetch={false} className={`shelf-card panel-${card.panel}`}>
+              <Link key={card.key} href={card.href} className={`shelf-card panel-${card.panel}`}>
                 <div className="kicker">{card.kicker}</div>
                 <h3>{card.title}</h3>
                 <p>{card.body}</p>
@@ -130,7 +130,7 @@ export default async function DashboardPage() {
         <h2 className="section-label">Locked</h2>
         <div className="shelf">
           {locked.map((card) => (
-            <Link key={card.key} href={card.href} prefetch={false} className="shelf-card panel-purple">
+            <Link key={card.key} href={card.href} className="shelf-card panel-purple">
               <div className="kicker">{card.kicker}</div>
               <h3>{card.title}</h3>
               <p>{card.body}</p>

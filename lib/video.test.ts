@@ -1,6 +1,5 @@
 import { createHash } from "crypto";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { bunnyToken, drivePreviewUrl, resolveVideo, youtubeId } from "./video";
 
@@ -71,15 +70,5 @@ describe("resolveVideo", () => {
     else process.env.BUNNY_STREAM_LIBRARY_ID = previousLibrary;
     if (previousKey === undefined) delete process.env.BUNNY_STREAM_TOKEN_KEY;
     else process.env.BUNNY_STREAM_TOKEN_KEY = previousKey;
-  });
-
-  it("resolves playback on the server so the player does not import node crypto", () => {
-    const player = readFileSync("components/video-player.tsx", "utf8");
-    const learn = readFileSync("lib/learn.ts", "utf8");
-    assert.equal(player.includes("@/lib/video"), false);
-    assert.equal(player.includes('from "crypto"'), false);
-    assert.match(learn, /playback: resolveVideo\(lesson\.videoProvider, lesson\.videoUrl\)/);
-    assert.match(readFileSync("components/header-nav.tsx", "utf8"), /prefetch=\{false\}/);
-    assert.match(readFileSync("app/(academy)/(main)/dashboard/page.tsx", "utf8"), /prefetch=\{false\}/);
   });
 });

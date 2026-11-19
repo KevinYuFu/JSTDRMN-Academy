@@ -9,7 +9,7 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start -H 0.0.0.0 -p 43123",
     "lint": "eslint",
-    "test": "tsx --test lib/*.test.ts",
+    "test": "tsx --require ./lib/test-register.cjs --test lib/*.test.ts",
     "review:local": "sh scripts/local-review.sh",
     "db:v02:validate": "prisma validate --schema prisma/v02/schema.prisma"
   },
@@ -28,6 +28,7 @@
     "prisma": "^6.19.3",
     "react": "19.2.9",
     "react-dom": "19.2.9",
+    "server-only": "^0.0.1",
     "stripe": "^23.0.0",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5"

@@ -1,17 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { runtimeSeconds, type ResolvedVideo } from "@/lib/runtime";
 import { Icon } from "./icons";
-
-type Playback = { type: "mock" | "iframe" | "file"; src: string };
-
-function runtimeSeconds(label: string) {
-  const parts = label.split(":").map((part) => Number(part));
-  if (parts.some((part) => !Number.isFinite(part))) return 60;
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  return parts[0];
-}
 
 function clock(seconds: number) {
   const safe = Math.max(0, Math.floor(seconds));
@@ -29,7 +20,7 @@ export function VideoPlayer({
   title: string;
   position: number;
   runtime: string;
-  playback: Playback;
+  playback: ResolvedVideo;
 }) {
   if (playback.type === "iframe") {
     return (

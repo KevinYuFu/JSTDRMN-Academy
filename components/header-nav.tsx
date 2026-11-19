@@ -26,7 +26,6 @@ export function HeaderNav({ links }: { links: NavLink[] }) {
         <Link
           key={link.key}
           href={link.href}
-          prefetch={false}
           className={itemClass(link, active)}
           aria-current={link.key === active ? "page" : undefined}
         >
