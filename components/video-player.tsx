@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { resolveVideo, runtimeSeconds } from "@/lib/video";
 import { Icon } from "./icons";
+
+type Playback = { type: "mock" | "iframe" | "file"; src: string };
+
+function runtimeSeconds(label: string) {
+  const parts = label.split(":").map((part) => Number(part));
+  if (parts.some((part) => !Number.isFinite(part))) return 60;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0];
+}
 
 function clock(seconds: number) {
   const safe = Math.max(0, Math.floor(seconds));
@@ -15,31 +24,28 @@ export function VideoPlayer({
   title,
   position,
   runtime,
-  provider,
-  url,
+  playback,
 }: {
   title: string;
   position: number;
   runtime: string;
-  provider: string;
-  url: string;
+  playback: Playback;
 }) {
-  const resolved = resolveVideo(provider, url);
-  if (resolved.type === "iframe") {
+  if (playback.type === "iframe") {
     return (
       <div className="video">
-        <iframe src={resolved.src} title={title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen />
+        <iframe src={playback.src} title={title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen />
       </div>
     );
   }
-  if (resolved.type === "file") {
+  if (playback.type === "file") {
     return (
       <div className="video">
-        <video src={resolved.src} controls playsInline />
+        <video src={playback.src} controls playsInline />
       </div>
     );
   }
-  return <MockPlayback key={`${url}\0${title}`} title={title} position={position} runtime={runtime} />;
+  return <MockPlayback key={`${playback.src}\0${title}`} title={title} position={position} runtime={runtime} />;
 }
 
 function MockPlayback({

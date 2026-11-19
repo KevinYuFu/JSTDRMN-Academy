@@ -141,8 +141,7 @@ export function CourseView({
               title={current.title}
               position={current.position}
               runtime={current.runtimeLabel}
-              provider={current.videoProvider}
-              url={current.videoUrl}
+              playback={current.playback}
             />
           ) : (
             <div className="upsell">

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { User } from "@prisma/client";
 import { prisma } from "./db";
+import { resolveVideo, type ResolvedVideo } from "./video";
 import {
   asCourseAccess,
   containerAccess,
@@ -21,6 +22,7 @@ export type LessonView = {
   runtimeLabel: string;
   videoProvider: string;
   videoUrl: string;
+  playback: ResolvedVideo;
   slidesTitle: string | null;
   slidesMeta: string | null;
   headliner: boolean;
@@ -84,6 +86,7 @@ export async function openCourse(input: {
     runtimeLabel: lesson.runtimeLabel,
     videoProvider: lesson.videoProvider,
     videoUrl: lesson.videoUrl,
+    playback: resolveVideo(lesson.videoProvider, lesson.videoUrl),
     slidesTitle: lesson.slidesTitle,
     slidesMeta: lesson.slidesMeta,
     headliner: lesson.headliner,
