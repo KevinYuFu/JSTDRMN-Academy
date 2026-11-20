@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { EventsBoard, type EventCard } from "@/components/events-editor";
 import { getUser } from "@/lib/auth";
 import { courseBySlug, listEvents, loadPageCopy } from "@/lib/content";
@@ -8,6 +9,7 @@ import { canEditPrograms } from "@/lib/program-edit";
 export const instant = false;
 
 export default async function EventsPage({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
+  await connection();
   const [rows, production, copy, user, query] = await Promise.all([
     listEvents(),
     courseBySlug("production-bootcamp"),
