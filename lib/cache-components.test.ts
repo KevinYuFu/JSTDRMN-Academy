@@ -17,7 +17,6 @@ const readyMadePages = new Set([
   "app/(academy)/(main)/page.tsx",
   "app/(academy)/(main)/programs/page.tsx",
   "app/(academy)/(main)/programs/[slug]/page.tsx",
-  "app/(academy)/(main)/events/page.tsx",
   "app/(academy)/(main)/private-sessions/page.tsx",
   "app/(academy)/(main)/skill-tree/[[...slug]]/page.tsx",
   "app/(academy)/(main)/bootcamps/[slug]/page.tsx",
@@ -49,6 +48,8 @@ describe("cache components", () => {
     const events = readFileSync("app/(academy)/(main)/events/page.tsx", "utf8");
     const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
     assert.match(events, /new Date\(\)/);
+    assert.match(events, /export const instant = false/);
+    assert.equal(events.includes("Suspense"), false);
     const bootcamp = readFileSync("app/(academy)/(main)/bootcamps/[slug]/page.tsx", "utf8");
     const shelf = bootcamp.slice(bootcamp.indexOf("function CohortShelfFallback"), bootcamp.indexOf("function CohortCard"));
     assert.match(bootcamp, /Apply for a seat/);
