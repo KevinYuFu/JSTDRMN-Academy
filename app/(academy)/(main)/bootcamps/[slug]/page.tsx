@@ -139,9 +139,9 @@ export default async function BootcampPage({
   const course = await courseBySlug(slug);
   if (!course) notFound();
   if (course.access !== "cohort") redirect("/dashboard");
-  const guest = (
-    <BootcampBody course={course} openIds={openCohortIds(course, "student", [])} staff={false} added={false} error={false} />
-  );
+  // A logged-out visitor has no seat, so every cohort stays on Apply. The clock in
+  // containerAccess stays in the live part, where a signed-in seat can open one.
+  const guest = <BootcampBody course={course} openIds={new Set()} staff={false} added={false} error={false} />;
   return (
     <Suspense fallback={guest}>
       <BootcampForViewer course={course} searchParams={searchParams} />

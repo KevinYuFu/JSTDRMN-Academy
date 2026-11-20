@@ -16,7 +16,7 @@ export const STATIC_ASSET_HEADER_SOURCE =
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  partialPrefetching: false,
+  partialPrefetching: true,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
   async headers() {
     return [

@@ -28,7 +28,7 @@ const readyMadePages = new Set([
 describe("cache components", () => {
   it("opts in without caching data or the old dynamic segment config", () => {
     assert.equal(nextConfig.cacheComponents, true);
-    assert.equal(nextConfig.partialPrefetching, false);
+    assert.equal(nextConfig.partialPrefetching, true);
     const source = readFileSync("next.config.ts", "utf8");
     assert.equal(source.includes("use cache"), false);
     for (const file of walk("app")) {
