@@ -38,11 +38,15 @@ describe("home and programs routes", () => {
     assert.equal(frame.includes("cookies"), false);
     assert.match(session, /await getUser\(\)/);
     const fallback = session.slice(session.indexOf("function HeaderSessionFallback"), session.indexOf("export async function HeaderSession"));
-    assert.match(fallback, /Log in/);
-    assert.match(fallback, /Sign up/);
+    assert.match(session, /header-session\.module\.css/);
+    assert.match(fallback, /aria-hidden="true"/);
+    assert.equal(fallback.includes("Log in"), false);
+    assert.equal(fallback.includes("Sign up"), false);
     assert.equal(fallback.includes("UserMenu"), false);
     assert.equal(fallback.includes("Dashboard"), false);
     assert.equal(fallback.includes("getUser"), false);
+    assert.match(session, /Log in/);
+    assert.match(session, /Sign up/);
     assert.match(frame, /target\.closest\("a"\)/);
     assert.match(frame, /closeAfterNavigation\(\)/);
     assert.match(frame, /setAccountOpen\(\(open\) => \(open \? false : open\)\)/);

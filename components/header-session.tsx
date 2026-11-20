@@ -3,34 +3,43 @@ import { getUser } from "@/lib/auth";
 import { academyNav } from "@/lib/nav";
 import { HeaderNav } from "./header-nav";
 import { UserMenu } from "./user-menu";
+import styles from "./header-session.module.css";
 
-/** Logged-out header. This is the prerendered frame, and the fallback while the session streams. */
-export function HeaderSessionFallback() {
+function PublicAuth() {
   return (
-    <div className="header-menu" id="academy-menu">
-      <HeaderNav links={academyNav(null)} />
-      <div className="public-auth">
-        <Link href="/login" className="pill pill-black">
-          Log in
-        </Link>
-        <Link href="/signup" className="pill pill-purple">
-          Sign up
-        </Link>
-      </div>
+    <div className="public-auth">
+      <Link href="/login" className="pill pill-black">
+        Log in
+      </Link>
+      <Link href="/signup" className="pill pill-purple">
+        Sign up
+      </Link>
     </div>
   );
 }
 
-/** User menu and staff links. Guests render the same frame as the fallback. */
-export async function HeaderSession() {
-  const user = await getUser();
-  if (!user) return <HeaderSessionFallback />;
+export function HeaderSessionFallback() {
   return (
     <>
       <div className="header-menu" id="academy-menu">
-        <HeaderNav links={academyNav(user.role)} />
+        <HeaderNav links={academyNav(null)} />
       </div>
-      <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} />
+      <span className={styles.slot} aria-hidden="true">
+        <span className={styles.mark} />
+      </span>
+    </>
+  );
+}
+
+export async function HeaderSession() {
+  const user = await getUser();
+  return (
+    <>
+      <div className="header-menu" id="academy-menu">
+        <HeaderNav links={academyNav(user?.role ?? null)} />
+        {user ? null : <PublicAuth />}
+      </div>
+      {user ? <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} /> : null}
     </>
   );
 }
