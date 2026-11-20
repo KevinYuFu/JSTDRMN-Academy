@@ -32,6 +32,11 @@ export async function loadSkillTree() {
   return (await ensureSkillTree(skillTreeClient(prisma))).tree;
 }
 
+/** The row a save will rewrite. Never the cached copy. */
+export async function loadSkillTreeForWrite() {
+  return (await ensureSkillTree(skillTreeClient(prisma))).tree;
+}
+
 export async function saveSkillTree(tree: SkillNode) {
   return writeSkillTree(tree, skillTreeClient(prisma));
 }

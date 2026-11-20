@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth";
-import { loadSkillTree, refreshContent, saveSkillTree } from "@/lib/content";
+import { loadSkillTreeForWrite, refreshContent, saveSkillTree } from "@/lib/content";
 import { eventsCopyTags, sessionsCopyTags, skillTreeSaveTags } from "@/lib/content-tags";
 import { prisma } from "@/lib/db";
 import { commitEventCopy } from "@/lib/event-copy";
@@ -81,7 +81,7 @@ export async function saveEventsCopy(input: { copy?: unknown; events?: unknown }
 
 export async function saveSkillCopy(patches: unknown) {
   const user = await getUser();
-  const tree = await loadSkillTree();
+  const tree = await loadSkillTreeForWrite();
   const result = commitSkillCopy({ role: user?.role ?? null, tree, patches });
   if (!result.ok) return result;
   await saveSkillTree(result.tree);
