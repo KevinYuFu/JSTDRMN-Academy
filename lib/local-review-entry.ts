@@ -47,12 +47,11 @@ export function localReviewEnabled(env: { NODE_ENV?: string; LOCAL_REVIEW?: stri
 
 /** True only for the local-review dev process, on the loopback app, with the isolated database. */
 export function localReviewEntryDecision(input: LocalReviewEntryInput): LocalReviewEntryDecision {
-  if (!localReviewEnabled({ NODE_ENV: input.nodeEnv, LOCAL_REVIEW: input.localReview })) {
-    return { ok: false, reason: input.nodeEnv !== "development" ? "runtime" : "flag" };
-  }
+  if (input.nodeEnv !== "development") return { ok: false, reason: "runtime" };
   if (present(input.vercel) || present(input.vercelEnv) || present(input.vercelUrl)) {
     return { ok: false, reason: "vercel" };
   }
+  if (input.localReview !== "1") return { ok: false, reason: "flag" };
   if (!isToken(input.localReviewToken)) return { ok: false, reason: "token" };
   const reviewHost = (input.reviewHost ?? LOCAL_REVIEW_HOST).trim().toLowerCase();
   const preview = reviewHost === LOCAL_REVIEW_HOST ? null : parsePreviewHost(reviewHost);

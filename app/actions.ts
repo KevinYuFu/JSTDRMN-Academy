@@ -197,7 +197,7 @@ export async function addLesson(formData: FormData) {
       drip: formData.get("drip") === "on",
     },
   });
-  refreshContent(lessonSaveTags(course));
+  refreshContent(lessonSaveTags(course.id));
   revalidatePath(`/teacher/courses/${course.slug}`);
   redirect(`/teacher/courses/${course.slug}?added=1`);
 }

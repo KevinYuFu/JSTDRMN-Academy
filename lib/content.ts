@@ -3,7 +3,13 @@ import type { Cohort, Course, Lesson } from "@prisma/client";
 import { prisma } from "./db";
 import { pageCopyKeys, readPageCopy, type PageCopy, type PageCopyKey } from "./page-copy";
 import type { SkillNode } from "./skill-tree";
-import { ensureSkillTree, readSkillTree, writeSkillTree, skillTreeClient } from "./skill-tree-store";
+import {
+  ensureSkillTree,
+  loadSkillTreeForWrite as readCurrentSkillTree,
+  readSkillTree,
+  skillTreeClient,
+  writeSkillTree,
+} from "./skill-tree-store";
 import { contentCacheLife, contentTags, eachContentTag } from "./content-tags";
 
 type CourseWithCohorts = Course & { cohorts: Cohort[] };
@@ -34,7 +40,7 @@ export async function loadSkillTree() {
 
 /** The row a save will rewrite. Never the cached copy. */
 export async function loadSkillTreeForWrite() {
-  return (await ensureSkillTree(skillTreeClient(prisma))).tree;
+  return readCurrentSkillTree(skillTreeClient(prisma));
 }
 
 export async function saveSkillTree(tree: SkillNode) {

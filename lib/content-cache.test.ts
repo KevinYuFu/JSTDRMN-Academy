@@ -75,7 +75,7 @@ describe("content cache tags", () => {
 
   it("maps each save to the tags that read changes", () => {
     assert.deepEqual(programSaveTags(["dj-bootcamp", "fb2b"]), ["courses", "course:dj-bootcamp", "course:fb2b"]);
-    assert.deepEqual(lessonSaveTags({ id: "crs_dj" }), ["lessons:crs_dj"]);
+    assert.deepEqual(lessonSaveTags("crs_dj"), ["lessons:crs_dj"]);
     assert.deepEqual(cohortSaveTags("dj-bootcamp"), ["cohorts", "course:dj-bootcamp"]);
     assert.deepEqual(mentorSaveTags(), ["mentors"]);
     assert.deepEqual(sessionsCopyTags(), ["page-copy:sessions", "mentors"]);

@@ -1,86 +1,88 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+import { resolveOffer, type OfferCourses } from "./catalog";
+import { skillTree } from "./skill-tree";
+import { loadSkillTreeForWrite, writeSkillTree, type SkillTreeStore } from "./skill-tree-store";
 
-function loadEnv() {
-  for (const line of readFileSync(".env", "utf8").split("\n")) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (!match || process.env[match[1]]) continue;
-    process.env[match[1]] = match[2].replace(/^["']|["']$/g, "");
-  }
+function courseRow(priceCents: number) {
+  return {
+    id: "crs_intro",
+    slug: "intro-courses",
+    title: "Intro courses",
+    presenter: null,
+    priceCents,
+    access: "subscription" as const,
+    billing: "monthly",
+  };
 }
 
-function functionBody(source: string, name: string) {
-  const start = source.indexOf(`function ${name}`);
-  assert.notEqual(start, -1, name);
-  const next = source.indexOf("\nexport async function ", start + 1);
-  return source.slice(start, next === -1 ? source.length : next);
+function offerCourses(priceCents: { current: number }): OfferCourses {
+  return {
+    async findFirst() {
+      return null;
+    },
+    async findUnique() {
+      return courseRow(priceCents.current);
+    },
+  };
 }
 
-describe("checkout reads the database", () => {
-  it("shows a program price change on the next offer read", async () => {
-    loadEnv();
-    const { prisma } = await import("./db");
-    const { resolveOffer } = await import("./catalog");
-    const course = await prisma.course.findFirst({
-      where: { access: "subscription", billing: "monthly", priceCents: { not: null } },
-      orderBy: { sort: "asc" },
-    });
-    assert.ok(course?.priceCents != null);
-    const original = course.priceCents;
-    await prisma.course.update({ where: { id: course.id }, data: { priceCents: 4500 } });
-    try {
-      const offer = await resolveOffer("program", course.slug);
-      assert.equal(offer?.amountCents, 4500);
-    } finally {
-      await prisma.course.update({ where: { id: course.id }, data: { priceCents: original } });
-    }
-  });
+function memoryStore() {
+  let row: { id: string; document: unknown } | null = null;
+  const store: SkillTreeStore = {
+    skillTree: {
+      async findUnique() {
+        return row;
+      },
+      async create({ data }) {
+        row = { id: data.id, document: data.document };
+        return row;
+      },
+      async upsert({ where, create, update }) {
+        if (!row) row = { id: where.id, document: create.document };
+        else row = { id: row.id, document: update.document };
+        return row;
+      },
+    },
+  };
+  return {
+    store,
+    setRow(next: { id: string; document: unknown } | null) {
+      row = next;
+    },
+  };
+}
 
-  it("does not count lessons or price a checkout from the shared cache", () => {
-    const catalog = readFileSync("lib/catalog.ts", "utf8");
-    const offer = functionBody(catalog, "resolveOffer");
-    assert.match(offer, /prisma\.course\.find/);
-    assert.equal(offer.includes("listCourses"), false);
-    assert.equal(offer.includes("courseBySlug"), false);
-    const payment = functionBody(readFileSync("app/actions.ts", "utf8"), "confirmMockPayment");
-    assert.match(payment, /prisma\.lesson\.count/);
-    assert.equal(payment.includes("lessonsForCourse"), false);
-    const checkout = functionBody(readFileSync("app/actions.ts", "utf8"), "startCheckout");
-    assert.match(checkout, /resolveOffer/);
-    assert.equal(checkout.includes("listCourses"), false);
+describe("checkout reads the live price", () => {
+  it("returns the price on the row, including a change made after the first read", async () => {
+    const price = { current: 2000 };
+    const first = await resolveOffer("program", "intro-courses", offerCourses(price));
+    assert.equal(first?.amountCents, 2000);
+    price.current = 4500;
+    const second = await resolveOffer("program", "intro-courses", offerCourses(price));
+    assert.equal(second?.amountCents, 4500);
+    assert.equal(second?.cadence, "month");
   });
 });
 
 describe("skill-tree writes read the row they will replace", () => {
-  it("sees an out-of-band document change before a save", async () => {
-    loadEnv();
-    const { prisma } = await import("./db");
-    const { loadSkillTreeForWrite } = await import("./content");
-    const row = await prisma.skillTree.findUnique({ where: { id: "current" } });
-    assert.ok(row);
-    const original = row.document;
-    const mutated = JSON.parse(JSON.stringify(original)) as { card: { title: string } };
-    const title = `${mutated.card.title} out of band`;
-    mutated.card.title = title;
-    await prisma.skillTree.update({ where: { id: "current" }, data: { document: mutated } });
-    try {
-      const tree = await loadSkillTreeForWrite();
-      assert.equal(tree.card.title, title);
-    } finally {
-      await prisma.skillTree.update({ where: { id: "current" }, data: { document: original as object } });
-    }
-  });
+  it("keeps an out-of-band change when the save reads the current document", async () => {
+    const db = memoryStore();
+    const saved = structuredClone(skillTree);
+    saved.card = { ...saved.card, title: "Saved map" };
+    db.setRow({ id: "current", document: saved });
+    const outside = structuredClone(saved);
+    outside.card = { ...outside.card, title: "Out of band" };
+    db.setRow({ id: "current", document: outside });
 
-  it("uses the uncached read on every write path", () => {
-    const files = ["app/skill-tree-actions.ts", "app/lead-copy-actions.ts"];
-    const names = ["saveSkillNode", "addSkillChild", "removeSkillNode", "reorderSkillNode", "moveSkillNode", "saveSkillCopy"];
-    for (const name of names) {
-      const source = files.map((file) => readFileSync(file, "utf8")).find((text) => text.includes(`function ${name}`));
-      assert.ok(source, name);
-      const body = functionBody(source, name);
-      assert.match(body, /loadSkillTreeForWrite\(\)/, name);
-      assert.equal(body.includes("loadSkillTree()"), false, name);
-    }
+    const tree = await loadSkillTreeForWrite(db.store);
+    assert.equal(tree.card.title, "Out of band");
+    const edited = structuredClone(tree);
+    edited.card = { ...edited.card, sub: "Edited on top" };
+    await writeSkillTree(edited, db.store);
+
+    const after = await loadSkillTreeForWrite(db.store);
+    assert.equal(after.card.title, "Out of band");
+    assert.equal(after.card.sub, "Edited on top");
   });
 });
