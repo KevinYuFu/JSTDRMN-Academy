@@ -115,6 +115,26 @@ describe("skill tree storage", () => {
     assert.equal(db.creates(), 0);
   });
 
+  it("keeps an out-of-band change when a save edits that row", async () => {
+    const db = memoryStore();
+    const outside = structuredClone(skillTree);
+    outside.card = { ...outside.card, title: "Out of band" };
+    db.setRow({ id: "current", document: outside });
+
+    const loaded = await ensureSkillTree(db.store);
+    assert.equal(loaded.created, false);
+    assert.equal(loaded.tree.card.title, "Out of band");
+    const edited = structuredClone(loaded.tree);
+    edited.card = { ...edited.card, sub: "Edited on top" };
+    await writeSkillTree(edited, db.store);
+
+    const after = await ensureSkillTree(db.store);
+    assert.equal(after.created, false);
+    assert.equal(after.tree.card.title, "Out of band");
+    assert.equal(after.tree.card.sub, "Edited on top");
+    assert.equal(db.creates(), 0);
+  });
+
   it("does not overwrite a row it cannot read", async () => {
     const db = memoryStore();
     db.setRow({ id: "current", document: { bad: true } });
