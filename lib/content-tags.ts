@@ -24,8 +24,8 @@ export function programSaveTags(slugs: readonly string[]) {
   return [contentTags.courses, ...slugs.map((slug) => contentTags.course(slug))];
 }
 
-export function lessonSaveTags(course: { id: string; slug: string }) {
-  return [contentTags.lessons(course.id), contentTags.course(course.slug)];
+export function lessonSaveTags(course: { id: string }) {
+  return [contentTags.lessons(course.id)];
 }
 
 export function cohortSaveTags(slug: string) {

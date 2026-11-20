@@ -16,15 +16,15 @@ export async function generateStaticParams() {
   return skillTreeParams(await loadSkillTree());
 }
 
-/**
- * Public preview, same idea as the Programs homepage.
- * Dashboard and checkout stay behind login. This map does not.
- */
 async function SkillTreeForViewer({ stack }: { stack: SkillNode[] }) {
   const user = await getUser();
   return <SkillCopyEditor lead={canEditPrograms(user?.role)} stack={stack} />;
 }
 
+/**
+ * Public preview, same idea as the Programs homepage.
+ * Dashboard and checkout stay behind login. This map does not.
+ */
 export default async function SkillTreePage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
   const tree = await loadSkillTree();

@@ -51,20 +51,15 @@ function CohortCard({
   );
 }
 
-function openCohortIds(course: Bootcamp, role: string, records: EntitlementRecord[]) {
-  return new Set(
-    course.cohorts
-      .filter(
-        (cohort) =>
-          containerAccess({
-            role,
-            access: "cohort",
-            courseId: course.id,
-            cohortId: cohort.id,
-            entitlements: records,
-          }).allowed,
-      )
-      .map((cohort) => cohort.id),
+function openCohorts(course: Bootcamp, role: string, records: EntitlementRecord[]) {
+  return course.cohorts.filter((cohort) =>
+    containerAccess({
+      role,
+      access: "cohort",
+      courseId: course.id,
+      cohortId: cohort.id,
+      entitlements: records,
+    }).allowed,
   );
 }
 
@@ -78,10 +73,9 @@ async function BootcampLive({
   const [user, query] = await Promise.all([getUser(), searchParams]);
   const records = user ? await entitlementRecords(user.id) : [];
   const role = user?.role ?? "student";
-  const openIds = openCohortIds(course, role, records);
-  if (openIds.size === 1 && user && role === "student") {
-    const cohort = course.cohorts.find((item) => openIds.has(item.id));
-    if (cohort) redirect(`/bootcamps/${course.slug}/${cohort.slug}`);
+  const open = openCohorts(course, role, records);
+  if (open.length === 1 && user && role === "student") {
+    redirect(`/bootcamps/${course.slug}/${open[0].slug}`);
   }
   const applyHref = hubspotApplyUrl(course.hubspotUrl);
   return (
@@ -90,7 +84,7 @@ async function BootcampLive({
       {query.error ? <div className="error">Check the cohort name and slug. Slugs have to be unique.</div> : null}
       <div className="shelf">
         {course.cohorts.map((cohort) => (
-          <CohortCard key={cohort.id} course={course} cohort={cohort} allowed={openIds.has(cohort.id)} applyHref={applyHref} />
+          <CohortCard key={cohort.id} course={course} cohort={cohort} allowed={open.some((item) => item.id === cohort.id)} applyHref={applyHref} />
         ))}
         {course.cohorts.length === 0 ? (
           <a className={`shelf-card panel-${course.panel}`} href={applyHref} target="_blank" rel="noreferrer">
@@ -100,7 +94,7 @@ async function BootcampLive({
           </a>
         ) : null}
       </div>
-      {openIds.size === 0 ? (
+      {open.length === 0 ? (
         <p style={{ marginTop: 18 }}>
           <a className="pill pill-purple" href={applyHref} target="_blank" rel="noreferrer">
             Apply

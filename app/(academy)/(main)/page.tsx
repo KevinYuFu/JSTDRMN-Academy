@@ -11,7 +11,7 @@ import { listCourses, loadSkillTree } from "@/lib/content";
 import { prices } from "@/lib/config";
 import { getUser } from "@/lib/auth";
 import { homePathPreview } from "@/lib/home-path";
-import { localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
+import { localReviewEnabled, localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
 
 export const metadata = {
   title: "JSTDRMN Academy",
@@ -40,7 +40,7 @@ export default async function HomePage({
       program.priceCents === 2000,
   );
   const preview = homePathPreview(tree);
-  const localReview = process.env.NODE_ENV === "development" && process.env.LOCAL_REVIEW === "1";
+  const localReview = localReviewEnabled(process.env);
 
   return (
     <div className={`programs-page ${home.page}`}>
