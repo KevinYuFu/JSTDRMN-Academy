@@ -14,15 +14,11 @@ export function refreshContent(tags: readonly string[]) {
 }
 
 /** A missing row is the built-in map. This cache never writes it. */
-async function readCachedSkillTree(): Promise<SkillNode> {
+export async function loadSkillTree(): Promise<SkillNode> {
   "use cache";
   cacheTag(contentTags.skillTree);
   cacheLife(contentCacheLife);
   return skillTreeForRead(skillTreeClient(prisma));
-}
-
-export async function loadSkillTree() {
-  return readCachedSkillTree();
 }
 
 /** The row a save will rewrite. Never the cached copy. */

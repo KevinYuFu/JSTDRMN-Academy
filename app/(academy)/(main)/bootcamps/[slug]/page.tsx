@@ -20,7 +20,18 @@ export async function generateStaticParams() {
   return courses.filter((course) => course.access === "cohort").map((course) => ({ slug: course.slug }));
 }
 
+function EmptyCohortCard({ course, href }: { course: Bootcamp; href: string }) {
+  return (
+    <a className={`shelf-card panel-${course.panel}`} href={href} target="_blank" rel="noreferrer">
+      <div className="kicker">{course.statusLabel}</div>
+      <h3>{course.title}</h3>
+      <p>No cohort portal is open yet. Applications stay on the JSTDRMN site.</p>
+    </a>
+  );
+}
+
 function CohortShelfFallback({ course }: { course: Bootcamp }) {
+  const href = hubspotApplyUrl(course.hubspotUrl);
   return (
     <div className="shelf">
       {course.cohorts.map((cohort) => (
@@ -29,12 +40,7 @@ function CohortShelfFallback({ course }: { course: Bootcamp }) {
           <p>{cohort.startsLabel}</p>
         </div>
       ))}
-      {course.cohorts.length === 0 ? (
-        <div className={`shelf-card panel-${course.panel}`}>
-          <h3>{course.title}</h3>
-          <p>No cohort portal is open yet. Applications stay on the JSTDRMN site.</p>
-        </div>
-      ) : null}
+      {course.cohorts.length === 0 ? <EmptyCohortCard course={course} href={href} /> : null}
     </div>
   );
 }
@@ -95,13 +101,7 @@ async function BootcampLive({
         {course.cohorts.map((cohort) => (
           <CohortCard key={cohort.id} course={course} cohort={cohort} allowed={open.some((item) => item.id === cohort.id)} applyHref={applyHref} />
         ))}
-        {course.cohorts.length === 0 ? (
-          <a className={`shelf-card panel-${course.panel}`} href={applyHref} target="_blank" rel="noreferrer">
-            <div className="kicker">{course.statusLabel}</div>
-            <h3>{course.title}</h3>
-            <p>No cohort portal is open yet. Applications stay on the JSTDRMN site.</p>
-          </a>
-        ) : null}
+        {course.cohorts.length === 0 ? <EmptyCohortCard course={course} href={applyHref} /> : null}
       </div>
       {open.length === 0 ? (
         <p style={{ marginTop: 18 }}>
