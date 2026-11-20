@@ -14,10 +14,15 @@ function walk(dir: string, out: string[] = []) {
 }
 
 const readyMadePages = new Set([
+  "app/(academy)/(main)/page.tsx",
   "app/(academy)/(main)/programs/page.tsx",
   "app/(academy)/(main)/programs/[slug]/page.tsx",
   "app/(academy)/(main)/events/page.tsx",
   "app/(academy)/(main)/private-sessions/page.tsx",
+  "app/(academy)/(main)/skill-tree/[[...slug]]/page.tsx",
+  "app/(academy)/(main)/bootcamps/[slug]/page.tsx",
+  "app/(academy)/(main)/login/page.tsx",
+  "app/(academy)/(main)/signup/page.tsx",
 ]);
 
 describe("cache components", () => {

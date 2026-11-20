@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { CommunitySection } from "@/components/academy-home/community";
@@ -13,27 +14,25 @@ import { homePathPreview } from "@/lib/home-path";
 import { localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
 import { loadSkillTree } from "@/lib/skill-tree-store";
 
-export const instant = false;
-
 export const metadata = {
   title: "JSTDRMN Academy",
   description: "Find your next step in music production or DJing with JSTDRMN Academy in Toronto.",
 };
+
+/** Local review only. Production never reads the request headers. */
+async function LocalReviewGate({ searchParams }: { searchParams: Promise<{ entered?: string }> }) {
+  const [query, headerList, user] = await Promise.all([searchParams, headers(), getUser()]);
+  const entry = localReviewEntryDecision(localReviewEntryFrom(process.env, headerList));
+  if (!user && entry.ok && query.entered !== "1") redirect("/local-review/enter");
+  return null;
+}
 
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ entered?: string }>;
 }) {
-  const [programs, user, tree, query, headerList] = await Promise.all([
-    listCourses(),
-    getUser(),
-    loadSkillTree(),
-    searchParams,
-    headers(),
-  ]);
-  const entry = localReviewEntryDecision(localReviewEntryFrom(process.env, headerList));
-  if (!user && entry.ok && query.entered !== "1") redirect("/local-review/enter");
+  const [programs, tree] = await Promise.all([listCourses(), loadSkillTree()]);
   const tutorialListedAtTwenty = programs.some(
     (program) =>
       program.placement === "plan" &&
@@ -42,9 +41,15 @@ export default async function HomePage({
       program.priceCents === 2000,
   );
   const preview = homePathPreview(tree);
+  const localReview = process.env.NODE_ENV === "development" && process.env.LOCAL_REVIEW === "1";
 
   return (
     <div className={`programs-page ${home.page}`}>
+      {localReview ? (
+        <Suspense fallback={null}>
+          <LocalReviewGate searchParams={searchParams} />
+        </Suspense>
+      ) : null}
       <main>
         <WelcomeHero />
         <GoalSection preview={preview} />
