@@ -414,6 +414,28 @@ function matchShortcut(parts: readonly string[], node: SkillNode): SkillNode[] |
   return null;
 }
 
+/** Every public skill-tree URL, including the overview. Unknown slugs are left out. */
+export function skillTreeParams(tree: SkillNode): { slug: string[] }[] {
+  const params: { slug: string[] }[] = [];
+  const seen = new Set<string>();
+  function add(slug: readonly string[] | null) {
+    if (!slug || !stackFromSlug(slug, tree)) return;
+    const key = slug.join("/");
+    if (seen.has(key)) return;
+    seen.add(key);
+    params.push({ slug: [...slug] });
+  }
+  add([]);
+  function walk(node: SkillNode, ancestors: SkillNode[]) {
+    const stack = [...ancestors, node];
+    add(slugFromStack(stack, tree));
+    if (ancestors.length === 1 && ancestors[0]?.id === tree.id && node.fromOverview) add(node.fromOverview);
+    for (const child of node.children) walk(child, stack);
+  }
+  for (const child of tree.children) walk(child, [tree]);
+  return params;
+}
+
 /** Turns a URL slug into the breadcrumb. Unknown paths return null. */
 export function stackFromSlug(slug: readonly string[] | undefined, tree: SkillNode = skillTree): SkillNode[] | null {
   const parts = slug ?? [];

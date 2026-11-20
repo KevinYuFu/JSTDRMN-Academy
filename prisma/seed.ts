@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { isBuiltinLeadEmail, leadEmails, nameFromEmail } from "../lib/google";
-import { ensureSkillTree, type SkillTreeStore } from "../lib/skill-tree-store";
+import { ensureSkillTree, skillTreeClient } from "../lib/skill-tree-store";
 import { catalogCourses, djCohorts, djLessons, sampleEventTypes, sampleEvents, seedAdmin } from "./seed-data";
 
 const prisma = new PrismaClient();
@@ -98,7 +98,7 @@ async function main() {
       }
     }
 
-    const skill = await ensureSkillTree(db as unknown as SkillTreeStore);
+    const skill = await ensureSkillTree(skillTreeClient(db));
     skillTreeCreated = skill.created;
   });
 

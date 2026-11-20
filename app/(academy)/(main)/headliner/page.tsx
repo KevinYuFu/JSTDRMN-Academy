@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DiscordCard } from "@/components/discord-card";
 import { ProgressionTree } from "@/components/progression-tree";
+import { lessonsForCourse, listCourses } from "@/lib/content";
 import { getUser } from "@/lib/auth";
 import { formatCad, prices } from "@/lib/config";
 import { prisma } from "@/lib/db";
@@ -17,15 +18,13 @@ export default async function HeadlinerPage({
   searchParams: Promise<{ unlocked?: string; discord?: string }>;
 }) {
   const query = await searchParams;
-  const course = await prisma.course.findFirst({
-    where: { access: "headliner" },
-    orderBy: { sort: "asc" },
-    include: {
-      tracks: { orderBy: { position: "asc" } },
-      lessons: { orderBy: { position: "asc" } },
-    },
-  });
-  if (!course) notFound();
+  const headliner = (await listCourses()).find((item) => item.access === "headliner");
+  if (!headliner) notFound();
+  const [lessons, tracks] = await Promise.all([
+    lessonsForCourse(headliner.id),
+    prisma.track.findMany({ where: { courseId: headliner.id }, orderBy: { position: "asc" } }),
+  ]);
+  const course = { ...headliner, lessons, tracks };
   const user = await getUser();
   const records = user ? await entitlementRecords(user.id) : [];
   const role = user?.role ?? "student";

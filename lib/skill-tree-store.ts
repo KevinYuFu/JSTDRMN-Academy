@@ -1,9 +1,11 @@
 /**
  * One Neon row holds the live skill tree.
  * Id is "current". The document is the SkillNode JSON.
- * An empty table is filled from the built-in map, once. Later saves are left alone.
+ * A page read shows the built-in map when the row is missing and does not write.
+ * A save may create the row. Later saves are left as written.
  */
 
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { builtinSkillTree, parseSkillTree } from "./skill-tree-edit";
 import type { SkillNode } from "./skill-tree";
 import previousDefault from "./skill-tree-previous-default.json";
@@ -13,21 +15,31 @@ export const SKILL_TREE_ROW_ID = "current";
 export type SkillTreeStore = {
   skillTree: {
     findUnique(args: { where: { id: string } }): Promise<{ document: unknown } | null>;
-    create(args: { data: { id: string; document: unknown } }): Promise<unknown>;
+    create(args: { data: { id: string; document: Prisma.InputJsonValue } }): Promise<unknown>;
     upsert(args: {
       where: { id: string };
-      create: { id: string; document: unknown };
-      update: { document: unknown };
+      create: { id: string; document: Prisma.InputJsonValue };
+      update: { document: Prisma.InputJsonValue };
     }): Promise<unknown>;
   };
 };
+
+export function skillTreeClient(client: Pick<PrismaClient, "skillTree">): SkillTreeStore {
+  return {
+    skillTree: {
+      findUnique: (args) => client.skillTree.findUnique({ where: args.where }),
+      create: (args) => client.skillTree.create({ data: args.data }),
+      upsert: (args) => client.skillTree.upsert({ where: args.where, create: args.create, update: args.update }),
+    },
+  };
+}
 
 function isUniqueConflict(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: unknown }).code === "P2002";
 }
 
-function plainDocument(tree: SkillNode): unknown {
-  return JSON.parse(JSON.stringify(tree)) as unknown;
+function plainDocument(tree: SkillNode): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(tree)) as Prisma.InputJsonValue;
 }
 
 /**
@@ -41,44 +53,40 @@ function isUntouchedPreviousDefault(tree: SkillNode) {
   return JSON.stringify(tree) === JSON.stringify(previous);
 }
 
-export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: SkillNode; created: boolean }> {
+/** Read only. A missing row is null. This never inserts. */
+export async function readSkillTree(db: SkillTreeStore): Promise<SkillNode | null> {
   const row = await db.skillTree.findUnique({ where: { id: SKILL_TREE_ROW_ID } });
-  if (row) {
-    const tree = parseSkillTree(row.document);
-    if (!tree) throw new Error("Saved skill tree is invalid.");
-    if (isUntouchedPreviousDefault(tree)) return { tree: builtinSkillTree(), created: false };
-    return { tree, created: false };
-  }
+  if (!row) return null;
+  const tree = parseSkillTree(row.document);
+  if (!tree) throw new Error("Saved skill tree is invalid.");
+  if (isUntouchedPreviousDefault(tree)) return builtinSkillTree();
+  return tree;
+}
+
+/** The tree a page shows. A missing row is the built-in map. This never inserts. */
+export async function skillTreeForRead(db: SkillTreeStore): Promise<SkillNode> {
+  return (await readSkillTree(db)) ?? builtinSkillTree();
+}
+
+export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: SkillNode; created: boolean }> {
+  const existing = await readSkillTree(db);
+  if (existing) return { tree: existing, created: false };
   const tree = builtinSkillTree();
   try {
     await db.skillTree.create({ data: { id: SKILL_TREE_ROW_ID, document: plainDocument(tree) } });
   } catch (error) {
     if (!isUniqueConflict(error)) throw error;
-    const again = await db.skillTree.findUnique({ where: { id: SKILL_TREE_ROW_ID } });
-    if (!again) throw error;
-    const saved = parseSkillTree(again.document);
-    if (!saved) throw new Error("Saved skill tree is invalid.");
-    if (isUntouchedPreviousDefault(saved)) return { tree: builtinSkillTree(), created: false };
+    const saved = await readSkillTree(db);
+    if (!saved) throw error;
     return { tree: saved, created: false };
   }
   return { tree, created: true };
 }
 
-async function database(): Promise<SkillTreeStore> {
-  const { prisma } = await import("./db");
-  return prisma as unknown as SkillTreeStore;
-}
-
-export async function loadSkillTree(db?: SkillTreeStore) {
-  const client = db ?? (await database());
-  return (await ensureSkillTree(client)).tree;
-}
-
-export async function saveSkillTree(tree: SkillNode, db?: SkillTreeStore) {
+export async function writeSkillTree(tree: SkillNode, db: SkillTreeStore) {
   const parsed = parseSkillTree(tree);
   if (!parsed) throw new Error("Skill tree is invalid.");
-  const client = db ?? (await database());
-  await client.skillTree.upsert({
+  await db.skillTree.upsert({
     where: { id: SKILL_TREE_ROW_ID },
     create: { id: SKILL_TREE_ROW_ID, document: plainDocument(parsed) },
     update: { document: plainDocument(parsed) },

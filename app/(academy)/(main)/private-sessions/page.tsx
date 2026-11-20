@@ -1,53 +1,82 @@
+import { Suspense } from "react";
 import { SessionsBoard } from "@/components/sessions-editor";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { listActiveMentors, listCourses, loadPageCopy } from "@/lib/content";
 import { unpackMentorList } from "@/lib/mentors";
-import { pageCopyKeys, readPageCopy } from "@/lib/page-copy";
+import type { PageCopy } from "@/lib/page-copy";
 import { canEditPrograms } from "@/lib/program-edit";
+import type { MentorView } from "@/components/mentor-roster";
 
-export const instant = false;
+function mentorViews(mentors: Awaited<ReturnType<typeof listActiveMentors>>): MentorView[] {
+  return mentors.map((mentor) => ({
+    id: mentor.id,
+    slug: mentor.slug,
+    name: mentor.name,
+    roleLine: mentor.roleLine,
+    photoUrl: mentor.photoUrl,
+    bio: mentor.bio,
+    background: unpackMentorList(mentor.background),
+    specialties: unpackMentorList(mentor.specialties),
+    genres: unpackMentorList(mentor.genres),
+    placeholder: mentor.placeholder,
+    rateLabel: mentor.rateLabel,
+    instagramUrl: mentor.instagramUrl,
+    instagramLabel: mentor.instagramLabel,
+  }));
+}
+
+async function SessionsLive({
+  copy,
+  courseId,
+  mentors,
+  searchParams,
+}: {
+  copy: PageCopy;
+  courseId: string;
+  mentors: MentorView[];
+  searchParams: Promise<{ sent?: string; error?: string; mentor?: string }>;
+}) {
+  const [user, query] = await Promise.all([getUser(), searchParams]);
+  return (
+    <SessionsBoard
+      lead={canEditPrograms(user?.role)}
+      copy={copy}
+      courseId={courseId}
+      viewer={user ? { name: user.name, email: user.email } : null}
+      openSlug={query.mentor ?? null}
+      openForm={query.error === "1" && Boolean(query.mentor)}
+      sent={Boolean(query.sent)}
+      error={Boolean(query.error)}
+      mentors={mentors}
+    />
+  );
+}
 
 export default async function PrivateSessionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ sent?: string; error?: string; mentor?: string }>;
 }) {
-  const query = await searchParams;
-  const [mentors, course, user, storedCopy] = await Promise.all([
-    prisma.mentor.findMany({ where: { active: true }, orderBy: { sort: "asc" } }),
-    prisma.course.findFirst({ where: { billing: "request" } }),
-    getUser(),
-    prisma.meta.findUnique({ where: { key: pageCopyKeys.sessions } }),
-  ]);
-  const copy = readPageCopy("sessions", storedCopy?.value);
+  const [mentors, courses, copy] = await Promise.all([listActiveMentors(), listCourses(), loadPageCopy("sessions")]);
+  const courseId = courses.find((item) => item.billing === "request")?.id ?? "";
+  const roster = mentorViews(mentors);
+  const guest = (
+    <SessionsBoard
+      lead={false}
+      copy={copy}
+      courseId={courseId}
+      viewer={null}
+      openSlug={null}
+      openForm={false}
+      sent={false}
+      error={false}
+      mentors={roster}
+    />
+  );
 
   return (
-    <>
-      <SessionsBoard
-          lead={canEditPrograms(user?.role)}
-          copy={copy}
-          courseId={course?.id ?? ""}
-          viewer={user ? { name: user.name, email: user.email } : null}
-          openSlug={query.mentor ?? null}
-          openForm={query.error === "1" && Boolean(query.mentor)}
-          sent={Boolean(query.sent)}
-          error={Boolean(query.error)}
-          mentors={mentors.map((mentor) => ({
-            id: mentor.id,
-            slug: mentor.slug,
-            name: mentor.name,
-            roleLine: mentor.roleLine,
-            photoUrl: mentor.photoUrl,
-            bio: mentor.bio,
-            background: unpackMentorList(mentor.background),
-            specialties: unpackMentorList(mentor.specialties),
-            genres: unpackMentorList(mentor.genres),
-            placeholder: mentor.placeholder,
-            rateLabel: mentor.rateLabel,
-            instagramUrl: mentor.instagramUrl,
-            instagramLabel: mentor.instagramLabel,
-          }))}
-        />
-    </>
+    <Suspense fallback={guest}>
+      <SessionsLive copy={copy} courseId={courseId} mentors={roster} searchParams={searchParams} />
+    </Suspense>
   );
 }

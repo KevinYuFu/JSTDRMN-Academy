@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { User } from "@prisma/client";
+import { courseBySlug, lessonsForCourse } from "./content";
 import { prisma } from "./db";
 import type { ResolvedVideo } from "./playback";
 import { resolveVideo } from "./video";
@@ -47,19 +48,13 @@ export async function openCourse(input: {
   cohortSlug?: string;
   lessonId?: string;
 }) {
-  const course = await prisma.course.findUnique({
-    where: { slug: input.courseSlug },
-    include: { cohorts: { orderBy: { sort: "asc" } } },
-  });
+  const course = await courseBySlug(input.courseSlug);
   if (!course) notFound();
 
   const cohort = input.cohortSlug ? course.cohorts.find((item) => item.slug === input.cohortSlug) : null;
   if (input.cohortSlug && !cohort) notFound();
 
-  const lessonRows = await prisma.lesson.findMany({
-    where: { courseId: course.id, cohortId: cohort?.id ?? null },
-    orderBy: { position: "asc" },
-  });
+  const lessonRows = (await lessonsForCourse(course.id)).filter((lesson) => lesson.cohortId === (cohort?.id ?? null));
 
   const signedIn = Boolean(input.user);
   const records = input.user ? await entitlementRecords(input.user.id) : [];

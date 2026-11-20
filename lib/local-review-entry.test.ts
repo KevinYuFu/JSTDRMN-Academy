@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   isSyntheticLocalLead,
   localReviewClusterMatches,
+  localReviewEnabled,
   localReviewEntryDecision,
   type LocalReviewEntryInput,
 } from "./local-review-entry";
@@ -35,6 +36,15 @@ function allowed(overrides: Partial<LocalReviewEntryInput> = {}): LocalReviewEnt
     ...overrides,
   };
 }
+
+describe("localReviewEnabled", () => {
+  it("is on only for the development flag", () => {
+    assert.equal(localReviewEnabled({ NODE_ENV: "development", LOCAL_REVIEW: "1" }), true);
+    assert.equal(localReviewEnabled({ NODE_ENV: "development", LOCAL_REVIEW: "0" }), false);
+    assert.equal(localReviewEnabled({ NODE_ENV: "production", LOCAL_REVIEW: "1" }), false);
+    assert.equal(localReviewEnabled({ NODE_ENV: "test" }), false);
+  });
+});
 
 describe("local review entry", () => {
   it("allows a direct loopback visit in the local-review dev process", () => {

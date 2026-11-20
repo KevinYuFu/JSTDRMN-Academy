@@ -40,6 +40,11 @@ export type LocalReviewEntryInput = {
 
 export type LocalReviewEntryDecision = { ok: true } | { ok: false; reason: string };
 
+/** The dev flag that turns the local-review gate on. The full entry check is stricter. */
+export function localReviewEnabled(env: { NODE_ENV?: string; LOCAL_REVIEW?: string }) {
+  return env.NODE_ENV === "development" && env.LOCAL_REVIEW === "1";
+}
+
 /** True only for the local-review dev process, on the loopback app, with the isolated database. */
 export function localReviewEntryDecision(input: LocalReviewEntryInput): LocalReviewEntryDecision {
   if (input.nodeEnv !== "development") return { ok: false, reason: "runtime" };

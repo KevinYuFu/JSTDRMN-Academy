@@ -13,6 +13,17 @@ function walk(dir: string, out: string[] = []) {
   return out;
 }
 
+const readyMadePages = new Set([
+  "app/(academy)/(main)/page.tsx",
+  "app/(academy)/(main)/programs/page.tsx",
+  "app/(academy)/(main)/programs/[slug]/page.tsx",
+  "app/(academy)/(main)/private-sessions/page.tsx",
+  "app/(academy)/(main)/skill-tree/[[...slug]]/page.tsx",
+  "app/(academy)/(main)/bootcamps/[slug]/page.tsx",
+  "app/(academy)/(main)/login/page.tsx",
+  "app/(academy)/(main)/signup/page.tsx",
+]);
+
 describe("cache components", () => {
   it("opts in without caching data or the old dynamic segment config", () => {
     assert.equal(nextConfig.cacheComponents, true);
@@ -27,7 +38,8 @@ describe("cache components", () => {
       assert.equal(text.includes("export const runtime"), false, file);
       assert.equal(text.includes("use cache"), false, file);
       if (file.endsWith("/page.tsx") && file !== "app/mentor-drafts/page.tsx") {
-        assert.match(text, /export const instant = false/, file);
+        if (readyMadePages.has(file)) assert.equal(text.includes("export const instant = false"), false, file);
+        else assert.match(text, /export const instant = false/, file);
       }
     }
   });
@@ -36,6 +48,8 @@ describe("cache components", () => {
     const events = readFileSync("app/(academy)/(main)/events/page.tsx", "utf8");
     const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
     assert.match(events, /new Date\(\)/);
+    assert.match(events, /export const instant = false/);
+    assert.equal(events.includes("Suspense"), false);
     assert.match(home, /headers\(\)/);
     assert.match(home, /localReviewEntryDecision/);
     assert.equal(home.includes("use cache"), false);

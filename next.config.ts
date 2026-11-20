@@ -16,6 +16,8 @@ export const STATIC_ASSET_HEADER_SOURCE =
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Off. With it on, the first fetch after a save can serve the old shell,
+  // and the first hit on an unknown public URL is 200 plus noindex. Prefetch stays on.
   partialPrefetching: false,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
   async headers() {

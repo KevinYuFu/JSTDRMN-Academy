@@ -238,6 +238,7 @@ describe("save", () => {
       row({ id: "crs_req", access: "request" }),
     ]);
     const paths: string[] = [];
+    const invalidated: string[][] = [];
     const result = await persistProgramEdits({
       role: "admin",
       input: listingInput([
@@ -254,6 +255,7 @@ describe("save", () => {
       ]),
       store: db.store,
       revalidate: (path) => paths.push(path),
+      invalidate: (slugs) => invalidated.push(slugs),
     });
     assert.deepEqual(result, { ok: true });
     assert.equal(db.rows[0]?.title, "Decks");
@@ -267,6 +269,7 @@ describe("save", () => {
     assert.equal(db.rows[0]?.placement, "grid");
     assert.deepEqual(Object.keys(db.updates[0]?.data ?? {}).sort(), ["presenter", "tagline", "title"]);
     assert.deepEqual(paths, ["/programs", "/programs/crs_dj"]);
+    assert.deepEqual(invalidated, [["crs_dj"]]);
     assert.equal(db.rows[1]?.title, "DJ Bootcamp");
   });
 
