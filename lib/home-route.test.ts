@@ -43,6 +43,9 @@ describe("home and programs routes", () => {
     assert.equal(fallback.includes("Sign up"), false);
     assert.equal(fallback.includes("UserMenu"), false);
     assert.equal(fallback.includes("Dashboard"), false);
+    assert.match(frame, /target\.closest\("a"\)/);
+    assert.match(frame, /closeAfterNavigation\(\)/);
+    assert.match(frame, /setAccountOpen\(\(open\) => \(open \? false : open\)\)/);
     assert.match(nav, /usePathname/);
     assert.match(nav, /activeNavKey/);
     assert.equal(activeNavKey("/"), null);

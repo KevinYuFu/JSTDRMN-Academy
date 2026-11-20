@@ -4,7 +4,7 @@ import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { openCourse } from "@/lib/learn";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function CohortPage({
   params,

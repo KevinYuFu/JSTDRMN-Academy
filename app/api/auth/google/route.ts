@@ -12,8 +12,6 @@ import {
 } from "@/lib/google";
 import { safeNext } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
 function cookieOptions() {
   return {
     httpOnly: true,

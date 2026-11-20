@@ -9,7 +9,7 @@ import { prisma } from "@/lib/db";
 import { isStaff } from "@/lib/entitlements";
 import { canonicalRole, isLeadActor, roleLabel } from "@/lib/promote";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 function when(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });

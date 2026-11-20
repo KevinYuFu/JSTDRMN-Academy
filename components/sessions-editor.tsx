@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useResetWhenHidden } from "./form";
 import { saveSessionsCopy } from "@/app/lead-copy-actions";
 import { LeadEditFrame } from "./lead-edit";
 import { MentorCardFace } from "./mentor-card-face";
@@ -71,6 +72,12 @@ export function SessionsBoard({
   const [drafts, setDrafts] = useState<Draft[]>(() => mentors.map(toDraft));
   const [savedCopy, setSavedCopy] = useState(copy);
   const [savedMentors, setSavedMentors] = useState(mentors);
+  useResetWhenHidden(() => {
+    setDraftCopy(savedCopy);
+    setDrafts(savedMentors.map(toDraft));
+    setMessage(null);
+    setEditing(false);
+  });
 
   function reset(nextCopy = savedCopy, nextMentors = savedMentors) {
     setDraftCopy(nextCopy);

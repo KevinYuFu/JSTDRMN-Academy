@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { saveEventType } from "@/app/actions";
+import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { prisma } from "@/lib/db";
 import { roleLabel } from "@/lib/roles";
 import { formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function EventManagerPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const staff = await requireStaff();
@@ -59,7 +60,7 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
           <section className="card" style={{ padding: "8px 16px 16px" }}>
             <h2 className="section-label">Event types</h2>
             {types.map((type) => (
-              <form key={type.id} action={saveEventType} className="stack" style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+              <Form key={type.id} action={saveEventType} className="stack" style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
                 <input type="hidden" name="id" value={type.id} />
                 <Label htmlFor={`name-${type.id}`}>{type.name}</Label>
                 <Input id={`name-${type.id}`} name="name" defaultValue={type.name} required />
@@ -70,9 +71,9 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
                 <Input name="actionUrl" defaultValue={type.actionUrl} placeholder="Destination URL, or blank for .ics" />
                 <Input name="buttonLabel" defaultValue={type.buttonLabel} required />
                 <Button type="submit" variant="black">Save type</Button>
-              </form>
+              </Form>
             ))}
-            <form action={saveEventType} className="stack" style={{ paddingTop: 16 }}>
+            <Form action={saveEventType} className="stack" style={{ paddingTop: 16 }}>
               <h2 className="section-label">New type</h2>
               <Input name="name" placeholder="Type name" required />
               <select name="actionType" className="h-11 rounded-[25px] border border-white/15 bg-[#121212] px-4" defaultValue="link">
@@ -82,7 +83,7 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
               <Input name="actionUrl" placeholder="Destination URL" />
               <Input name="buttonLabel" placeholder="Button label" required />
               <Button type="submit">Add type</Button>
-            </form>
+            </Form>
           </section>
         </div>
       </main>

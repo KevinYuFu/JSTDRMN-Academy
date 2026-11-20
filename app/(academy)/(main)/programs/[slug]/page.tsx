@@ -10,7 +10,7 @@ import { isStaff } from "@/lib/entitlements";
 import { canEditPrograms, detailEditItem } from "@/lib/program-edit";
 import { enrollmentPrice } from "@/lib/program-labels";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function ProgramPage({
   params,

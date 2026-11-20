@@ -14,8 +14,9 @@ const { getImgProps } = require("next/dist/shared/lib/get-img-props") as {
     options: { defaultLoader: (args: { src: string; width: number; quality?: number }) => string; imgConf: Record<string, unknown> },
   ) => { props: { loading?: string; fetchPriority?: string; src: string; srcSet?: string; sizes?: string; width?: number; height?: number } };
 };
-const { imageConfigDefault } = require("next/dist/shared/lib/image-config") as {
+const { imageConfigDefault, prepareImageConfig } = require("next/dist/shared/lib/image-config") as {
   imageConfigDefault: Record<string, unknown>;
+  prepareImageConfig: (config: Record<string, unknown>) => Record<string, unknown>;
 };
 
 function loader({ src, width, quality }: { src: string; width: number; quality?: number }) {
@@ -23,16 +24,12 @@ function loader({ src, width, quality }: { src: string; width: number; quality?:
 }
 
 function imgProps(props: Record<string, unknown>) {
-  const deviceSizes = imageConfigDefault.deviceSizes as number[];
-  const imageSizes = imageConfigDefault.imageSizes as number[];
   return getImgProps(props, {
     defaultLoader: loader,
-    imgConf: {
+    imgConf: prepareImageConfig({
       ...imageConfigDefault,
-      deviceSizes: [...deviceSizes],
-      imageSizes: [...imageSizes],
       localPatterns: undefined,
-    },
+    }),
   }).props;
 }
 
@@ -82,7 +79,7 @@ describe("image loading", () => {
 
   it("optimizes home photos and keeps eager loading", () => {
     assert.equal(photo.includes("unoptimized"), false);
-    assert.match(photo, /priority \? \{\} : \{ loading: "eager" as const, fetchPriority: "low" as const \}/);
+    assert.match(photo, /preload \? \{\} : \{ loading: "eager" as const, fetchPriority: "low" as const \}/);
     assert.equal(photo.includes('fetchPriority="high"'), false);
     assert.equal(photo.includes('fetchPriority: "high"'), false);
     assert.equal(photo.includes('loading="lazy"'), false);
@@ -97,7 +94,7 @@ describe("image loading", () => {
       width: 1000,
       height: 669,
       sizes: "(max-width: 800px) calc(100vw - 64px), 560px",
-      priority: true,
+      preload: true,
     });
     assert.equal(above.loading, undefined);
     assert.equal(above.fetchPriority, undefined);
@@ -110,18 +107,18 @@ describe("image loading", () => {
       width: 1000,
       height: 669,
       sizes: "(max-width: 800px) calc(100vw - 32px), 1000px",
-      priority: false,
+      preload: false,
       loading: "eager",
       fetchPriority: "low",
     });
     assert.equal(below.loading, "eager");
     assert.equal(below.fetchPriority, "low");
-    assert.equal(below.loading === "lazy", false);
   });
 
   it("serves the logo and the first draft portraits at high priority", () => {
     assert.match(header, /width=\{256\}/);
-    assert.match(header, /priority/);
+    assert.match(header, /\bpreload\b/);
+    assert.equal(/\bpriority\b/.test(header), false);
     assert.equal(header.includes("loading="), false);
     assert.equal(header.includes("fetchPriority"), false);
     assert.match(face, /width=\{96\}/);
@@ -140,7 +137,7 @@ describe("image loading", () => {
       alt: "Yuzu",
       width: 96,
       height: 96,
-      priority: false,
+      preload: false,
       loading: "eager",
       fetchPriority: "low",
     });
@@ -152,6 +149,11 @@ describe("image loading", () => {
       portrait.srcSet,
       "/_next/image?url=%2Fmentor-draft-portraits%2Fyuzu.jpg&w=96&q=75 1x, /_next/image?url=%2Fmentor-draft-portraits%2Fyuzu.jpg&w=256&q=75 2x",
     );
+  });
+
+  it("does not preload the skill tree monospace font", () => {
+    const shell = readFileSync("components/skill-tree/shell.tsx", "utf8");
+    assert.match(shell, /const mono = Space_Mono\(\{[\s\S]*preload: false/);
   });
 
   it("does not lazy-load images or video embeds", () => {

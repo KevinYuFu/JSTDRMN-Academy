@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { syncContact } from "@/lib/hubspot";
 import { stripeClient } from "@/lib/stripe";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function CheckoutReturnPage({
   searchParams,

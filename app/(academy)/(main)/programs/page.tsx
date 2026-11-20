@@ -8,7 +8,7 @@ import { getUser } from "@/lib/auth";
 import { canEditPrograms, listingEditItems } from "@/lib/program-edit";
 import { programGroups } from "@/lib/program-labels";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function ProgramsPage() {
   const [programs, user] = await Promise.all([

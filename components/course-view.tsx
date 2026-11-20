@@ -4,6 +4,7 @@ import { formatCad, hubspotApplyUrl, prices, programPriceLabel } from "@/lib/con
 import type { openCourse } from "@/lib/learn";
 import { isStaff } from "@/lib/entitlements";
 import { roleLabel } from "@/lib/roles";
+import { Form } from "./form";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Icon } from "./icons";
@@ -140,8 +141,7 @@ export function CourseView({
               title={current.title}
               position={current.position}
               runtime={current.runtimeLabel}
-              provider={current.videoProvider}
-              url={current.videoUrl}
+              playback={current.playback}
             />
           ) : (
             <div className="upsell">
@@ -201,22 +201,22 @@ export function CourseView({
                     </div>
                   ))}
                   {data.staff ? (
-                    <form action={postComment} className="stack" style={{ marginTop: 8 }}>
+                    <Form action={postComment} className="stack" style={{ marginTop: 8 }}>
                       <input type="hidden" name="lessonId" value={current.id} />
                       <input type="hidden" name="parentId" value={comment.id} />
                       <input type="hidden" name="next" value={`${basePath}?lesson=${current.id}`} />
                       <Textarea name="body" required placeholder="Reply to this note" />
                       <Button type="submit" variant="black" className="self-start">Reply</Button>
-                    </form>
+                    </Form>
                   ) : null}
                 </article>
               ))}
-              <form action={postComment} className="stack" style={{ marginTop: 16 }}>
+              <Form action={postComment} className="stack" style={{ marginTop: 16 }}>
                 <input type="hidden" name="lessonId" value={current.id} />
                 <input type="hidden" name="next" value={`${basePath}?lesson=${current.id}`} />
                 <Textarea name="body" required placeholder="Ask about this lesson" />
                 <Button type="submit" className="self-start">Post note</Button>
-              </form>
+              </Form>
             </div>
           ) : null}
         </section>

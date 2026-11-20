@@ -17,7 +17,7 @@ export function WelcomeHero() {
             </Link>
           </div>
         </div>
-        <AcademyFigure photo={welcomeStudio} priority />
+        <AcademyFigure photo={welcomeStudio} preload />
       </div>
     </section>
   );

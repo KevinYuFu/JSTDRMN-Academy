@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useResetWhenHidden } from "@/components/form";
 import { saveSkillCopy } from "@/app/lead-copy-actions";
 import { applySkillDraftChange } from "@/lib/skill-copy";
 import { LeadEditFrame } from "@/components/lead-edit";
@@ -23,6 +24,12 @@ export function SkillCopyEditor({
   const [message, setMessage] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  useResetWhenHidden(() => {
+    setDrafts({});
+    setErrors({});
+    setMessage(null);
+    setEditing(false);
+  });
   const dirty = Object.keys(drafts).length > 0;
 
   const shell = (

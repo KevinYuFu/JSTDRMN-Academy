@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { addSkillChild, moveSkillNode, removeSkillNode, reorderSkillNode, saveSkillNode } from "@/app/skill-tree-actions";
+import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -56,7 +57,7 @@ export function SkillTreeEditor({ tree, selectedId }: { tree: SkillNode; selecte
         </ul>
       </section>
       <section>
-        <form action={saveSkillNode} className="card stack request-form">
+        <Form action={saveSkillNode} className="card stack request-form">
           <h2 className="section-label">Edit {selected.card.title}</h2>
           <input type="hidden" name="id" value={selected.id} />
           <div className="field">
@@ -112,10 +113,10 @@ export function SkillTreeEditor({ tree, selectedId }: { tree: SkillNode; selecte
           <p>
             <Link className="pill pill-purple" href={publicHref}>See this on the public page</Link>
           </p>
-        </form>
+        </Form>
 
         {canMove ? (
-          <form action={moveSkillNode} className="card stack request-form">
+          <Form action={moveSkillNode} className="card stack request-form">
             <h2 className="section-label">Move</h2>
             <input type="hidden" name="id" value={selected.id} />
             <div className="field">
@@ -127,10 +128,10 @@ export function SkillTreeEditor({ tree, selectedId }: { tree: SkillNode; selecte
               </select>
             </div>
             <Button type="submit" variant="black">Move</Button>
-          </form>
+          </Form>
         ) : null}
 
-        <form action={addSkillChild} className="card stack request-form">
+        <Form action={addSkillChild} className="card stack request-form">
           <h2 className="section-label">Add a node under {selected.card.title}</h2>
           <input type="hidden" name="id" value={selected.id} />
           <div className="field">
@@ -146,7 +147,7 @@ export function SkillTreeEditor({ tree, selectedId }: { tree: SkillNode; selecte
             <Textarea id="new-blurb" name="blurb" maxLength={500} />
           </div>
           <Button type="submit">Add node</Button>
-        </form>
+        </Form>
 
         {root ? null : (
           <div className="card stack request-form">

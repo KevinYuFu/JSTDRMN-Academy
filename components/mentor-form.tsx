@@ -1,5 +1,6 @@
 import { saveMentor } from "@/app/actions";
 import { unpackMentorList } from "@/lib/mentors";
+import { Form } from "./form";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -23,7 +24,7 @@ type MentorRecord = {
 export function MentorForm({ mentor }: { mentor: MentorRecord | null }) {
   const lines = (stored: string) => unpackMentorList(stored).join("\n");
   return (
-    <form action={saveMentor} className="card stack request-form">
+    <Form action={saveMentor} className="card stack request-form">
       {mentor ? <input type="hidden" name="id" value={mentor.id} /> : null}
       <div className="field">
         <Label htmlFor="mentor-name">Name</Label>
@@ -70,6 +71,6 @@ export function MentorForm({ mentor }: { mentor: MentorRecord | null }) {
         Placeholder (Coming soon, no requests)
       </label>
       <Button type="submit">{mentor ? "Save mentor" : "Add mentor"}</Button>
-    </form>
+    </Form>
   );
 }

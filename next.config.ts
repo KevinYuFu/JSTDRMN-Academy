@@ -15,6 +15,8 @@ export const STATIC_ASSET_HEADER_SOURCE =
   "/((?!_next/static|_next/image|api/).*)\\.(png|jpe?g|gif|webp|avif|svg|ico)";
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
+  partialPrefetching: false,
   serverExternalPackages: ["@prisma/client", "bcryptjs"],
   async headers() {
     return [

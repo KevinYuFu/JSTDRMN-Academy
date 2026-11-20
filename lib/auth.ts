@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "./db";
 import { homeForRole, isLead, isStaff } from "./roles";
+import { SESSION_COOKIE } from "./session-cookie";
 
-const COOKIE = "jstdrmn_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 
 export async function hashPassword(password: string) {
@@ -28,7 +28,7 @@ export async function createSession(userId: string) {
     },
   });
   const jar = await cookies();
-  jar.set(COOKIE, token, {
+  jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -39,11 +39,11 @@ export async function createSession(userId: string) {
 
 export async function destroySession() {
   const jar = await cookies();
-  const token = jar.get(COOKIE)?.value;
+  const token = jar.get(SESSION_COOKIE)?.value;
   if (token) {
     await prisma.session.deleteMany({ where: { token } });
   }
-  jar.delete(COOKIE);
+  jar.delete(SESSION_COOKIE);
 }
 
 /**
@@ -53,7 +53,7 @@ export async function destroySession() {
  */
 export const getUser = cache(async function getUser() {
   const jar = await cookies();
-  const token = jar.get(COOKIE)?.value;
+  const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const session = await prisma.session.findUnique({ where: { token }, include: { user: true } });
   if (!session) return null;

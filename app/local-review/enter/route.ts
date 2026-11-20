@@ -11,8 +11,6 @@ import {
 } from "@/lib/local-review-entry";
 import { LOCAL_LEAD_EMAIL } from "@/scripts/local-review-guard.mjs";
 
-export const dynamic = "force-dynamic";
-
 /** Loopback-only session for the synthetic local Lead. Anywhere else this is a 404. */
 export async function GET(request: Request) {
   const decision = localReviewEntryDecision(localReviewEntryFrom(process.env, request.headers));

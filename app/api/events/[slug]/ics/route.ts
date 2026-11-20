@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { eventIcs, nextOccurrence, resolveJoin } from "@/lib/events";
 
-export const runtime = "nodejs";
-
 export async function GET(_request: Request, context: { params: Promise<{ slug: string }> }) {
   const { slug } = await context.params;
   const event = await prisma.event.findUnique({ where: { slug }, include: { type: true } });

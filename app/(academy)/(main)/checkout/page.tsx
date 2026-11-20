@@ -8,7 +8,7 @@ import { formatCad, stripeLive } from "@/lib/config";
 import { containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function CheckoutPage({
   searchParams,

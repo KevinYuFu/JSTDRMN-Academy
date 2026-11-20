@@ -1,5 +1,6 @@
 import { saveEvent } from "@/app/actions";
 import { formatTorontoInput } from "@/lib/events";
+import { Form } from "./form";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -33,7 +34,7 @@ export function EventForm({
   cohorts: { id: string; name: string; course: string }[];
 }) {
   return (
-    <form action={saveEvent} className="card stack request-form">
+    <Form action={saveEvent} className="card stack request-form">
       {event ? <input type="hidden" name="id" value={event.id} /> : null}
       <div className="field">
         <Label htmlFor="event-title">Title</Label>
@@ -114,6 +115,6 @@ export function EventForm({
         Cancelled
       </label>
       <Button type="submit">{event ? "Save event" : "Add event"}</Button>
-    </form>
+    </Form>
   );
 }

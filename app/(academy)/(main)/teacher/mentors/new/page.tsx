@@ -3,7 +3,7 @@ import { MentorForm } from "@/components/mentor-form";
 import { requireStaff } from "@/lib/auth";
 import { roleLabel } from "@/lib/roles";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function NewMentorPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const staff = await requireStaff();

@@ -304,8 +304,17 @@ async function listenProxy(options) {
   const handler = (req, res) => void onRequest(req, res, options).catch(() => {
     if (!res.headersSent) res.writeHead(404).end();
   });
+  const onUpgrade = (req, socket, head) => {
+    if (!guardRequest(req, options, true).ok) {
+      socket.destroy();
+      return;
+    }
+    proxyUpgrade(req, socket, head, options);
+  };
   const v4 = http.createServer(handler);
   const v6 = http.createServer(handler);
+  v4.on("upgrade", onUpgrade);
+  v6.on("upgrade", onUpgrade);
   await new Promise((resolve, reject) => {
     v4.once("error", reject);
     v4.listen(options.appPort, "127.0.0.1", resolve);
@@ -315,6 +324,49 @@ async function listenProxy(options) {
     v6.listen(options.appPort, "::1", resolve);
   });
   return { v4, v6 };
+}
+
+export function proxyUpgrade(req, socket, head, options) {
+  const upstream = http.request({
+    host: "127.0.0.1",
+    port: options.internalPort,
+    method: req.method,
+    path: req.url,
+    headers: upstreamHeaders(req, options),
+    agent: false,
+  });
+  upstream.on("upgrade", (upRes, upSocket, upHead) => {
+    const lines = [`HTTP/1.1 ${upRes.statusCode ?? 101} ${upRes.statusMessage || "Switching Protocols"}`];
+    for (const [key, value] of Object.entries(upRes.headers)) {
+      if (value == null) continue;
+      for (const item of Array.isArray(value) ? value : [value]) lines.push(`${key}: ${item}`);
+    }
+    socket.write(`${lines.join("\r\n")}\r\n\r\n`);
+    if (upHead?.length) socket.write(upHead);
+    if (head?.length) upSocket.write(head);
+    upSocket.pipe(socket);
+    socket.pipe(upSocket);
+    upSocket.on("error", () => socket.destroy());
+    socket.on("error", () => upSocket.destroy());
+    upSocket.on("close", () => socket.destroy());
+    socket.on("close", () => upSocket.destroy());
+  });
+  upstream.on("response", (up) => {
+    up.resume();
+    socket.destroy();
+  });
+  upstream.on("error", () => socket.destroy());
+  upstream.end();
+}
+
+function upstreamHeaders(req, options) {
+  const headers = { ...req.headers, host: `127.0.0.1:${options.internalPort}` };
+  delete headers["accept-encoding"];
+  delete headers["x-forwarded-host"];
+  delete headers["x-forwarded-for"];
+  delete headers.forwarded;
+  delete headers["x-real-ip"];
+  return headers;
 }
 
 async function onRequest(req, res, options) {
@@ -398,12 +450,7 @@ function isDocument(req) {
 }
 
 async function forward(req, res, options) {
-  const headers = { ...req.headers, host: `127.0.0.1:${options.internalPort}` };
-  delete headers["accept-encoding"];
-  delete headers["x-forwarded-host"];
-  delete headers["x-forwarded-for"];
-  delete headers.forwarded;
-  delete headers["x-real-ip"];
+  const headers = upstreamHeaders(req, options);
   const upstream = http.request(
     {
       host: "127.0.0.1",
@@ -422,7 +469,7 @@ async function forward(req, res, options) {
       const chunks = [];
       up.on("data", (chunk) => chunks.push(chunk));
       up.on("end", () => {
-        const html = Buffer.concat(chunks).toString("utf8").replace(/<body([^>]*)>/i, `<body$1>${banner(options)}`);
+        const html = injectPreviewLabel(Buffer.concat(chunks).toString("utf8"), options);
         const responseHeaders = { ...up.headers };
         delete responseHeaders["content-length"];
         delete responseHeaders["content-encoding"];
@@ -437,11 +484,16 @@ async function forward(req, res, options) {
   req.pipe(upstream);
 }
 
-function banner(options) {
+export function previewLabelScript(options) {
   const label = JSON.stringify(String(options.label));
   const branch = JSON.stringify(String(options.branch));
   const commit = JSON.stringify(String(options.commit).slice(0, 7));
-  return `<script data-local-preview-script>(function(){function place(){if(document.querySelector("[data-local-preview]"))return;var bar=document.createElement("div");bar.setAttribute("data-local-preview","1");bar.textContent="Preview "+${label}+" · "+${branch}+" · "+${commit};bar.style.cssText="position:sticky;top:0;z-index:50;background:#241433;color:#fff2cc;font:14px/1.4 sans-serif;padding:8px 16px;border-bottom:1px solid rgba(255,242,204,.4)";document.body.prepend(bar);}place();new MutationObserver(place).observe(document.documentElement,{childList:true,subtree:true});})();</script>`;
+  return `<script data-local-preview-boot>(function(){var label=${label},branch=${branch},commit=${commit};function place(){if(!document.body||document.getElementById("local-preview-label"))return;var bar=document.createElement("div");bar.id="local-preview-label";bar.setAttribute("data-local-preview","1");bar.textContent="Preview "+label+" · "+branch+" · "+commit;bar.style.cssText="position:sticky;top:0;z-index:50;background:#241433;color:#fff2cc;font:14px/1.4 sans-serif;padding:8px 16px;border-bottom:1px solid rgba(255,242,204,.4)";document.documentElement.insertBefore(bar,document.body);}if(document.readyState==="complete")place();else window.addEventListener("load",place,{once:true});})();</script>`;
+}
+
+export function injectPreviewLabel(html, options) {
+  if (!/<\/head>/i.test(html)) return html;
+  return html.replace(/<\/head>/i, `${previewLabelScript(options)}</head>`);
 }
 
 function sessionCookie(token) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { addLesson } from "@/app/actions";
+import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { roleLabel } from "@/lib/roles";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function EditorPage({
   params,
@@ -62,7 +63,7 @@ export default async function EditorPage({
               </div>
             ))}
           </section>
-          <form action={addLesson} className="card stack" style={{ padding: 18 }}>
+          <Form action={addLesson} className="card stack" style={{ padding: 18 }}>
             <h2 className="section-label">Add a lesson</h2>
             <input type="hidden" name="courseId" value={course.id} />
             {course.access === "cohort" ? (
@@ -118,7 +119,7 @@ export default async function EditorPage({
               </label>
             </div>
             <Button type="submit" className="self-start">Add lesson</Button>
-          </form>
+          </Form>
         </div>
       </main>
     </>

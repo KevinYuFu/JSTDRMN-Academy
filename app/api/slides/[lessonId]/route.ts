@@ -5,8 +5,6 @@ import { asCourseAccess, earlierLessonsComplete, isStaff, lessonAccess } from "@
 import { entitlementRecords } from "@/lib/learn";
 import { buildHandout } from "@/lib/pdf";
 
-export const runtime = "nodejs";
-
 export async function GET(_request: Request, context: { params: Promise<{ lessonId: string }> }) {
   const { lessonId } = await context.params;
   const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, include: { course: true } });

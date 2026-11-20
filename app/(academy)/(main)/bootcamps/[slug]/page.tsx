@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { addCohort } from "@/app/actions";
+import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { prisma } from "@/lib/db";
 import { containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function BootcampPage({
   params,
@@ -80,7 +81,7 @@ export default async function BootcampPage({
           </p>
         ) : null}
         {user && isStaff(user.role) ? (
-          <form action={addCohort} className="card stack" style={{ padding: 18, marginTop: 22, maxWidth: 520 }}>
+          <Form action={addCohort} className="card stack" style={{ padding: 18, marginTop: 22, maxWidth: 520 }}>
             <h2 className="section-label">Add a cohort</h2>
             <input type="hidden" name="courseId" value={course.id} />
             <Label htmlFor="name">Name</Label>
@@ -90,7 +91,7 @@ export default async function BootcampPage({
             <Label htmlFor="startsLabel">When</Label>
             <Input id="startsLabel" name="startsLabel" placeholder="Winter 2027" />
             <Button type="submit" className="self-start">Create cohort</Button>
-          </form>
+          </Form>
         ) : null}
       </main>
     </>

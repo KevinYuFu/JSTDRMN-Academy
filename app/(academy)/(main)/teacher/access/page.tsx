@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { grantAccess, revokeAccess } from "@/app/actions";
+import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { requireStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { roleLabel } from "@/lib/roles";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function AccessPage({ searchParams }: { searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }> }) {
   const staff = await requireStaff();
@@ -45,7 +46,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
         </p>
         {banner ? <div className="banner">{banner}</div> : null}
         {query.error ? <div className="error">Need a valid email and a product.</div> : null}
-        <form action={grantAccess} className="card stack" style={{ padding: 18, maxWidth: 560, marginBottom: 22 }}>
+        <Form action={grantAccess} className="card stack" style={{ padding: 18, maxWidth: 560, marginBottom: 22 }}>
           <Label htmlFor="email">Student email</Label>
           <Input id="email" name="email" type="email" list="students" required placeholder="student@email.com" />
           <datalist id="students">
@@ -60,7 +61,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
             ))}
           </select>
           <Button type="submit" className="self-start">Grant access</Button>
-        </form>
+        </Form>
         <section className="card" style={{ padding: "8px 16px 16px" }}>
           <h2 className="section-label">Active access</h2>
           {entitlements.length === 0 ? <p className="note">Nobody has a seat yet.</p> : null}

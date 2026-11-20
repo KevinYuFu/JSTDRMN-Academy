@@ -5,7 +5,7 @@ import { unpackMentorList } from "@/lib/mentors";
 import { pageCopyKeys, readPageCopy } from "@/lib/page-copy";
 import { canEditPrograms } from "@/lib/program-edit";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function PrivateSessionsPage({
   searchParams,

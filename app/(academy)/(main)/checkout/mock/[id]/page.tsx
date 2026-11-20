@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { formatCad } from "@/lib/config";
 import { prisma } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
+export const instant = false;
 
 export default async function MockCheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
