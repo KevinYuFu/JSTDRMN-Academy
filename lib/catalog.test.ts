@@ -17,7 +17,7 @@ function course(priceCents: number, extra: Partial<OfferCourse> = {}): OfferCour
 }
 
 describe("offerFor", () => {
-  it("uses the row's price, including a change made after the first read", () => {
+  it("uses the price on the course row", () => {
     const row = course(2000);
     assert.equal(offerFor("program", row)?.amountCents, 2000);
     row.priceCents = 4500;

@@ -1,7 +1,8 @@
 /**
  * One Neon row holds the live skill tree.
  * Id is "current". The document is the SkillNode JSON.
- * An empty table is filled from the built-in map, once. Later saves are left alone.
+ * A page read shows the built-in map when the row is missing and does not write.
+ * A save may create the row. Later saves are left as written.
  */
 
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -60,6 +61,11 @@ export async function readSkillTree(db: SkillTreeStore): Promise<SkillNode | nul
   if (!tree) throw new Error("Saved skill tree is invalid.");
   if (isUntouchedPreviousDefault(tree)) return builtinSkillTree();
   return tree;
+}
+
+/** The tree a page shows. A missing row is the built-in map. This never inserts. */
+export async function skillTreeForRead(db: SkillTreeStore): Promise<SkillNode> {
+  return (await readSkillTree(db)) ?? builtinSkillTree();
 }
 
 export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: SkillNode; created: boolean }> {

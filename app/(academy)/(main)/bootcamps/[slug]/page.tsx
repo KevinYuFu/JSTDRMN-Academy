@@ -20,12 +20,21 @@ export async function generateStaticParams() {
   return courses.filter((course) => course.access === "cohort").map((course) => ({ slug: course.slug }));
 }
 
-function CohortShelfFallback({ count }: { count: number }) {
+function CohortShelfFallback({ course }: { course: Bootcamp }) {
   return (
-    <div className="shelf" aria-hidden="true">
-      {Array.from({ length: Math.max(count, 1) }, (_, index) => (
-        <div key={index} className="shelf-card" />
+    <div className="shelf">
+      {course.cohorts.map((cohort) => (
+        <div key={cohort.id} className={`shelf-card panel-${course.panel}`}>
+          <h3>{cohort.name}</h3>
+          <p>{cohort.startsLabel}</p>
+        </div>
       ))}
+      {course.cohorts.length === 0 ? (
+        <div className={`shelf-card panel-${course.panel}`}>
+          <h3>{course.title}</h3>
+          <p>No cohort portal is open yet. Applications stay on the JSTDRMN site.</p>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -138,7 +147,7 @@ export default async function BootcampPage({
       </div>
       <h1 className="page-title" style={{ marginBottom: 8 }}>{course.title}</h1>
       <p className="note" style={{ maxWidth: 640, marginBottom: 18 }}>{course.description}</p>
-      <Suspense fallback={<CohortShelfFallback count={course.cohorts.length} />}>
+      <Suspense fallback={<CohortShelfFallback course={course} />}>
         <BootcampLive course={course} searchParams={searchParams} />
       </Suspense>
     </main>

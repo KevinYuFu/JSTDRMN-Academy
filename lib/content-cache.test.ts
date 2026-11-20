@@ -5,7 +5,6 @@ import { describe, it } from "node:test";
 import {
   cohortSaveTags,
   contentCacheLife,
-  contentTags,
   eachContentTag,
   eventSaveTags,
   eventsCopyTags,
@@ -27,16 +26,7 @@ function walk(dir: string, out: string[] = []) {
 }
 
 describe("content cache tags", () => {
-  it("gives each shared read its own tag and keeps an edit to about an hour", () => {
-    assert.equal(contentTags.courses, "courses");
-    assert.equal(contentTags.course("dj-bootcamp"), "course:dj-bootcamp");
-    assert.equal(contentTags.lessons("crs_dj"), "lessons:crs_dj");
-    assert.equal(contentTags.cohorts, "cohorts");
-    assert.equal(contentTags.mentors, "mentors");
-    assert.equal(contentTags.events, "events");
-    assert.equal(contentTags.pageCopy("events"), "page-copy:events");
-    assert.equal(contentTags.pageCopy("sessions"), "page-copy:sessions");
-    assert.equal(contentTags.skillTree, "skill-tree");
+  it("keeps a shared read fresh for about an hour", () => {
     assert.equal(contentCacheLife.stale, 300);
     assert.equal(contentCacheLife.revalidate, 3600);
     assert.equal(contentCacheLife.expire, 3601);

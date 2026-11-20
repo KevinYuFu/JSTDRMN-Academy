@@ -3,7 +3,7 @@ import type { Cohort, Course, Lesson } from "@prisma/client";
 import { prisma } from "./db";
 import { pageCopyKeys, readPageCopy, type PageCopy, type PageCopyKey } from "./page-copy";
 import type { SkillNode } from "./skill-tree";
-import { ensureSkillTree, readSkillTree, skillTreeClient, writeSkillTree } from "./skill-tree-store";
+import { ensureSkillTree, skillTreeClient, skillTreeForRead, writeSkillTree } from "./skill-tree-store";
 import { contentCacheLife, contentTags, eachContentTag } from "./content-tags";
 
 type CourseWithCohorts = Course & { cohorts: Cohort[] };
@@ -13,23 +13,16 @@ export function refreshContent(tags: readonly string[]) {
   eachContentTag(tags, updateTag);
 }
 
-/** Misses expire quickly so the first row can be written outside this cache. */
-export async function readCachedSkillTree(): Promise<SkillNode | null> {
+/** A missing row is the built-in map. This cache never writes it. */
+async function readCachedSkillTree(): Promise<SkillNode> {
   "use cache";
   cacheTag(contentTags.skillTree);
-  const tree = await readSkillTree(skillTreeClient(prisma));
-  if (!tree) {
-    cacheLife({ stale: 0, revalidate: 1, expire: 2 });
-    return null;
-  }
   cacheLife(contentCacheLife);
-  return tree;
+  return skillTreeForRead(skillTreeClient(prisma));
 }
 
 export async function loadSkillTree() {
-  const stored = await readCachedSkillTree();
-  if (stored) return stored;
-  return (await ensureSkillTree(skillTreeClient(prisma))).tree;
+  return readCachedSkillTree();
 }
 
 /** The row a save will rewrite. Never the cached copy. */

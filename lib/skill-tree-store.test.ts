@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyNodePatch, draftFromNode, parseSkillTree } from "./skill-tree-edit";
 import { findNode, skillTree } from "./skill-tree";
-import { ensureSkillTree, readSkillTree, writeSkillTree, type SkillTreeStore } from "./skill-tree-store";
+import { ensureSkillTree, readSkillTree, skillTreeForRead, writeSkillTree, type SkillTreeStore } from "./skill-tree-store";
 import previousDefault from "./skill-tree-previous-default.json";
 
 function memoryStore() {
@@ -47,16 +47,12 @@ describe("skill tree storage", () => {
     assert.equal(db.creates(), 0);
   });
 
-  it("ensureSkillTree writes the built-in map once when the store is empty", async () => {
+  it("shows the built-in map when the row is missing and does not create it", async () => {
     const db = memoryStore();
-    const first = await ensureSkillTree(db.store);
-    assert.equal(first.tree.card.title, skillTree.card.title);
-    assert.equal(first.created, true);
-    assert.equal(db.creates(), 1);
-    const second = await ensureSkillTree(db.store);
-    assert.equal(second.tree.card.title, first.tree.card.title);
-    assert.equal(second.created, false);
-    assert.equal(db.creates(), 1);
+    const tree = await skillTreeForRead(db.store);
+    assert.equal(tree.card.title, skillTree.card.title);
+    assert.equal(db.creates(), 0);
+    assert.equal(db.row(), null);
   });
 
   it("copies the built-in map once when the row is missing", async () => {
