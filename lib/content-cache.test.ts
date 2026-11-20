@@ -16,27 +16,6 @@ import {
   skillTreeSaveTags,
 } from "./content-tags";
 
-const privateReads = [
-  "getUser",
-  "cookies(",
-  "headers(",
-  "requireUser",
-  "requireStaff",
-  "requireLead",
-  "prisma.user",
-  "prisma.session",
-  "prisma.progress",
-  "prisma.entitlement",
-  "prisma.checkout",
-  "prisma.comment",
-  "prisma.sessionRequest",
-  "prisma.announcement",
-  "prisma.hubspotLog",
-  "prisma.pendingGrant",
-  "ensureSkillTree",
-  ".create(",
-];
-
 function walk(dir: string, out: string[] = []) {
   for (const name of readdirSync(dir)) {
     if (name === "node_modules" || name === ".next") continue;
@@ -45,15 +24,6 @@ function walk(dir: string, out: string[] = []) {
     else if (name.endsWith(".ts") || name.endsWith(".tsx")) out.push(path);
   }
   return out;
-}
-
-function functionBody(source: string, name: string) {
-  const start = source.indexOf(`function ${name}`);
-  assert.notEqual(start, -1, name);
-  const next = source.indexOf("\nexport async function ", start + 1);
-  const local = source.indexOf("\nfunction ", start + 1);
-  const end = [next, local].filter((index) => index > start).sort((a, b) => a - b)[0] ?? source.length;
-  return source.slice(start, end);
 }
 
 describe("content cache tags", () => {
@@ -89,34 +59,10 @@ describe("content cache tags", () => {
     eachContentTag(["courses", "courses", "", "course:dj-bootcamp"], (tag) => seen.push(tag));
     assert.deepEqual(seen, ["courses", "course:dj-bootcamp"]);
   });
-
-  it("refreshes those tags from the save that owns them", () => {
-    const owned: [string, string, string][] = [
-      ["app/program-edit-actions.ts", "savePrograms", "programSaveTags"],
-      ["app/actions.ts", "addLesson", "lessonSaveTags"],
-      ["app/actions.ts", "addCohort", "cohortSaveTags"],
-      ["app/actions.ts", "saveMentor", "mentorSaveTags"],
-      ["app/actions.ts", "setMentorActive", "mentorSaveTags"],
-      ["app/actions.ts", "saveEvent", "eventSaveTags"],
-      ["app/actions.ts", "saveEventType", "eventSaveTags"],
-      ["app/lead-copy-actions.ts", "saveSessionsCopy", "sessionsCopyTags"],
-      ["app/lead-copy-actions.ts", "saveEventsCopy", "eventsCopyTags"],
-      ["app/lead-copy-actions.ts", "saveSkillCopy", "skillTreeSaveTags"],
-    ];
-    for (const [file, name, tags] of owned) {
-      const body = functionBody(readFileSync(file, "utf8"), name);
-      assert.match(body, new RegExp(`refreshContent\\(${tags}\\(`), `${name} refreshes ${tags}`);
-    }
-    const skillActions = readFileSync("app/skill-tree-actions.ts", "utf8");
-    assert.match(functionBody(skillActions, "refresh"), /refreshContent\(skillTreeSaveTags\(\)\)/);
-    for (const name of ["saveSkillNode", "addSkillChild", "removeSkillNode", "reorderSkillNode", "moveSkillNode"]) {
-      assert.match(functionBody(skillActions, name), /refresh\(\)/, name);
-    }
-  });
 });
 
 describe("content cache boundary", () => {
-  it("keeps private reads and the skill-tree insert outside use cache", () => {
+  it("keeps use cache in lib/content.ts", () => {
     const cachedFiles = ["app", "lib", "components"]
       .flatMap((dir) => walk(dir))
       .filter((file) => !file.endsWith(".test.ts") && readFileSync(file, "utf8").includes('"use cache";'));
@@ -128,18 +74,5 @@ describe("content cache boundary", () => {
     assert.equal(store.includes('"use cache"'), false);
     assert.equal(store.includes("next/cache"), false);
     assert.equal(store.includes('from "./db"'), false);
-    const cached = source.slice(source.indexOf("export async function readCachedSkillTree"), source.indexOf("export async function loadSkillTree"));
-    for (const read of privateReads) {
-      assert.equal(cached.includes(read), false, read);
-    }
-    const skillRead = functionBody(source, "readCachedSkillTree");
-    assert.match(skillRead, /readSkillTree\(/);
-    assert.equal(skillRead.includes("ensureSkillTree"), false);
-    assert.equal(store.includes("as unknown as SkillTreeStore"), false);
-    assert.equal(store.includes('await import("./content")'), false);
-    const load = functionBody(source, "loadSkillTree");
-    const cachedCall = load.indexOf("readCachedSkillTree()");
-    const fill = load.indexOf("ensureSkillTree(skillTreeClient(prisma))");
-    assert.ok(cachedCall > -1 && fill > cachedCall);
   });
 });

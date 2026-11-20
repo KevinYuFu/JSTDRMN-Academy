@@ -1,4 +1,5 @@
 import { prices } from "./config";
+import { prisma } from "./db";
 import type { CourseAccess, Product } from "./entitlements";
 
 export type Offer = {
@@ -12,7 +13,7 @@ export type Offer = {
   href: string;
 };
 
-type OfferCourse = {
+export type OfferCourse = {
   id: string;
   slug: string;
   title: string;
@@ -22,26 +23,9 @@ type OfferCourse = {
   billing: string;
 };
 
-export type OfferCourses = {
-  findFirst(args: { where: { access: "headliner" }; orderBy: { sort: "asc" } }): Promise<OfferCourse | null>;
-  findUnique(args: { where: { slug: string } }): Promise<OfferCourse | null>;
-};
-
-async function courseTable(): Promise<OfferCourses> {
-  const { prisma } = await import("./db");
-  return {
-    findFirst: (args) => prisma.course.findFirst(args),
-    findUnique: (args) => prisma.course.findUnique(args),
-  };
-}
-
-/** Checkout reads the program row. Headliner is the only price that still comes from the environment. */
-export async function resolveOffer(product: string, slug: string, courses?: OfferCourses): Promise<Offer | null> {
-  const table = courses ?? (await courseTable());
-  const asked = product === "course" || product === "ash" ? "program" : product;
-  if (asked === "headliner" || slug === "headliner") {
-    const course = await table.findFirst({ where: { access: "headliner" }, orderBy: { sort: "asc" } });
-    if (!course) return null;
+/** The price and label for a course row checkout already loaded. */
+export function offerFor(asked: string, course: OfferCourse): Offer | null {
+  if (asked === "headliner") {
     return {
       product: "headliner",
       courseId: course.id,
@@ -53,9 +37,7 @@ export async function resolveOffer(product: string, slug: string, courses?: Offe
       href: "/headliner",
     };
   }
-  if (asked !== "program" || !slug) return null;
-  const course = await table.findUnique({ where: { slug } });
-  if (!course) return null;
+  if (asked !== "program") return null;
   if (course.access !== "purchase" && course.access !== "subscription") return null;
   if (course.billing !== "once" && course.billing !== "monthly") return null;
   return {
@@ -68,4 +50,18 @@ export async function resolveOffer(product: string, slug: string, courses?: Offe
     access: course.access,
     href: `/programs/${course.slug}`,
   };
+}
+
+/** Checkout reads the program row. Headliner is the only price that still comes from the environment. */
+export async function resolveOffer(product: string, slug: string): Promise<Offer | null> {
+  const asked = product === "course" || product === "ash" ? "program" : product;
+  if (asked === "headliner" || slug === "headliner") {
+    const course = await prisma.course.findFirst({ where: { access: "headliner" }, orderBy: { sort: "asc" } });
+    if (!course) return null;
+    return offerFor("headliner", course);
+  }
+  if (asked !== "program" || !slug) return null;
+  const course = await prisma.course.findUnique({ where: { slug } });
+  if (!course) return null;
+  return offerFor(asked, course);
 }

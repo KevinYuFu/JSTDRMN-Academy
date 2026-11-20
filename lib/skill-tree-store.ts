@@ -77,11 +77,6 @@ export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: Skill
   return { tree, created: true };
 }
 
-/** The row a save will rewrite. Reads the store it is given, never a cache. */
-export async function loadSkillTreeForWrite(db: SkillTreeStore) {
-  return (await ensureSkillTree(db)).tree;
-}
-
 export async function writeSkillTree(tree: SkillNode, db: SkillTreeStore) {
   const parsed = parseSkillTree(tree);
   if (!parsed) throw new Error("Skill tree is invalid.");
