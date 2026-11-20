@@ -49,6 +49,10 @@ describe("cache components", () => {
     const events = readFileSync("app/(academy)/(main)/events/page.tsx", "utf8");
     const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
     assert.match(events, /new Date\(\)/);
+    const bootcamp = readFileSync("app/(academy)/(main)/bootcamps/[slug]/page.tsx", "utf8");
+    const shelf = bootcamp.slice(bootcamp.indexOf("function CohortShelfFallback"), bootcamp.indexOf("function CohortCard"));
+    assert.match(bootcamp, /Apply for a seat/);
+    assert.equal(shelf.includes("Apply"), false);
     assert.match(home, /headers\(\)/);
     assert.match(home, /localReviewEntryDecision/);
     assert.equal(home.includes("use cache"), false);
