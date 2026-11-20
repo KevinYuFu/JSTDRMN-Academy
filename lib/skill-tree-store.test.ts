@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyNodePatch, draftFromNode, parseSkillTree } from "./skill-tree-edit";
 import { findNode, skillTree } from "./skill-tree";
-import { ensureSkillTree, loadSkillTree, readSkillTree, saveSkillTree, type SkillTreeStore } from "./skill-tree-store";
+import { loadSkillTree } from "./content";
+import { ensureSkillTree, readSkillTree, saveSkillTree, type SkillTreeStore } from "./skill-tree-store";
 import previousDefault from "./skill-tree-previous-default.json";
 
 function memoryStore() {

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireLead } from "@/lib/auth";
-import { refreshContent } from "@/lib/content";
+import { loadSkillTree, refreshContent, saveSkillTree } from "@/lib/content";
 import { skillTreeSaveTags } from "@/lib/content-tags";
 import {
   addChildNode,
@@ -15,7 +15,6 @@ import {
   type NodeDraft,
 } from "@/lib/skill-tree-edit";
 import { findNode } from "@/lib/skill-tree";
-import { loadSkillTree, saveSkillTree } from "@/lib/skill-tree-store";
 
 const DRAFT_KEYS = ["cardTitle", "crumb", "pageTitle", "cardSub", "mapSub", "blurb", "hint", "slug", "shortcut"] as const;
 

@@ -120,25 +120,26 @@ describe("content cache boundary", () => {
     const cachedFiles = ["app", "lib", "components"]
       .flatMap((dir) => walk(dir))
       .filter((file) => !file.endsWith(".test.ts") && readFileSync(file, "utf8").includes('"use cache";'));
-    assert.deepEqual(cachedFiles.sort(), ["lib/content.ts", "lib/skill-tree-store.ts"]);
+    assert.deepEqual(cachedFiles, ["lib/content.ts"]);
     const source = readFileSync("lib/content.ts", "utf8");
     const store = readFileSync("lib/skill-tree-store.ts", "utf8");
     assert.equal(source.includes("use cache: remote"), false);
-    assert.equal(store.includes("use cache: remote"), false);
     assert.equal(source.includes("use cache: private"), false);
-    assert.equal(store.includes("use cache: private"), false);
-    const cached = store.slice(store.indexOf("export async function readCachedSkillTree"));
+    assert.equal(store.includes('"use cache"'), false);
+    assert.equal(store.includes("next/cache"), false);
+    assert.equal(store.includes('from "./db"'), false);
+    const cached = source.slice(source.indexOf("export async function readCachedSkillTree"), source.indexOf("export async function loadSkillTree"));
     for (const read of privateReads) {
       assert.equal(cached.includes(read), false, read);
     }
-    const skillRead = functionBody(store, "readCachedSkillTree");
+    const skillRead = functionBody(source, "readCachedSkillTree");
     assert.match(skillRead, /readSkillTree\(/);
     assert.equal(skillRead.includes("ensureSkillTree"), false);
     assert.equal(store.includes("as unknown as SkillTreeStore"), false);
     assert.equal(store.includes('await import("./content")'), false);
-    const load = functionBody(store, "loadSkillTree");
+    const load = functionBody(source, "loadSkillTree");
     const cachedCall = load.indexOf("readCachedSkillTree()");
-    const fill = load.indexOf("ensureSkillTree(database())");
+    const fill = load.indexOf("ensureSkillTree(skillTreeClient(prisma))");
     assert.ok(cachedCall > -1 && fill > cachedCall);
   });
 });

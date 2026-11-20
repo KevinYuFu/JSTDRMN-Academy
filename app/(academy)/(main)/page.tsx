@@ -7,12 +7,11 @@ import { LearnIntro } from "@/components/academy-home/learn";
 import home from "@/components/academy-home/home.module.css";
 import { SubscriptionSection } from "@/components/academy-home/subscription";
 import { WelcomeHero } from "@/components/academy-home/welcome";
-import { listCourses } from "@/lib/content";
+import { listCourses, loadSkillTree } from "@/lib/content";
 import { prices } from "@/lib/config";
 import { getUser } from "@/lib/auth";
 import { homePathPreview } from "@/lib/home-path";
 import { localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
-import { loadSkillTree } from "@/lib/skill-tree-store";
 
 export const metadata = {
   title: "JSTDRMN Academy",

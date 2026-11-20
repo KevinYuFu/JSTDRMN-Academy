@@ -5,7 +5,7 @@ import { SkillCopyEditor } from "@/components/skill-tree/copy";
 import { getUser } from "@/lib/auth";
 import { canEditPrograms } from "@/lib/program-edit";
 import { skillTreeNav, skillTreeParams, stackFromSlug, type SkillNode } from "@/lib/skill-tree";
-import { loadSkillTree } from "@/lib/skill-tree-store";
+import { loadSkillTree } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: `${skillTreeNav.label} · JSTDRMN Academy`,

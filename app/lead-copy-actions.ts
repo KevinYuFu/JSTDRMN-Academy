@@ -2,14 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth";
-import { refreshContent } from "@/lib/content";
+import { loadSkillTree, refreshContent, saveSkillTree } from "@/lib/content";
 import { eventsCopyTags, sessionsCopyTags, skillTreeSaveTags } from "@/lib/content-tags";
 import { prisma } from "@/lib/db";
 import { commitEventCopy } from "@/lib/event-copy";
 import { commitMentorCopy } from "@/lib/mentor-copy";
 import { commitPageCopy, pageCopyKeys, type PageCopyKey } from "@/lib/page-copy";
 import { commitSkillCopy } from "@/lib/skill-copy";
-import { loadSkillTree, saveSkillTree } from "@/lib/skill-tree-store";
 
 async function writePageCopy(page: PageCopyKey, value: string) {
   await prisma.meta.upsert({

@@ -4,10 +4,7 @@
  * An empty table is filled from the built-in map, once. Later saves are left alone.
  */
 
-import { cacheLife, cacheTag } from "next/cache";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { prisma } from "./db";
-import { contentCacheLife, contentTags } from "./content-tags";
 import { builtinSkillTree, parseSkillTree } from "./skill-tree-edit";
 import type { SkillNode } from "./skill-tree";
 import previousDefault from "./skill-tree-previous-default.json";
@@ -80,35 +77,10 @@ export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: Skill
   return { tree, created: true };
 }
 
-function database(): SkillTreeStore {
-  return skillTreeClient(prisma);
-}
-
-export async function loadSkillTree(db?: SkillTreeStore) {
-  if (db) return (await ensureSkillTree(db)).tree;
-  const stored = await readCachedSkillTree();
-  if (stored) return stored;
-  return (await ensureSkillTree(database())).tree;
-}
-
-/** Misses expire quickly so the first row can be written outside this cache. */
-export async function readCachedSkillTree(): Promise<SkillNode | null> {
-  "use cache";
-  cacheTag(contentTags.skillTree);
-  const tree = await readSkillTree(database());
-  if (!tree) {
-    cacheLife({ stale: 0, revalidate: 1, expire: 2 });
-    return null;
-  }
-  cacheLife(contentCacheLife);
-  return tree;
-}
-
-export async function saveSkillTree(tree: SkillNode, db?: SkillTreeStore) {
+export async function saveSkillTree(tree: SkillNode, db: SkillTreeStore) {
   const parsed = parseSkillTree(tree);
   if (!parsed) throw new Error("Skill tree is invalid.");
-  const client = db ?? database();
-  await client.skillTree.upsert({
+  await db.skillTree.upsert({
     where: { id: SKILL_TREE_ROW_ID },
     create: { id: SKILL_TREE_ROW_ID, document: plainDocument(parsed) },
     update: { document: plainDocument(parsed) },
