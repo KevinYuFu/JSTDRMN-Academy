@@ -67,8 +67,9 @@ describe("content cache tags", () => {
     assert.equal(contentTags.pageCopy("events"), "page-copy:events");
     assert.equal(contentTags.pageCopy("sessions"), "page-copy:sessions");
     assert.equal(contentTags.skillTree, "skill-tree");
-    assert.equal(contentCacheLife.revalidate, 3_599);
-    assert.equal(contentCacheLife.expire, 3_600);
+    assert.equal(contentCacheLife.stale, 300);
+    assert.equal(contentCacheLife.revalidate, 3600);
+    assert.equal(contentCacheLife.expire, 3601);
     assert.ok(contentCacheLife.expire > contentCacheLife.revalidate);
   });
 
@@ -119,20 +120,25 @@ describe("content cache boundary", () => {
     const cachedFiles = ["app", "lib", "components"]
       .flatMap((dir) => walk(dir))
       .filter((file) => !file.endsWith(".test.ts") && readFileSync(file, "utf8").includes('"use cache";'));
-    assert.deepEqual(cachedFiles, ["lib/content.ts"]);
+    assert.deepEqual(cachedFiles.sort(), ["lib/content.ts", "lib/skill-tree-store.ts"]);
     const source = readFileSync("lib/content.ts", "utf8");
+    const store = readFileSync("lib/skill-tree-store.ts", "utf8");
     assert.equal(source.includes("use cache: remote"), false);
+    assert.equal(store.includes("use cache: remote"), false);
     assert.equal(source.includes("use cache: private"), false);
-    const cached = source.slice(source.indexOf("export async function readCachedSkillTree"));
+    assert.equal(store.includes("use cache: private"), false);
+    const cached = store.slice(store.indexOf("export async function readCachedSkillTree"));
     for (const read of privateReads) {
       assert.equal(cached.includes(read), false, read);
     }
-    const skillRead = functionBody(source, "readCachedSkillTree");
+    const skillRead = functionBody(store, "readCachedSkillTree");
     assert.match(skillRead, /readSkillTree\(/);
     assert.equal(skillRead.includes("ensureSkillTree"), false);
-    const load = functionBody(readFileSync("lib/skill-tree-store.ts", "utf8"), "loadSkillTree");
+    assert.equal(store.includes("as unknown as SkillTreeStore"), false);
+    assert.equal(store.includes('await import("./content")'), false);
+    const load = functionBody(store, "loadSkillTree");
     const cachedCall = load.indexOf("readCachedSkillTree()");
-    const fill = load.indexOf("ensureSkillTree(await database())");
+    const fill = load.indexOf("ensureSkillTree(database())");
     assert.ok(cachedCall > -1 && fill > cachedCall);
   });
 });

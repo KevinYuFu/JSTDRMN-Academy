@@ -14,8 +14,11 @@ export const contentTags = {
   pageCopy: (page: "events" | "sessions") => `page-copy:${page}`,
 } as const;
 
-/** About an hour. expire must be longer than revalidate, so the hard ceiling is one hour. */
-export const contentCacheLife = { stale: 300, revalidate: 3_599, expire: 3_600 };
+/**
+ * stale 300 lets the browser show content up to 5 minutes old.
+ * revalidate and expire are about an hour. expire has to be longer than revalidate.
+ */
+export const contentCacheLife = { stale: 300, revalidate: 3600, expire: 3601 };
 
 export function programSaveTags(slugs: readonly string[]) {
   return [contentTags.courses, ...slugs.map((slug) => contentTags.course(slug))];

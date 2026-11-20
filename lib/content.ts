@@ -2,8 +2,6 @@ import { cacheLife, cacheTag, updateTag } from "next/cache";
 import type { Cohort, Course, Lesson } from "@prisma/client";
 import { prisma } from "./db";
 import { pageCopyKeys, readPageCopy, type PageCopy, type PageCopyKey } from "./page-copy";
-import { readSkillTree, type SkillTreeStore } from "./skill-tree-store";
-import type { SkillNode } from "./skill-tree";
 import { contentCacheLife, contentTags, eachContentTag } from "./content-tags";
 
 type CourseWithCohorts = Course & { cohorts: Cohort[] };
@@ -11,19 +9,6 @@ type CatalogCourse = CourseWithCohorts & { lessons: Lesson[] };
 
 export function refreshContent(tags: readonly string[]) {
   eachContentTag(tags, updateTag);
-}
-
-/** Misses expire quickly so the first row can be written outside this cache. */
-export async function readCachedSkillTree(): Promise<SkillNode | null> {
-  "use cache";
-  cacheTag(contentTags.skillTree);
-  const tree = await readSkillTree(prisma as unknown as SkillTreeStore);
-  if (!tree) {
-    cacheLife({ stale: 0, revalidate: 1, expire: 2 });
-    return null;
-  }
-  cacheLife(contentCacheLife);
-  return tree;
 }
 
 export async function listCourses(): Promise<Course[]> {

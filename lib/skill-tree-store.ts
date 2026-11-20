@@ -4,6 +4,10 @@
  * An empty table is filled from the built-in map, once. Later saves are left alone.
  */
 
+import { cacheLife, cacheTag } from "next/cache";
+import type { Prisma, PrismaClient } from "@prisma/client";
+import { prisma } from "./db";
+import { contentCacheLife, contentTags } from "./content-tags";
 import { builtinSkillTree, parseSkillTree } from "./skill-tree-edit";
 import type { SkillNode } from "./skill-tree";
 import previousDefault from "./skill-tree-previous-default.json";
@@ -13,21 +17,31 @@ export const SKILL_TREE_ROW_ID = "current";
 export type SkillTreeStore = {
   skillTree: {
     findUnique(args: { where: { id: string } }): Promise<{ document: unknown } | null>;
-    create(args: { data: { id: string; document: unknown } }): Promise<unknown>;
+    create(args: { data: { id: string; document: Prisma.InputJsonValue } }): Promise<unknown>;
     upsert(args: {
       where: { id: string };
-      create: { id: string; document: unknown };
-      update: { document: unknown };
+      create: { id: string; document: Prisma.InputJsonValue };
+      update: { document: Prisma.InputJsonValue };
     }): Promise<unknown>;
   };
 };
+
+export function skillTreeClient(client: Pick<PrismaClient, "skillTree">): SkillTreeStore {
+  return {
+    skillTree: {
+      findUnique: (args) => client.skillTree.findUnique({ where: args.where }),
+      create: (args) => client.skillTree.create({ data: args.data }),
+      upsert: (args) => client.skillTree.upsert({ where: args.where, create: args.create, update: args.update }),
+    },
+  };
+}
 
 function isUniqueConflict(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: unknown }).code === "P2002";
 }
 
-function plainDocument(tree: SkillNode): unknown {
-  return JSON.parse(JSON.stringify(tree)) as unknown;
+function plainDocument(tree: SkillNode): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(tree)) as Prisma.InputJsonValue;
 }
 
 /**
@@ -66,23 +80,34 @@ export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: Skill
   return { tree, created: true };
 }
 
-async function database(): Promise<SkillTreeStore> {
-  const { prisma } = await import("./db");
-  return prisma as unknown as SkillTreeStore;
+function database(): SkillTreeStore {
+  return skillTreeClient(prisma);
 }
 
 export async function loadSkillTree(db?: SkillTreeStore) {
   if (db) return (await ensureSkillTree(db)).tree;
-  const { readCachedSkillTree } = await import("./content");
   const stored = await readCachedSkillTree();
   if (stored) return stored;
-  return (await ensureSkillTree(await database())).tree;
+  return (await ensureSkillTree(database())).tree;
+}
+
+/** Misses expire quickly so the first row can be written outside this cache. */
+export async function readCachedSkillTree(): Promise<SkillNode | null> {
+  "use cache";
+  cacheTag(contentTags.skillTree);
+  const tree = await readSkillTree(database());
+  if (!tree) {
+    cacheLife({ stale: 0, revalidate: 1, expire: 2 });
+    return null;
+  }
+  cacheLife(contentCacheLife);
+  return tree;
 }
 
 export async function saveSkillTree(tree: SkillNode, db?: SkillTreeStore) {
   const parsed = parseSkillTree(tree);
   if (!parsed) throw new Error("Skill tree is invalid.");
-  const client = db ?? (await database());
+  const client = db ?? database();
   await client.skillTree.upsert({
     where: { id: SKILL_TREE_ROW_ID },
     create: { id: SKILL_TREE_ROW_ID, document: plainDocument(parsed) },

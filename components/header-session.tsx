@@ -18,6 +18,11 @@ function PublicAuth() {
   );
 }
 
+/**
+ * Neutral slot. No login links, avatar, or staff item.
+ * On a wide screen it holds the width of Log in / Sign up, so the nav stays put for a guest.
+ * On a phone it is hidden: the closed bar is only the logo and the menu button.
+ */
 export function HeaderSessionFallback() {
   return (
     <>

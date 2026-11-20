@@ -12,6 +12,13 @@ import { programGroups } from "@/lib/program-labels";
 
 const guestSubscribeHref = "/signup?next=/checkout?product=headliner";
 
+function listingPrograms(programs: Course[]) {
+  return {
+    banner: programs.find((program) => program.placement === "banner") ?? null,
+    cards: programs.filter((program) => program.placement === "grid" && program.access !== "request"),
+  };
+}
+
 function ProgramsBody({
   programs,
   lead,
@@ -21,8 +28,7 @@ function ProgramsBody({
   lead: boolean;
   subscribeHref: string;
 }) {
-  const banner = programs.find((program) => program.placement === "banner");
-  const cards = programs.filter((program) => program.placement === "grid" && program.access !== "request");
+  const { banner, cards } = listingPrograms(programs);
   const headlinerPrice = formatCad(prices.headlinerMonthlyCents, "month");
   return (
     <>
@@ -77,10 +83,8 @@ function ProgramsBody({
 
 async function ProgramsForViewer({ programs }: { programs: Course[] }) {
   const user = await getUser();
-  const editItems = listingEditItems(
-    programs.find((program) => program.placement === "banner") ?? null,
-    programs.filter((program) => program.placement === "grid" && program.access !== "request"),
-  );
+  const { banner, cards } = listingPrograms(programs);
+  const editItems = listingEditItems(banner, cards);
   const lead = canEditPrograms(user?.role) && editItems.length > 0;
   const subscribeHref = user ? "/checkout?product=headliner" : guestSubscribeHref;
   const body = <ProgramsBody programs={programs} lead={lead} subscribeHref={subscribeHref} />;
