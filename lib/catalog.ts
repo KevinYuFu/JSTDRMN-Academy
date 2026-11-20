@@ -1,3 +1,4 @@
+import type { Course } from "@prisma/client";
 import { prices } from "./config";
 import { prisma } from "./db";
 import type { CourseAccess, Product } from "./entitlements";
@@ -13,18 +14,10 @@ export type Offer = {
   href: string;
 };
 
-export type OfferCourse = {
-  id: string;
-  slug: string;
-  title: string;
-  presenter: string | null;
-  priceCents: number | null;
-  access: string;
-  billing: string;
-};
+export type OfferCourse = Pick<Course, "id" | "slug" | "title" | "presenter" | "priceCents" | "access" | "billing">;
 
 /** The price and label for a course row checkout already loaded. */
-export function offerFor(asked: string, course: OfferCourse): Offer | null {
+export function offerFor(asked: "headliner" | "program", course: OfferCourse): Offer | null {
   if (asked === "headliner") {
     return {
       product: "headliner",
@@ -37,7 +30,6 @@ export function offerFor(asked: string, course: OfferCourse): Offer | null {
       href: "/headliner",
     };
   }
-  if (asked !== "program") return null;
   if (course.access !== "purchase" && course.access !== "subscription") return null;
   if (course.billing !== "once" && course.billing !== "monthly") return null;
   return {

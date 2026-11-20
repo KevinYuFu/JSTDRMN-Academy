@@ -30,26 +30,14 @@ const eslintConfig = defineConfig([
   ]),
   { files: ["**/*.cjs"], rules: { "@typescript-eslint/no-require-imports": "off" } },
   {
-    files: ["app/actions.ts", "app/*-actions.ts", "lib/catalog.ts"],
+    files: ["app/actions.ts", "app/*-actions.ts", "lib/catalog.ts", "app/api/**/route.ts", "lib/billing.ts"],
     rules: {
       "no-restricted-imports": ["error", {
-        paths: [
-          {
-            name: "@/lib/content",
-            importNames: cachedContentReaders,
-            message: cachedContentReaderMessage,
-          },
-          {
-            name: "./content",
-            importNames: cachedContentReaders,
-            message: cachedContentReaderMessage,
-          },
-          {
-            name: "../content",
-            importNames: cachedContentReaders,
-            message: cachedContentReaderMessage,
-          },
-        ],
+        patterns: [{
+          group: ["@/lib/content", "**/lib/content", "./content"],
+          importNames: cachedContentReaders,
+          message: cachedContentReaderMessage,
+        }],
       }],
     },
   },
