@@ -3,7 +3,7 @@ import type { Cohort, Course, Lesson } from "@prisma/client";
 import { prisma } from "./db";
 import { pageCopyKeys, readPageCopy, type PageCopy, type PageCopyKey } from "./page-copy";
 import type { SkillNode } from "./skill-tree";
-import { ensureSkillTree, readSkillTree, saveSkillTree as writeSkillTree, skillTreeClient, type SkillTreeStore } from "./skill-tree-store";
+import { ensureSkillTree, readSkillTree, writeSkillTree, skillTreeClient } from "./skill-tree-store";
 import { contentCacheLife, contentTags, eachContentTag } from "./content-tags";
 
 type CourseWithCohorts = Course & { cohorts: Cohort[] };
@@ -26,8 +26,7 @@ export async function readCachedSkillTree(): Promise<SkillNode | null> {
   return tree;
 }
 
-export async function loadSkillTree(db?: SkillTreeStore) {
-  if (db) return (await ensureSkillTree(db)).tree;
+export async function loadSkillTree() {
   const stored = await readCachedSkillTree();
   if (stored) return stored;
   return (await ensureSkillTree(skillTreeClient(prisma))).tree;

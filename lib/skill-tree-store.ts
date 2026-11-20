@@ -77,7 +77,7 @@ export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: Skill
   return { tree, created: true };
 }
 
-export async function saveSkillTree(tree: SkillNode, db: SkillTreeStore) {
+export async function writeSkillTree(tree: SkillNode, db: SkillTreeStore) {
   const parsed = parseSkillTree(tree);
   if (!parsed) throw new Error("Skill tree is invalid.");
   await db.skillTree.upsert({

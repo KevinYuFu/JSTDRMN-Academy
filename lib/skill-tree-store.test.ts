@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyNodePatch, draftFromNode, parseSkillTree } from "./skill-tree-edit";
 import { findNode, skillTree } from "./skill-tree";
-import { loadSkillTree } from "./content";
-import { ensureSkillTree, readSkillTree, saveSkillTree, type SkillTreeStore } from "./skill-tree-store";
+import { ensureSkillTree, readSkillTree, writeSkillTree, type SkillTreeStore } from "./skill-tree-store";
 import previousDefault from "./skill-tree-previous-default.json";
 
 function memoryStore() {
@@ -48,13 +47,15 @@ describe("skill tree storage", () => {
     assert.equal(db.creates(), 0);
   });
 
-  it("loadSkillTree writes the built-in map once when the passed store is empty", async () => {
+  it("ensureSkillTree writes the built-in map once when the store is empty", async () => {
     const db = memoryStore();
-    const first = await loadSkillTree(db.store);
-    assert.equal(first.card.title, skillTree.card.title);
+    const first = await ensureSkillTree(db.store);
+    assert.equal(first.tree.card.title, skillTree.card.title);
+    assert.equal(first.created, true);
     assert.equal(db.creates(), 1);
-    const second = await loadSkillTree(db.store);
-    assert.equal(second.card.title, first.card.title);
+    const second = await ensureSkillTree(db.store);
+    assert.equal(second.tree.card.title, first.tree.card.title);
+    assert.equal(second.created, false);
     assert.equal(db.creates(), 1);
   });
 
@@ -78,7 +79,7 @@ describe("skill tree storage", () => {
     const edited = applyNodePatch(skillTree, "mashup", draft);
     assert.equal(edited.ok, true);
     if (!edited.ok) return;
-    await saveSkillTree(edited.tree, db.store);
+    await writeSkillTree(edited.tree, db.store);
     const loaded = await ensureSkillTree(db.store);
     assert.equal(loaded.created, false);
     assert.equal(findNode("mashup", loaded.tree)?.card.title, "Mashup lab");
@@ -121,7 +122,7 @@ describe("skill tree storage", () => {
     assert.deepEqual(db.row()?.document, { bad: true });
     const broken = structuredClone(skillTree);
     broken.id = "other";
-    await assert.rejects(() => saveSkillTree(broken, db.store), /invalid/);
+    await assert.rejects(() => writeSkillTree(broken, db.store), /invalid/);
     assert.deepEqual(db.row()?.document, { bad: true });
   });
 
