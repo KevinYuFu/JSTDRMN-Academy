@@ -13,6 +13,13 @@ function walk(dir: string, out: string[] = []) {
   return out;
 }
 
+const readyMadePages = new Set([
+  "app/(academy)/(main)/programs/page.tsx",
+  "app/(academy)/(main)/programs/[slug]/page.tsx",
+  "app/(academy)/(main)/events/page.tsx",
+  "app/(academy)/(main)/private-sessions/page.tsx",
+]);
+
 describe("cache components", () => {
   it("opts in without caching data or the old dynamic segment config", () => {
     assert.equal(nextConfig.cacheComponents, true);
@@ -27,9 +34,7 @@ describe("cache components", () => {
       assert.equal(text.includes("export const runtime"), false, file);
       assert.equal(text.includes("use cache"), false, file);
       if (file.endsWith("/page.tsx") && file !== "app/mentor-drafts/page.tsx") {
-        const ready =
-          file.endsWith("/programs/page.tsx") || file.endsWith("/programs/[slug]/page.tsx");
-        if (ready) assert.equal(text.includes("export const instant = false"), false, file);
+        if (readyMadePages.has(file)) assert.equal(text.includes("export const instant = false"), false, file);
         else assert.match(text, /export const instant = false/, file);
       }
     }
