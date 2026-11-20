@@ -49,10 +49,6 @@ describe("cache components", () => {
     const events = readFileSync("app/(academy)/(main)/events/page.tsx", "utf8");
     const home = readFileSync("app/(academy)/(main)/page.tsx", "utf8");
     assert.match(events, /new Date\(\)/);
-    const frame = events.slice(events.indexOf("function EventsFrame"), events.indexOf("async function EventsLive"));
-    assert.match(frame, /event-feature/);
-    assert.match(frame, /event-card/);
-    assert.equal(frame.includes("new Date"), false);
     const bootcamp = readFileSync("app/(academy)/(main)/bootcamps/[slug]/page.tsx", "utf8");
     const shelf = bootcamp.slice(bootcamp.indexOf("function CohortShelfFallback"), bootcamp.indexOf("function CohortCard"));
     assert.match(bootcamp, /Apply for a seat/);

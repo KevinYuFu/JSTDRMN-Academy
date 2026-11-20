@@ -16,11 +16,6 @@ function EventsFrame({ copy }: { copy: PageCopy }) {
         <h1>{copy.title}</h1>
         <p>{copy.lede}</p>
       </section>
-      <article className="event-feature event-placeholder" aria-hidden="true" />
-      <div className="event-grid">
-        <article className="event-card event-placeholder" aria-hidden="true" />
-        <article className="event-card event-placeholder" aria-hidden="true" />
-      </div>
     </main>
   );
 }
