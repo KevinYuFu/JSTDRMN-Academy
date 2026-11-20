@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth";
+import { refreshContent } from "@/lib/content";
+import { programSaveTags } from "@/lib/content-tags";
 import { prisma } from "@/lib/db";
 import {
   persistProgramEdits,
@@ -48,5 +50,6 @@ export async function savePrograms(input: ProgramEditSubmission) {
     input,
     store,
     revalidate: (path) => revalidatePath(path),
+    invalidate: (slugs) => refreshContent(programSaveTags(slugs)),
   });
 }

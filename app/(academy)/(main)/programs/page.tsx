@@ -2,8 +2,8 @@ import Link from "next/link";
 import { savePrograms } from "@/app/program-edit-actions";
 import { EditableProgramText, ProgramEditor } from "@/components/program-editor";
 import { ProgramGroup } from "@/components/program-groups";
+import { listCourses } from "@/lib/content";
 import { formatCad, prices } from "@/lib/config";
-import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { canEditPrograms, listingEditItems } from "@/lib/program-edit";
 import { programGroups } from "@/lib/program-labels";
@@ -12,7 +12,7 @@ export const instant = false;
 
 export default async function ProgramsPage() {
   const [programs, user] = await Promise.all([
-    prisma.course.findMany({ orderBy: { sort: "asc" } }),
+    listCourses(),
     getUser(),
   ]);
   const banner = programs.find((program) => program.placement === "banner");

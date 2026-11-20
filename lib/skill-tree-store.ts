@@ -41,24 +41,26 @@ function isUntouchedPreviousDefault(tree: SkillNode) {
   return JSON.stringify(tree) === JSON.stringify(previous);
 }
 
-export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: SkillNode; created: boolean }> {
+/** Read only. A missing row is null. This never inserts. */
+export async function readSkillTree(db: SkillTreeStore): Promise<SkillNode | null> {
   const row = await db.skillTree.findUnique({ where: { id: SKILL_TREE_ROW_ID } });
-  if (row) {
-    const tree = parseSkillTree(row.document);
-    if (!tree) throw new Error("Saved skill tree is invalid.");
-    if (isUntouchedPreviousDefault(tree)) return { tree: builtinSkillTree(), created: false };
-    return { tree, created: false };
-  }
+  if (!row) return null;
+  const tree = parseSkillTree(row.document);
+  if (!tree) throw new Error("Saved skill tree is invalid.");
+  if (isUntouchedPreviousDefault(tree)) return builtinSkillTree();
+  return tree;
+}
+
+export async function ensureSkillTree(db: SkillTreeStore): Promise<{ tree: SkillNode; created: boolean }> {
+  const existing = await readSkillTree(db);
+  if (existing) return { tree: existing, created: false };
   const tree = builtinSkillTree();
   try {
     await db.skillTree.create({ data: { id: SKILL_TREE_ROW_ID, document: plainDocument(tree) } });
   } catch (error) {
     if (!isUniqueConflict(error)) throw error;
-    const again = await db.skillTree.findUnique({ where: { id: SKILL_TREE_ROW_ID } });
-    if (!again) throw error;
-    const saved = parseSkillTree(again.document);
-    if (!saved) throw new Error("Saved skill tree is invalid.");
-    if (isUntouchedPreviousDefault(saved)) return { tree: builtinSkillTree(), created: false };
+    const saved = await readSkillTree(db);
+    if (!saved) throw error;
     return { tree: saved, created: false };
   }
   return { tree, created: true };
@@ -70,8 +72,11 @@ async function database(): Promise<SkillTreeStore> {
 }
 
 export async function loadSkillTree(db?: SkillTreeStore) {
-  const client = db ?? (await database());
-  return (await ensureSkillTree(client)).tree;
+  if (db) return (await ensureSkillTree(db)).tree;
+  const { readCachedSkillTree } = await import("./content");
+  const stored = await readCachedSkillTree();
+  if (stored) return stored;
+  return (await ensureSkillTree(await database())).tree;
 }
 
 export async function saveSkillTree(tree: SkillNode, db?: SkillTreeStore) {

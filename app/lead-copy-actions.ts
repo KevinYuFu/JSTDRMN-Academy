@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/auth";
+import { refreshContent } from "@/lib/content";
+import { eventsCopyTags, sessionsCopyTags, skillTreeSaveTags } from "@/lib/content-tags";
 import { prisma } from "@/lib/db";
 import { commitEventCopy } from "@/lib/event-copy";
 import { commitMentorCopy } from "@/lib/mentor-copy";
@@ -50,6 +52,7 @@ export async function saveSessionsCopy(input: { copy?: unknown; mentors?: unknow
   if (mentors.writes.length > 0) {
     await prisma.$transaction(mentors.writes.map((write) => prisma.mentor.update({ where: { id: write.id }, data: write.data })));
   }
+  refreshContent(sessionsCopyTags());
   revalidatePath("/private-sessions");
   return { ok: true as const };
 }
@@ -72,6 +75,7 @@ export async function saveEventsCopy(input: { copy?: unknown; events?: unknown }
   if (events.writes.length > 0) {
     await prisma.$transaction(events.writes.map((write) => prisma.event.update({ where: { id: write.id }, data: write.data })));
   }
+  refreshContent(eventsCopyTags());
   revalidatePath("/events");
   return { ok: true as const };
 }
@@ -82,6 +86,7 @@ export async function saveSkillCopy(patches: unknown) {
   const result = commitSkillCopy({ role: user?.role ?? null, tree, patches });
   if (!result.ok) return result;
   await saveSkillTree(result.tree);
+  refreshContent(skillTreeSaveTags());
   revalidatePath("/skill-tree", "layout");
   return { ok: true as const };
 }

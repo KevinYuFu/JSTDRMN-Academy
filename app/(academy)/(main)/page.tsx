@@ -6,8 +6,8 @@ import { LearnIntro } from "@/components/academy-home/learn";
 import home from "@/components/academy-home/home.module.css";
 import { SubscriptionSection } from "@/components/academy-home/subscription";
 import { WelcomeHero } from "@/components/academy-home/welcome";
+import { listCourses } from "@/lib/content";
 import { prices } from "@/lib/config";
-import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { homePathPreview } from "@/lib/home-path";
 import { localReviewEntryDecision, localReviewEntryFrom } from "@/lib/local-review-entry";
@@ -26,7 +26,7 @@ export default async function HomePage({
   searchParams: Promise<{ entered?: string }>;
 }) {
   const [programs, user, tree, query, headerList] = await Promise.all([
-    prisma.course.findMany({ orderBy: { sort: "asc" } }),
+    listCourses(),
     getUser(),
     loadSkillTree(),
     searchParams,

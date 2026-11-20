@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { loadCourseCatalog } from "@/lib/content";
 import { programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff } from "@/lib/entitlements";
@@ -10,10 +11,7 @@ export const instant = false;
 export default async function DashboardPage() {
   const user = await requireUser();
   const [courses, records, progress] = await Promise.all([
-    prisma.course.findMany({
-      orderBy: { sort: "asc" },
-      include: { cohorts: { orderBy: { sort: "asc" } }, lessons: true },
-    }),
+    loadCourseCatalog(),
     entitlementRecords(user.id),
     prisma.progress.findMany({ where: { userId: user.id } }),
   ]);

@@ -3,8 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { savePrograms } from "@/app/program-edit-actions";
 import { EditableProgramText, ProgramEditor } from "@/components/program-editor";
 import { VideoUnavailable } from "@/components/video-unavailable";
+import { courseBySlug, lessonsForCourse } from "@/lib/content";
 import { hubspotApplyUrl } from "@/lib/config";
-import { prisma } from "@/lib/db";
 import { getUser } from "@/lib/auth";
 import { isStaff } from "@/lib/entitlements";
 import { canEditPrograms, detailEditItem } from "@/lib/program-edit";
@@ -20,16 +20,8 @@ export default async function ProgramPage({
   searchParams: Promise<{ unlocked?: string }>;
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const [program, user] = await Promise.all([
-    prisma.course.findUnique({
-      where: { slug },
-      include: {
-        cohorts: { orderBy: { sort: "asc" } },
-        lessons: { select: { id: true } },
-      },
-    }),
-    getUser(),
-  ]);
+  const [program, user] = await Promise.all([courseBySlug(slug), getUser()]);
+  const lessons = program ? await lessonsForCourse(program.id) : [];
   if (!program || program.placement !== "grid") {
     if (program?.access === "headliner" || program?.placement === "banner") redirect("/headliner");
     if (program?.access === "request") redirect("/private-sessions");
@@ -44,7 +36,7 @@ export default async function ProgramPage({
     ? `/checkout?product=program&slug=${program.slug}`
     : `/signup?next=${encodeURIComponent(`/checkout?product=program&slug=${program.slug}`)}`;
   const applyHref = hubspotApplyUrl(program.hubspotUrl);
-  const hasLessons = program.lessons.length > 0;
+  const hasLessons = lessons.length > 0;
   const lead = canEditPrograms(user?.role);
   const article = (
     <article className="program-detail">

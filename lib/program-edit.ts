@@ -105,7 +105,7 @@ export type ProgramEditResponse =
   | { ok: false; message: string; fieldErrors: Record<string, string> };
 
 export type CommitResult =
-  | { ok: true; paths: string[] }
+  | { ok: true; paths: string[]; slugs: string[] }
   | { ok: false; message: string; fieldErrors: Record<string, string> };
 
 export type ProgramEditStore = {
@@ -373,7 +373,8 @@ export async function commitProgramEdits(args: {
   if (changed.length > 0) {
     await args.store.updateMany(changed.map(({ id, data }) => ({ id, data })));
   }
-  return { ok: true, paths: pathsForSavedPrograms(changed.map((write) => write.row)) };
+  const changedRows = changed.map((write) => write.row);
+  return { ok: true, paths: pathsForSavedPrograms(changedRows), slugs: changedRows.map((row) => row.slug) };
 }
 
 export async function persistProgramEdits(args: {
@@ -381,10 +382,12 @@ export async function persistProgramEdits(args: {
   input: unknown;
   store: ProgramEditStore;
   revalidate?: (path: string) => void;
+  invalidate?: (slugs: string[]) => void;
 }): Promise<ProgramEditResponse> {
   const result = await commitProgramEdits(args);
   if (!result.ok) return result;
   for (const path of result.paths) args.revalidate?.(path);
+  if (result.slugs.length > 0) args.invalidate?.(result.slugs);
   return { ok: true };
 }
 

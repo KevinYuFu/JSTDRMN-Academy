@@ -1,5 +1,5 @@
+import { courseBySlug, listCourses } from "./content";
 import { prices } from "./config";
-import { prisma } from "./db";
 import type { CourseAccess, Product } from "./entitlements";
 
 export type Offer = {
@@ -17,7 +17,7 @@ export type Offer = {
 export async function resolveOffer(product: string, slug: string): Promise<Offer | null> {
   const asked = product === "course" || product === "ash" ? "program" : product;
   if (asked === "headliner" || slug === "headliner") {
-    const course = await prisma.course.findFirst({ where: { access: "headliner" }, orderBy: { sort: "asc" } });
+    const course = (await listCourses()).find((item) => item.access === "headliner");
     if (!course) return null;
     return {
       product: "headliner",
@@ -31,7 +31,7 @@ export async function resolveOffer(product: string, slug: string): Promise<Offer
     };
   }
   if (asked !== "program" || !slug) return null;
-  const course = await prisma.course.findUnique({ where: { slug } });
+  const course = await courseBySlug(slug);
   if (!course) return null;
   if (course.access !== "purchase" && course.access !== "subscription") return null;
   if (course.billing !== "once" && course.billing !== "monthly") return null;

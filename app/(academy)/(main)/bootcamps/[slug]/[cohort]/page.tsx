@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CourseView } from "@/components/course-view";
+import { courseBySlug } from "@/lib/content";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { openCourse } from "@/lib/learn";
 
 export const instant = false;
@@ -15,7 +15,7 @@ export default async function CohortPage({
 }) {
   const { slug, cohort } = await params;
   const query = await searchParams;
-  const course = await prisma.course.findUnique({ where: { slug } });
+  const course = await courseBySlug(slug);
   if (!course) notFound();
   const user = await getUser();
   const data = await openCourse({ user, courseSlug: slug, cohortSlug: cohort, lessonId: query.lesson });

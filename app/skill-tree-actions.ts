@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireLead } from "@/lib/auth";
+import { refreshContent } from "@/lib/content";
+import { skillTreeSaveTags } from "@/lib/content-tags";
 import {
   addChildNode,
   applyNodePatch,
@@ -18,6 +20,7 @@ import { loadSkillTree, saveSkillTree } from "@/lib/skill-tree-store";
 const DRAFT_KEYS = ["cardTitle", "crumb", "pageTitle", "cardSub", "mapSub", "blurb", "hint", "slug", "shortcut"] as const;
 
 function refresh() {
+  refreshContent(skillTreeSaveTags());
   revalidatePath("/skill-tree", "layout");
   revalidatePath("/teacher/skill-tree");
   revalidatePath("/teacher");

@@ -1,8 +1,7 @@
 import { SessionsBoard } from "@/components/sessions-editor";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { listActiveMentors, listCourses, loadPageCopy } from "@/lib/content";
 import { unpackMentorList } from "@/lib/mentors";
-import { pageCopyKeys, readPageCopy } from "@/lib/page-copy";
 import { canEditPrograms } from "@/lib/program-edit";
 
 export const instant = false;
@@ -13,13 +12,13 @@ export default async function PrivateSessionsPage({
   searchParams: Promise<{ sent?: string; error?: string; mentor?: string }>;
 }) {
   const query = await searchParams;
-  const [mentors, course, user, storedCopy] = await Promise.all([
-    prisma.mentor.findMany({ where: { active: true }, orderBy: { sort: "asc" } }),
-    prisma.course.findFirst({ where: { billing: "request" } }),
+  const [mentors, courses, user, copy] = await Promise.all([
+    listActiveMentors(),
+    listCourses(),
     getUser(),
-    prisma.meta.findUnique({ where: { key: pageCopyKeys.sessions } }),
+    loadPageCopy("sessions"),
   ]);
-  const copy = readPageCopy("sessions", storedCopy?.value);
+  const course = courses.find((item) => item.billing === "request");
 
   return (
     <>

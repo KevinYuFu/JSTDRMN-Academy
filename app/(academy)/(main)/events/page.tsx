@@ -1,9 +1,8 @@
 import { EventsBoard } from "@/components/events-editor";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { courseBySlug, listEvents, loadPageCopy } from "@/lib/content";
 import { audienceLabel, canSeeEvent, formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
 import { entitlementRecords } from "@/lib/learn";
-import { pageCopyKeys, readPageCopy } from "@/lib/page-copy";
 import { canEditPrograms } from "@/lib/program-edit";
 
 export const instant = false;
@@ -11,17 +10,12 @@ export const instant = false;
 export default async function EventsPage({ searchParams }: { searchParams: Promise<{ discord?: string }> }) {
   const query = await searchParams;
   const now = new Date();
-  const [rows, user, production, storedCopy] = await Promise.all([
-    prisma.event.findMany({
-      where: { active: true, cancelled: false },
-      include: { type: true, cohort: true },
-      orderBy: { startsAt: "asc" },
-    }),
+  const [rows, user, production, copy] = await Promise.all([
+    listEvents(),
     getUser(),
-    prisma.course.findUnique({ where: { slug: "production-bootcamp" }, select: { id: true } }),
-    prisma.meta.findUnique({ where: { key: pageCopyKeys.events } }),
+    courseBySlug("production-bootcamp"),
+    loadPageCopy("events"),
   ]);
-  const copy = readPageCopy("events", storedCopy?.value);
   const entitlements = user ? await entitlementRecords(user.id) : [];
   const producerCourseIds = production ? [production.id] : [];
   const upcoming = rows

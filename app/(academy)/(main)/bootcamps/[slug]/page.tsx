@@ -5,9 +5,9 @@ import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { courseBySlug } from "@/lib/content";
 import { getUser } from "@/lib/auth";
 import { hubspotApplyUrl } from "@/lib/config";
-import { prisma } from "@/lib/db";
 import { containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
@@ -22,10 +22,7 @@ export default async function BootcampPage({
 }) {
   const { slug } = await params;
   const query = await searchParams;
-  const course = await prisma.course.findUnique({
-    where: { slug },
-    include: { cohorts: { orderBy: { sort: "asc" } } },
-  });
+  const course = await courseBySlug(slug);
   if (!course || course.access !== "cohort") redirect("/dashboard");
   const user = await getUser();
   const records = user ? await entitlementRecords(user.id) : [];
