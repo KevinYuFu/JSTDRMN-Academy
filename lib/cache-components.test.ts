@@ -27,7 +27,10 @@ describe("cache components", () => {
       assert.equal(text.includes("export const runtime"), false, file);
       assert.equal(text.includes("use cache"), false, file);
       if (file.endsWith("/page.tsx") && file !== "app/mentor-drafts/page.tsx") {
-        assert.match(text, /export const instant = false/, file);
+        const ready =
+          file.endsWith("/programs/page.tsx") || file.endsWith("/programs/[slug]/page.tsx");
+        if (ready) assert.equal(text.includes("export const instant = false"), false, file);
+        else assert.match(text, /export const instant = false/, file);
       }
     }
   });

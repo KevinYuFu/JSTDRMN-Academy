@@ -3,48 +3,34 @@ import { getUser } from "@/lib/auth";
 import { academyNav } from "@/lib/nav";
 import { HeaderNav } from "./header-nav";
 import { UserMenu } from "./user-menu";
-import styles from "./header-session.module.css";
 
-function PublicAuth() {
+/** Logged-out header. This is the prerendered frame, and the fallback while the session streams. */
+export function HeaderSessionFallback() {
   return (
-    <div className="public-auth">
-      <Link href="/login" className="pill pill-black">
-        Log in
-      </Link>
-      <Link href="/signup" className="pill pill-purple">
-        Sign up
-      </Link>
+    <div className="header-menu" id="academy-menu">
+      <HeaderNav links={academyNav(null)} />
+      <div className="public-auth">
+        <Link href="/login" className="pill pill-black">
+          Log in
+        </Link>
+        <Link href="/signup" className="pill pill-purple">
+          Sign up
+        </Link>
+      </div>
     </div>
   );
 }
 
-/**
- * Neutral slot. No login links, avatar, or staff item.
- * On a wide screen it holds the width of Log in / Sign up, so the nav stays put for a guest.
- * On a phone it is hidden: the closed bar is only the logo and the menu button.
- */
-export function HeaderSessionFallback() {
-  return (
-    <>
-      <div className="header-menu" id="academy-menu">
-        <HeaderNav links={academyNav(null)} />
-      </div>
-      <span className={styles.slot} aria-hidden="true">
-        <span className={styles.mark} />
-      </span>
-    </>
-  );
-}
-
+/** User menu and staff links. Guests render the same frame as the fallback. */
 export async function HeaderSession() {
   const user = await getUser();
+  if (!user) return <HeaderSessionFallback />;
   return (
     <>
       <div className="header-menu" id="academy-menu">
-        <HeaderNav links={academyNav(user?.role ?? null)} />
-        {user ? null : <PublicAuth />}
+        <HeaderNav links={academyNav(user.role)} />
       </div>
-      {user ? <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} /> : null}
+      <UserMenu name={user.name} initial={user.name.slice(0, 1).toUpperCase()} />
     </>
   );
 }
