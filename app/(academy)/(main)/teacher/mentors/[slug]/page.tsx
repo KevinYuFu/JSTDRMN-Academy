@@ -1,11 +1,35 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MentorForm } from "@/components/mentor-form";
 import { requireStaff } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { listMentors, mentorBySlug } from "@/lib/content";
 import { roleLabel } from "@/lib/roles";
 
-export const instant = false;
+type MentorRow = NonNullable<Awaited<ReturnType<typeof mentorBySlug>>>;
+
+function EditMentorBody({ mentor, role, error }: { mentor: MentorRow; role: string | null; error: boolean }) {
+  return (
+    <main className="shell">
+      <div className="crumbs">
+        <Link href="/teacher">{role ? roleLabel(role) : "Dashboard"}</Link> › <b>{mentor.name}</b>
+      </div>
+      <h1 className="page-title" style={{ marginBottom: 12 }}>{mentor.name}</h1>
+      {error ? <div className="error">Name, role line, and bio are required. Photo URL, if you add one, starts with http.</div> : null}
+      <MentorForm mentor={mentor} />
+    </main>
+  );
+}
+
+async function EditMentorLive({ mentor, searchParams }: { mentor: MentorRow; searchParams: Promise<{ error?: string }> }) {
+  const [staff, query] = await Promise.all([requireStaff(), searchParams]);
+  return <EditMentorBody mentor={mentor} role={staff.role} error={Boolean(query.error)} />;
+}
+
+export async function generateStaticParams() {
+  const mentors = await listMentors();
+  return mentors.map((mentor) => ({ slug: mentor.slug }));
+}
 
 export default async function EditMentorPage({
   params,
@@ -14,21 +38,12 @@ export default async function EditMentorPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const staff = await requireStaff();
   const { slug } = await params;
-  const query = await searchParams;
-  const mentor = await prisma.mentor.findUnique({ where: { slug } });
+  const mentor = await mentorBySlug(slug);
   if (!mentor) notFound();
   return (
-    <>
-      <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>{mentor.name}</b>
-        </div>
-        <h1 className="page-title" style={{ marginBottom: 12 }}>{mentor.name}</h1>
-        {query.error ? <div className="error">Name, role line, and bio are required. Photo URL, if you add one, starts with http.</div> : null}
-        <MentorForm mentor={mentor} />
-      </main>
-    </>
+    <Suspense fallback={<EditMentorBody mentor={mentor} role={null} error={false} />}>
+      <EditMentorLive mentor={mentor} searchParams={searchParams} />
+    </Suspense>
   );
 }

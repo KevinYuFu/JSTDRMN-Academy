@@ -11,6 +11,7 @@ export const contentTags = {
   skillTree: "skill-tree",
   course: (slug: string) => `course:${slug}`,
   lessons: (courseId: string) => `lessons:${courseId}`,
+  tracks: (courseId: string) => `tracks:${courseId}`,
   pageCopy: (page: "events" | "sessions") => `page-copy:${page}`,
 } as const;
 

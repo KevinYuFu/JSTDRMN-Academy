@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { loadCourseCatalog } from "@/lib/content";
@@ -6,12 +7,18 @@ import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
-export const instant = false;
+function DashboardFrame() {
+  return (
+    <main className="shell">
+      <h1 className="page-title" style={{ marginBottom: 6 }}>My Courses</h1>
+      <p className="note" style={{ marginBottom: 18 }}>This shelf is only what your account can open.</p>
+    </main>
+  );
+}
 
-export default async function DashboardPage() {
+async function DashboardLive({ courses }: { courses: Awaited<ReturnType<typeof loadCourseCatalog>> }) {
   const user = await requireUser();
-  const [courses, records, progress] = await Promise.all([
-    loadCourseCatalog(),
+  const [records, progress] = await Promise.all([
     entitlementRecords(user.id),
     prisma.progress.findMany({ where: { userId: user.id } }),
   ]);
@@ -95,48 +102,55 @@ export default async function DashboardPage() {
   const locked = cards.filter((card) => !card.allowed);
 
   return (
-    <>
-      <main className="shell">
-        <h1 className="page-title" style={{ marginBottom: 6 }}>My Courses</h1>
-        <p className="note" style={{ marginBottom: 18 }}>
-          {user.name.split(" ")[0]}, this shelf is only what your account can open.
-        </p>
-        <div className="card" style={{ padding: "14px 16px", marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div>
-            <b>Discord</b>
-            <div className="note">{user.discordId ? `Linked${user.discordUsername ? ` as ${user.discordUsername}` : ""}` : "Not linked"}</div>
-          </div>
-          {user.discordId ? null : <a className="pill pill-purple" href="/api/discord/connect?next=/dashboard">Connect Discord</a>}
+    <main className="shell">
+      <h1 className="page-title" style={{ marginBottom: 6 }}>My Courses</h1>
+      <p className="note" style={{ marginBottom: 18 }}>
+        {user.name.split(" ")[0]}, this shelf is only what your account can open.
+      </p>
+      <div className="card" style={{ padding: "14px 16px", marginBottom: 18, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div>
+          <b>Discord</b>
+          <div className="note">{user.discordId ? `Linked${user.discordUsername ? ` as ${user.discordUsername}` : ""}` : "Not linked"}</div>
         </div>
-        <h2 className="section-label">Yours</h2>
-        {mine.length === 0 ? (
-          <div className="card" style={{ padding: 18, marginBottom: 22 }}>
-            <p>Nothing unlocked yet. Headliner, a single course, or a bootcamp cohort will show up here after you subscribe, buy, or get accepted.</p>
-          </div>
-        ) : (
-          <div className="shelf" style={{ marginBottom: 28 }}>
-            {mine.map((card) => (
-              <Link key={card.key} href={card.href} className={`shelf-card panel-${card.panel}`}>
-                <div className="kicker">{card.kicker}</div>
-                <h3>{card.title}</h3>
-                <p>{card.body}</p>
-                <p style={{ marginTop: 8 }}>{card.meta}</p>
-              </Link>
-            ))}
-          </div>
-        )}
-        <h2 className="section-label">Locked</h2>
-        <div className="shelf">
-          {locked.map((card) => (
-            <Link key={card.key} href={card.href} className="shelf-card panel-purple">
+        {user.discordId ? null : <a className="pill pill-purple" href="/api/discord/connect?next=/dashboard">Connect Discord</a>}
+      </div>
+      <h2 className="section-label">Yours</h2>
+      {mine.length === 0 ? (
+        <div className="card" style={{ padding: 18, marginBottom: 22 }}>
+          <p>Nothing unlocked yet. Headliner, a single course, or a bootcamp cohort will show up here after you subscribe, buy, or get accepted.</p>
+        </div>
+      ) : (
+        <div className="shelf" style={{ marginBottom: 28 }}>
+          {mine.map((card) => (
+            <Link key={card.key} href={card.href} className={`shelf-card panel-${card.panel}`}>
               <div className="kicker">{card.kicker}</div>
               <h3>{card.title}</h3>
               <p>{card.body}</p>
-              <p style={{ marginTop: 8, color: "#fff2cc" }}>{card.meta} · view upsell</p>
+              <p style={{ marginTop: 8 }}>{card.meta}</p>
             </Link>
           ))}
         </div>
-      </main>
-    </>
+      )}
+      <h2 className="section-label">Locked</h2>
+      <div className="shelf">
+        {locked.map((card) => (
+          <Link key={card.key} href={card.href} className="shelf-card panel-purple">
+            <div className="kicker">{card.kicker}</div>
+            <h3>{card.title}</h3>
+            <p>{card.body}</p>
+            <p style={{ marginTop: 8, color: "#fff2cc" }}>{card.meta} · view upsell</p>
+          </Link>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+export default async function DashboardPage() {
+  const courses = await loadCourseCatalog();
+  return (
+    <Suspense fallback={<DashboardFrame />}>
+      <DashboardLive courses={courses} />
+    </Suspense>
   );
 }

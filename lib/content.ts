@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag, updateTag } from "next/cache";
-import type { Cohort, Course, Lesson } from "@prisma/client";
+import type { Cohort, Course, Lesson, Track } from "@prisma/client";
 import { prisma } from "./db";
 import { pageCopyKeys, readPageCopy, type PageCopy, type PageCopyKey } from "./page-copy";
 import type { SkillNode } from "./skill-tree";
@@ -68,7 +68,29 @@ export async function listActiveMentors() {
   return prisma.mentor.findMany({ where: { active: true }, orderBy: { sort: "asc" } });
 }
 
-/** Public board. Inactive and cancelled rows stay on the teacher pages. */
+/** Every mentor card, including hidden ones. The public roster uses listActiveMentors. */
+export async function listMentors() {
+  "use cache";
+  cacheTag(contentTags.mentors);
+  cacheLife(contentCacheLife);
+  return prisma.mentor.findMany({ orderBy: { sort: "asc" } });
+}
+
+export async function mentorBySlug(slug: string) {
+  "use cache";
+  cacheTag(contentTags.mentors);
+  cacheLife(contentCacheLife);
+  return prisma.mentor.findUnique({ where: { slug } });
+}
+
+export async function tracksForCourse(courseId: string): Promise<Track[]> {
+  "use cache";
+  cacheTag(contentTags.tracks(courseId));
+  cacheLife(contentCacheLife);
+  return prisma.track.findMany({ where: { courseId }, orderBy: { position: "asc" } });
+}
+
+/** Public board. Inactive and cancelled rows stay on listManagedEvents. */
 export async function listEvents() {
   "use cache";
   cacheTag(contentTags.events);
@@ -78,6 +100,31 @@ export async function listEvents() {
     include: { type: true, cohort: true },
     orderBy: { startsAt: "asc" },
   });
+}
+
+/** Staff schedule, including inactive and cancelled rows. */
+export async function listManagedEvents() {
+  "use cache";
+  cacheTag(contentTags.events);
+  cacheLife(contentCacheLife);
+  return prisma.event.findMany({
+    include: { type: true, cohort: true },
+    orderBy: { startsAt: "asc" },
+  });
+}
+
+export async function listEventTypes() {
+  "use cache";
+  cacheTag(contentTags.events);
+  cacheLife(contentCacheLife);
+  return prisma.eventType.findMany({ orderBy: { sort: "asc" } });
+}
+
+export async function eventBySlug(slug: string) {
+  "use cache";
+  cacheTag(contentTags.events);
+  cacheLife(contentCacheLife);
+  return prisma.event.findUnique({ where: { slug } });
 }
 
 export async function loadPageCopy(page: PageCopyKey): Promise<PageCopy> {
@@ -106,4 +153,14 @@ export async function loadCourseCatalog(): Promise<CatalogCourse[]> {
     cohorts: cohortsByCourse.get(course.id) ?? [],
     lessons: lessons[index] ?? [],
   }));
+}
+
+/** Cohorts in sort order, with the course row the staff tables and event form need. */
+export async function loadCohortsWithCourses() {
+  const [cohorts, courses] = await Promise.all([listCohorts(), listCourses()]);
+  const byId = new Map(courses.map((course) => [course.id, course]));
+  return cohorts.flatMap((cohort) => {
+    const course = byId.get(cohort.courseId);
+    return course ? [{ ...cohort, course }] : [];
+  });
 }
