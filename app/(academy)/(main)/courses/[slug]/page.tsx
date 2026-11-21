@@ -6,6 +6,7 @@ import { openCourse } from "@/lib/learn";
 
 export const instant = false;
 
+// Prerendering the known slugs is what lets a missing one return 404.
 export async function generateStaticParams() {
   const courses = await listCourses();
   const params = courses

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { toEntitlementRecords } from "@/lib/entitlements";
-import { isStudent, singleStudentCohortHref, studentStaffRedirect } from "@/lib/route-entry";
+import { singleStudentCohortHref, staffRecordPath, studentStaffRedirect } from "@/lib/route-entry";
+import { isStudent } from "@/lib/roles";
 import { requestNeedsLogin, SESSION_COOKIE } from "@/lib/session-cookie";
 
 function needsLogin(pathname: string) {
@@ -21,22 +22,44 @@ function bootcampSlug(pathname: string) {
 }
 
 /**
- * Next removes its own prefetch headers before the proxy runs, so a Next
- * prefetch cannot be told apart from a navigation. A browser speculative
- * prefetch still sends Purpose or Sec-Purpose, and that one does not need a 307.
+ * Next 16.4.6 deletes flight headers, including next-router-prefetch, before
+ * the proxy sees the request (server/web/adapter.js). Purpose and Sec-Purpose
+ * are not in that list, so only a browser speculative prefetch skips the read.
  */
 function isPrefetch(request: NextRequest) {
   const purpose = `${request.headers.get("purpose") ?? ""} ${request.headers.get("sec-purpose") ?? ""}`;
   return purpose.includes("prefetch");
 }
 
-async function entryDestination(token: string, teacher: boolean, slug: string | null) {
+async function staffRecordExists(pathname: string) {
+  const record = staffRecordPath(pathname);
+  if (!record) return true;
+  // Cache Components has already sent the shell before a request-time notFound(),
+  // so the status stays 200. Reject the missing row here, before render.
+  if (record.kind === "mentor") {
+    const row = await prisma.mentor.findUnique({ where: { slug: record.slug }, select: { id: true } });
+    return Boolean(row);
+  }
+  if (record.kind === "event") {
+    const row = await prisma.event.findUnique({ where: { slug: record.slug }, select: { id: true } });
+    return Boolean(row);
+  }
+  const row = await prisma.course.findUnique({ where: { slug: record.slug }, select: { id: true } });
+  return Boolean(row);
+}
+
+async function entryDestination(token: string, teacher: boolean, slug: string | null, pathname: string) {
   const session = await prisma.session.findUnique({
     where: { token },
     select: { expiresAt: true, user: { select: { id: true, role: true } } },
   });
   if (!session || session.expiresAt.getTime() < Date.now()) return null;
-  if (teacher) return studentStaffRedirect(session.user.role);
+  if (teacher) {
+    const href = studentStaffRedirect(session.user.role);
+    if (href) return href;
+    if (!(await staffRecordExists(pathname))) return "404";
+    return null;
+  }
   if (!slug || !isStudent(session.user.role)) return null;
   // The proxy cannot call the cached readers in lib/content: 'use cache' does not
   // run here, and that cache can keep a cohort list for about an hour. The redirect
@@ -68,7 +91,8 @@ export async function proxy(request: NextRequest) {
   const teacher = pathname === "/teacher" || pathname.startsWith("/teacher/");
   const slug = bootcampSlug(pathname);
   if (!token || (!teacher && !slug)) return NextResponse.next();
-  const destination = await entryDestination(token, teacher, slug);
+  const destination = await entryDestination(token, teacher, slug, pathname);
+  if (destination === "404") return new NextResponse("Not found", { status: 404 });
   if (!destination) return NextResponse.next();
   return NextResponse.redirect(new URL(destination, request.url));
 }

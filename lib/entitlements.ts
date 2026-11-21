@@ -52,7 +52,7 @@ export function normalizeProduct(value: string): Product | null {
   return null;
 }
 
-export type StoredEntitlement = {
+type StoredEntitlement = {
   product: string;
   courseId: string | null;
   cohortId: string | null;

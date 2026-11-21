@@ -11,72 +11,55 @@ import { prisma } from "@/lib/db";
 
 export const instant = false;
 
-type CourseRow = Awaited<ReturnType<typeof listCourses>>[number];
-type CohortRow = Awaited<ReturnType<typeof loadCohortsWithCourses>>[number];
-
-function targetsFor(courses: CourseRow[], cohorts: CohortRow[]) {
-  return [
+export default async function AccessPage({ searchParams }: { searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }> }) {
+  const staff = await requireStaff();
+  const query = await searchParams;
+  const [courses, cohorts, entitlements, pending, students] = await Promise.all([
+    listCourses(),
+    loadCohortsWithCourses(),
+    prisma.entitlement.findMany({
+      where: { status: "active" },
+      include: { user: true, course: true, cohort: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.pendingGrant.findMany({ where: { consumedAt: null }, orderBy: { createdAt: "desc" } }),
+    prisma.user.findMany({ where: { role: "student" }, orderBy: { name: "asc" } }),
+  ]);
+  const targets = [
     ...courses.filter((course) => course.access === "headliner").map((course) => ({ value: "headliner", label: `${course.title} membership` })),
     ...courses
       .filter((course) => course.access === "purchase" || course.access === "subscription")
       .map((course) => ({ value: `program:${course.id}`, label: course.title })),
     ...cohorts.map((cohort) => ({ value: `cohort:${cohort.id}:${cohort.courseId}`, label: `${cohort.course.title} · ${cohort.name}` })),
   ];
-}
+  const banner = query.granted ? "Access granted." : query.pending ? "No account yet. The seat waits until they sign up with that email." : query.revoked ? "Access revoked." : null;
 
-function AccessBody({
-  courses,
-  cohorts,
-  role,
-  banner,
-  error,
-  students,
-  entitlements,
-  pending,
-}: {
-  courses: CourseRow[];
-  cohorts: CohortRow[];
-  role: string;
-  banner: string | null;
-  error: boolean;
-  students: { id: string; name: string; email: string }[] | null;
-  entitlements: {
-    id: string;
-    product: string;
-    source: string;
-    user: { name: string; email: string };
-    course: { title: string } | null;
-    cohort: { name: string } | null;
-  }[] | null;
-  pending: { id: string; email: string; product: string; source: string }[] | null;
-}) {
-  const targets = targetsFor(courses, cohorts);
   return (
-    <main className="shell">
-      <StaffCrumb role={role} page="Access" />
-      <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
-      <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>
-        Bootcamp students arrive from HubSpot. Put their email here when they’re accepted, or let the webhook do it once a token is set.
-      </p>
-      {banner ? <div className="banner">{banner}</div> : null}
-      {error ? <div className="error">Need a valid email and a product.</div> : null}
-      <Form action={grantAccess} className="card stack" style={{ padding: 18, maxWidth: 560, marginBottom: 22 }}>
-        <Label htmlFor="email">Student email</Label>
-        <Input id="email" name="email" type="email" list="students" required placeholder="student@email.com" />
-        <datalist id="students">
-          {students?.map((student) => (
-            <option key={student.id} value={student.email}>{student.name}</option>
-          ))}
-        </datalist>
-        <Label htmlFor="target">What they should open</Label>
-        <select id="target" name="target" className="h-11 rounded-[25px] border border-white/15 bg-[#121212] px-4" required defaultValue={targets[0]?.value}>
-          {targets.map((target) => (
-            <option key={target.value} value={target.value}>{target.label}</option>
-          ))}
-        </select>
-        <Button type="submit" className="self-start">Grant access</Button>
-      </Form>
-      {entitlements && pending ? (
+    <>
+      <main className="shell">
+        <StaffCrumb role={staff.role} page="Access" />
+        <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
+        <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>
+          Bootcamp students arrive from HubSpot. Put their email here when they’re accepted, or let the webhook do it once a token is set.
+        </p>
+        {banner ? <div className="banner">{banner}</div> : null}
+        {query.error ? <div className="error">Need a valid email and a product.</div> : null}
+        <Form action={grantAccess} className="card stack" style={{ padding: 18, maxWidth: 560, marginBottom: 22 }}>
+          <Label htmlFor="email">Student email</Label>
+          <Input id="email" name="email" type="email" list="students" required placeholder="student@email.com" />
+          <datalist id="students">
+            {students.map((student) => (
+              <option key={student.id} value={student.email}>{student.name}</option>
+            ))}
+          </datalist>
+          <Label htmlFor="target">What they should open</Label>
+          <select id="target" name="target" className="h-11 rounded-[25px] border border-white/15 bg-[#121212] px-4" required defaultValue={targets[0]?.value}>
+            {targets.map((target) => (
+              <option key={target.value} value={target.value}>{target.label}</option>
+            ))}
+          </select>
+          <Button type="submit" className="self-start">Grant access</Button>
+        </Form>
         <section className="card" style={{ padding: "8px 16px 16px" }}>
           <h2 className="section-label">Active access</h2>
           {entitlements.length === 0 ? <p className="note">Nobody has a seat yet.</p> : null}
@@ -116,46 +99,7 @@ function AccessBody({
             </div>
           ))}
         </section>
-      ) : null}
-    </main>
+      </main>
+    </>
   );
-}
-
-async function AccessLive({
-  searchParams,
-}: {
-  searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }>;
-}) {
-  const staff = await requireStaff();
-  const [courses, cohorts, query] = await Promise.all([listCourses(), loadCohortsWithCourses(), searchParams]);
-  const [entitlements, pending, students] = await Promise.all([
-    prisma.entitlement.findMany({
-      where: { status: "active" },
-      include: { user: true, course: true, cohort: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.pendingGrant.findMany({ where: { consumedAt: null }, orderBy: { createdAt: "desc" } }),
-    prisma.user.findMany({ where: { role: "student" }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true } }),
-  ]);
-  const banner = query.granted ? "Access granted." : query.pending ? "No account yet. The seat waits until they sign up with that email." : query.revoked ? "Access revoked." : null;
-  return (
-    <AccessBody
-      courses={courses}
-      cohorts={cohorts}
-      role={staff.role}
-      banner={banner}
-      error={Boolean(query.error)}
-      students={students}
-      entitlements={entitlements}
-      pending={pending}
-    />
-  );
-}
-
-export default async function AccessPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }>;
-}) {
-  return await AccessLive({ searchParams });
 }

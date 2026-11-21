@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { EntitlementRecord } from "./entitlements";
-import { singleStudentCohortHref, studentStaffRedirect } from "./route-entry";
+import { singleStudentCohortHref, staffRecordPath, studentStaffRedirect } from "./route-entry";
 
 const now = new Date("2026-06-01T00:00:00Z");
 const course = { id: "crs_dj", slug: "dj-bootcamp" };
@@ -23,6 +23,16 @@ describe("staff entry", () => {
     assert.equal(studentStaffRedirect("teacher"), null);
     assert.equal(studentStaffRedirect("admin"), null);
     assert.equal(studentStaffRedirect(null), null);
+  });
+
+  it("names the staff editor records and leaves the new pages alone", () => {
+    assert.deepEqual(staffRecordPath("/teacher/mentors/yuzu"), { kind: "mentor", slug: "yuzu" });
+    assert.deepEqual(staffRecordPath("/teacher/events/sync"), { kind: "event", slug: "sync" });
+    assert.deepEqual(staffRecordPath("/teacher/courses/dj-bootcamp"), { kind: "course", slug: "dj-bootcamp" });
+    assert.equal(staffRecordPath("/teacher/mentors/new"), null);
+    assert.equal(staffRecordPath("/teacher/events/new"), null);
+    assert.equal(staffRecordPath("/teacher"), null);
+    assert.equal(staffRecordPath("/teacher/access"), null);
   });
 });
 

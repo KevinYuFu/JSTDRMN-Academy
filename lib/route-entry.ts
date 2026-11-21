@@ -1,13 +1,19 @@
 import { containerAccess, type EntitlementRecord } from "./entitlements";
-import { homeForRole, isStaff } from "./roles";
-
-export function isStudent(role: string | null | undefined) {
-  return role === "student";
-}
+import { homeForRole, isStaff, isStudent } from "./roles";
 
 export function studentStaffRedirect(role: string | null | undefined) {
   if (!role || isStaff(role)) return null;
   return homeForRole(role);
+}
+
+/** A staff editor URL whose slug is the record. `new` is its own page. */
+export function staffRecordPath(pathname: string): { kind: "mentor" | "event" | "course"; slug: string } | null {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length !== 3 || parts[0] !== "teacher" || !parts[2]) return null;
+  if (parts[1] === "mentors" && parts[2] !== "new") return { kind: "mentor", slug: parts[2] };
+  if (parts[1] === "events" && parts[2] !== "new") return { kind: "event", slug: parts[2] };
+  if (parts[1] === "courses") return { kind: "course", slug: parts[2] };
+  return null;
 }
 
 export function accessibleCohorts<T extends { id: string }>(
@@ -38,7 +44,7 @@ export function singleStudentCohortHref(
   now?: Date,
 ) {
   if (!isStudent(role)) return null;
-  const open = accessibleCohorts(role, course.id, cohorts, records, now);
+  const open = accessibleCohorts("student", course.id, cohorts, records, now);
   if (open.length !== 1) return null;
   return `/bootcamps/${course.slug}/${open[0].slug}`;
 }
