@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { CourseView } from "@/components/course-view";
+import { courseBySlug, lessonsForCourse } from "@/lib/content";
 import { getUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { openCourse } from "@/lib/learn";
 
 export const instant = false;
@@ -15,13 +15,13 @@ export default async function CoursePage({
 }) {
   const { slug } = await params;
   const query = await searchParams;
-  const course = await prisma.course.findUnique({ where: { slug } });
+  const course = await courseBySlug(slug);
   if (!course) redirect("/dashboard");
   if (course.access === "cohort") redirect(`/bootcamps/${course.slug}`);
   if (course.access === "request") redirect("/private-sessions");
   if (course.access === "headliner" && !query.lesson) redirect("/headliner");
   if (course.placement === "grid" && !query.lesson) {
-    const count = await prisma.lesson.count({ where: { courseId: course.id } });
+    const count = (await lessonsForCourse(course.id)).length;
     if (count === 0) redirect(`/programs/${course.slug}`);
   }
   const user = await getUser();

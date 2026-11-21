@@ -10,6 +10,7 @@ import {
   skillTree,
   skillTreeHref,
   skillTreeNav,
+  skillTreeParams,
   slugFromStack,
   stackFromSlug,
   unlinkedChildren,
@@ -153,6 +154,17 @@ describe("skill tree map", () => {
       "Introduction to Music and EDM",
       "Intro DJ Bootcamp",
     ]);
+  });
+
+  it("lists the public paths, including the overview", () => {
+    const params = skillTreeParams(skillTree);
+    const keys = new Set(params.map((param) => param.slug.join("/")));
+    assert.ok(keys.has(""));
+    assert.ok(keys.has("dj/bootcamp"));
+    assert.equal(keys.has("nope"), false);
+    for (const param of params) {
+      assert.ok(stackFromSlug(param.slug, skillTree), param.slug.join("/") || "(overview)");
+    }
   });
 
   it("rejects paths that are not on this map", () => {

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireLead } from "@/lib/auth";
+import { loadSkillTreeForWrite, refreshContent, saveSkillTree } from "@/lib/content";
+import { skillTreeSaveTags } from "@/lib/content-tags";
 import {
   addChildNode,
   applyNodePatch,
@@ -13,11 +15,11 @@ import {
   type NodeDraft,
 } from "@/lib/skill-tree-edit";
 import { findNode } from "@/lib/skill-tree";
-import { loadSkillTree, saveSkillTree } from "@/lib/skill-tree-store";
 
 const DRAFT_KEYS = ["cardTitle", "crumb", "pageTitle", "cardSub", "mapSub", "blurb", "hint", "slug", "shortcut"] as const;
 
 function refresh() {
+  refreshContent(skillTreeSaveTags());
   revalidatePath("/skill-tree", "layout");
   revalidatePath("/teacher/skill-tree");
   revalidatePath("/teacher");
@@ -38,7 +40,7 @@ export async function saveSkillNode(formData: FormData) {
   await requireLead();
   const id = readId(formData, "id");
   if (!id) redirect("/teacher/skill-tree?error=invalid");
-  const tree = await loadSkillTree();
+  const tree = await loadSkillTreeForWrite();
   const node = findNode(id, tree);
   if (!node) back(tree.id, { error: "missing" });
   const fields: Partial<NodeDraft> = {};
@@ -56,7 +58,7 @@ export async function addSkillChild(formData: FormData) {
   await requireLead();
   const id = readId(formData, "id");
   if (!id) redirect("/teacher/skill-tree?error=invalid");
-  const tree = await loadSkillTree();
+  const tree = await loadSkillTreeForWrite();
   const result = addChildNode(tree, id, {
     title: String(formData.get("title") ?? ""),
     slug: String(formData.get("slug") ?? ""),
@@ -72,7 +74,7 @@ export async function removeSkillNode(formData: FormData) {
   await requireLead();
   const id = readId(formData, "id");
   if (!id) redirect("/teacher/skill-tree?error=invalid");
-  const tree = await loadSkillTree();
+  const tree = await loadSkillTreeForWrite();
   const result = removeNode(tree, id);
   if (!result.ok) back(id, { error: result.reason });
   await saveSkillTree(result.tree);
@@ -86,7 +88,7 @@ export async function reorderSkillNode(formData: FormData) {
   if (!id) redirect("/teacher/skill-tree?error=invalid");
   const direction = String(formData.get("direction") ?? "");
   if (direction !== "up" && direction !== "down") back(id, { error: "invalid" });
-  const tree = await loadSkillTree();
+  const tree = await loadSkillTreeForWrite();
   const result = moveNode(tree, id, direction);
   if (!result.ok) back(id, { error: result.reason });
   await saveSkillTree(result.tree);
@@ -99,7 +101,7 @@ export async function moveSkillNode(formData: FormData) {
   const id = readId(formData, "id");
   const parentId = readId(formData, "parentId");
   if (!id || !parentId) redirect("/teacher/skill-tree?error=invalid");
-  const tree = await loadSkillTree();
+  const tree = await loadSkillTreeForWrite();
   const result = reparentNode(tree, id, parentId);
   if (!result.ok) back(id, { error: result.reason });
   await saveSkillTree(result.tree);

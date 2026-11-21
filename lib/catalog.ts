@@ -1,3 +1,4 @@
+import type { Course } from "@prisma/client";
 import { prices } from "./config";
 import { prisma } from "./db";
 import type { CourseAccess, Product } from "./entitlements";
@@ -13,12 +14,11 @@ export type Offer = {
   href: string;
 };
 
-/** Checkout reads the program row. Headliner is the only price that still comes from the environment. */
-export async function resolveOffer(product: string, slug: string): Promise<Offer | null> {
-  const asked = product === "course" || product === "ash" ? "program" : product;
-  if (asked === "headliner" || slug === "headliner") {
-    const course = await prisma.course.findFirst({ where: { access: "headliner" }, orderBy: { sort: "asc" } });
-    if (!course) return null;
+export type OfferCourse = Pick<Course, "id" | "slug" | "title" | "presenter" | "priceCents" | "access" | "billing">;
+
+/** The price and label for a course row checkout already loaded. */
+export function offerFor(asked: "headliner" | "program", course: OfferCourse): Offer | null {
+  if (asked === "headliner") {
     return {
       product: "headliner",
       courseId: course.id,
@@ -30,9 +30,6 @@ export async function resolveOffer(product: string, slug: string): Promise<Offer
       href: "/headliner",
     };
   }
-  if (asked !== "program" || !slug) return null;
-  const course = await prisma.course.findUnique({ where: { slug } });
-  if (!course) return null;
   if (course.access !== "purchase" && course.access !== "subscription") return null;
   if (course.billing !== "once" && course.billing !== "monthly") return null;
   return {
@@ -45,4 +42,18 @@ export async function resolveOffer(product: string, slug: string): Promise<Offer
     access: course.access,
     href: `/programs/${course.slug}`,
   };
+}
+
+/** Checkout reads the program row. Headliner is the only price that still comes from the environment. */
+export async function resolveOffer(product: string, slug: string): Promise<Offer | null> {
+  const asked = product === "course" || product === "ash" ? "program" : product;
+  if (asked === "headliner" || slug === "headliner") {
+    const course = await prisma.course.findFirst({ where: { access: "headliner" }, orderBy: { sort: "asc" } });
+    if (!course) return null;
+    return offerFor("headliner", course);
+  }
+  if (asked !== "program" || !slug) return null;
+  const course = await prisma.course.findUnique({ where: { slug } });
+  if (!course) return null;
+  return offerFor(asked, course);
 }

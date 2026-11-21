@@ -7,6 +7,8 @@ import { z } from "zod";
 import { checkPassword, createSession, destroySession, hashPassword, requireStaff, requireUser } from "@/lib/auth";
 import { fulfillCheckout, grantEntitlement, revokeEntitlement } from "@/lib/billing";
 import { resolveOffer } from "@/lib/catalog";
+import { refreshContent } from "@/lib/content";
+import { cohortSaveTags, eventSaveTags, lessonSaveTags, mentorSaveTags } from "@/lib/content-tags";
 import { appUrl, stripeLive } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff, lessonAccess, earlierLessonsComplete, normalizeProduct, type Product } from "@/lib/entitlements";
@@ -195,6 +197,7 @@ export async function addLesson(formData: FormData) {
       drip: formData.get("drip") === "on",
     },
   });
+  refreshContent(lessonSaveTags(course.id));
   revalidatePath(`/teacher/courses/${course.slug}`);
   redirect(`/teacher/courses/${course.slug}?added=1`);
 }
@@ -221,6 +224,7 @@ export async function addCohort(formData: FormData) {
       sort: (last?.sort ?? 0) + 1,
     },
   });
+  refreshContent(cohortSaveTags(course.slug));
   revalidatePath(`/bootcamps/${course.slug}`);
   redirect(`/bootcamps/${course.slug}?added=1`);
 }
@@ -403,6 +407,7 @@ export async function saveMentor(formData: FormData) {
   } else {
     await prisma.mentor.create({ data: { id: `mnt_${randomBytes(6).toString("hex")}`, ...data } });
   }
+  refreshContent(mentorSaveTags());
   revalidatePath("/private-sessions");
   revalidatePath("/teacher");
   redirect("/teacher?saved=mentor");
@@ -414,6 +419,7 @@ export async function setMentorActive(formData: FormData) {
   const active = String(formData.get("active") ?? "") === "true";
   if (!id) redirect("/teacher");
   await prisma.mentor.update({ where: { id }, data: { active } });
+  refreshContent(mentorSaveTags());
   revalidatePath("/private-sessions");
   revalidatePath("/teacher");
   redirect("/teacher");
@@ -483,6 +489,7 @@ export async function saveEvent(formData: FormData) {
       data: { sendAt: new Date(saved.startsAt.getTime() - item.leadMinutes * 60 * 1000) },
     });
   }
+  refreshContent(eventSaveTags());
   revalidatePath("/events");
   revalidatePath("/teacher/events");
   revalidatePath("/teacher/announcements");
@@ -518,6 +525,7 @@ export async function saveEventType(formData: FormData) {
       },
     });
   }
+  refreshContent(eventSaveTags());
   revalidatePath("/events");
   revalidatePath("/teacher/events");
   redirect("/teacher/events?saved=type");

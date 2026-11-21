@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applyNodePatch, draftFromNode, parseSkillTree } from "./skill-tree-edit";
 import { findNode, skillTree } from "./skill-tree";
-import { ensureSkillTree, saveSkillTree, type SkillTreeStore } from "./skill-tree-store";
+import { ensureSkillTree, readSkillTree, skillTreeForRead, writeSkillTree, type SkillTreeStore } from "./skill-tree-store";
 import previousDefault from "./skill-tree-previous-default.json";
 
 function memoryStore() {
@@ -41,6 +41,20 @@ function memoryStore() {
 }
 
 describe("skill tree storage", () => {
+  it("reads an empty table without writing", async () => {
+    const db = memoryStore();
+    assert.equal(await readSkillTree(db.store), null);
+    assert.equal(db.creates(), 0);
+  });
+
+  it("shows the built-in map when the row is missing and does not create it", async () => {
+    const db = memoryStore();
+    const tree = await skillTreeForRead(db.store);
+    assert.equal(tree.card.title, skillTree.card.title);
+    assert.equal(db.creates(), 0);
+    assert.equal(db.row(), null);
+  });
+
   it("copies the built-in map once when the row is missing", async () => {
     const db = memoryStore();
     const first = await ensureSkillTree(db.store);
@@ -61,7 +75,7 @@ describe("skill tree storage", () => {
     const edited = applyNodePatch(skillTree, "mashup", draft);
     assert.equal(edited.ok, true);
     if (!edited.ok) return;
-    await saveSkillTree(edited.tree, db.store);
+    await writeSkillTree(edited.tree, db.store);
     const loaded = await ensureSkillTree(db.store);
     assert.equal(loaded.created, false);
     assert.equal(findNode("mashup", loaded.tree)?.card.title, "Mashup lab");
@@ -97,6 +111,26 @@ describe("skill tree storage", () => {
     assert.equal(db.creates(), 0);
   });
 
+  it("keeps an out-of-band change when a save edits that row", async () => {
+    const db = memoryStore();
+    const outside = structuredClone(skillTree);
+    outside.card = { ...outside.card, title: "Out of band" };
+    db.setRow({ id: "current", document: outside });
+
+    const loaded = await ensureSkillTree(db.store);
+    assert.equal(loaded.created, false);
+    assert.equal(loaded.tree.card.title, "Out of band");
+    const edited = structuredClone(loaded.tree);
+    edited.card = { ...edited.card, sub: "Edited on top" };
+    await writeSkillTree(edited, db.store);
+
+    const after = await ensureSkillTree(db.store);
+    assert.equal(after.created, false);
+    assert.equal(after.tree.card.title, "Out of band");
+    assert.equal(after.tree.card.sub, "Edited on top");
+    assert.equal(db.creates(), 0);
+  });
+
   it("does not overwrite a row it cannot read", async () => {
     const db = memoryStore();
     db.setRow({ id: "current", document: { bad: true } });
@@ -104,7 +138,7 @@ describe("skill tree storage", () => {
     assert.deepEqual(db.row()?.document, { bad: true });
     const broken = structuredClone(skillTree);
     broken.id = "other";
-    await assert.rejects(() => saveSkillTree(broken, db.store), /invalid/);
+    await assert.rejects(() => writeSkillTree(broken, db.store), /invalid/);
     assert.deepEqual(db.row()?.document, { bad: true });
   });
 

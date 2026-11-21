@@ -4,7 +4,7 @@ import { SkillTreeEditor } from "@/components/skill-tree/editor";
 import { requireLead } from "@/lib/auth";
 import { skillTreeErrorCopy, skillTreeSavedCopy } from "@/lib/skill-tree-edit";
 import { findNode } from "@/lib/skill-tree";
-import { loadSkillTree } from "@/lib/skill-tree-store";
+import { loadSkillTree } from "@/lib/content";
 import { roleLabel } from "@/lib/roles";
 
 export const instant = false;
