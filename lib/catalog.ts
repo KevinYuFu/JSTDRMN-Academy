@@ -40,7 +40,7 @@ export function offerFor(asked: "headliner" | "program", course: OfferCourse): O
     amountCents: course.priceCents,
     cadence: course.billing === "monthly" ? "month" : "once",
     access: course.access,
-    href: `/programs/${course.slug}`,
+    href: course.slug === "intro-courses" ? "/" : `/programs/${course.slug}`,
   };
 }
 

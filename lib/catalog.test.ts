@@ -24,7 +24,8 @@ describe("offerFor", () => {
     const offer = offerFor("program", row);
     assert.equal(offer?.amountCents, 4500);
     assert.equal(offer?.cadence, "month");
-    assert.equal(offer?.href, "/programs/intro-courses");
+    assert.equal(offer?.href, "/");
+    assert.equal(offerFor("program", course(2000, { slug: "dj-bootcamp" }))?.href, "/programs/dj-bootcamp");
   });
 
   it("prices a one-time purchase from the row and ignores a row that is not for sale", () => {
