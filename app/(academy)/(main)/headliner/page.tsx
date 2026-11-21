@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DiscordCard } from "@/components/discord-card";
@@ -135,6 +134,8 @@ async function HeadlinerLive({
   );
 }
 
+export const instant = false;
+
 export default async function HeadlinerPage({
   searchParams,
 }: {
@@ -144,18 +145,5 @@ export default async function HeadlinerPage({
   if (!headliner) notFound();
   const [lessons, tracks] = await Promise.all([lessonsForCourse(headliner.id), tracksForCourse(headliner.id)]);
   const course = { slug: headliner.slug, title: headliner.title, statusLabel: headliner.statusLabel, tagline: headliner.tagline, lessons, tracks };
-  const guest = (
-    <HeadlinerBody
-      course={course}
-      discordAllowed={false}
-      subscribeHref="/signup?next=/checkout?product=headliner"
-      unlocked={false}
-      discord={null}
-    />
-  );
-  return (
-    <Suspense fallback={guest}>
-      <HeadlinerLive course={course} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await HeadlinerLive({ course, searchParams });
 }

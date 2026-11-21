@@ -1,7 +1,6 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addLesson } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireStaff } from "@/lib/auth";
 import { courseBySlug, lessonsForCourse, listCourses, tracksForCourse } from "@/lib/content";
-import { roleLabel } from "@/lib/roles";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
+
+export const instant = false;
 
 type CourseRow = NonNullable<Awaited<ReturnType<typeof courseBySlug>>>;
 type LessonRow = Awaited<ReturnType<typeof lessonsForCourse>>[number];
@@ -27,7 +27,7 @@ function EditorBody({
   course: CourseRow;
   lessons: LessonRow[];
   tracks: TrackRow[];
-  staffRole: string | null;
+  staffRole: string;
   added: boolean;
   error: boolean;
 }) {
@@ -35,9 +35,7 @@ function EditorBody({
   const trackName = new Map(tracks.map((track) => [track.id, track.title]));
   return (
     <main className="shell">
-      <div className="crumbs">
-        <Link href="/teacher">{staffRole ? roleLabel(staffRole) : "Dashboard"}</Link> › <b>{course.title}</b>
-      </div>
+      <StaffCrumb role={staffRole} page={course.title} />
       <h1 className="page-title" style={{ marginBottom: 12 }}>{course.title}</h1>
       {added ? <div className="banner">Lesson added. Students see it the next time they open the course.</div> : null}
       {error ? <div className="error">A lesson needs a title, a video URL, a duration, and a cohort if this is a bootcamp.</div> : null}
@@ -126,17 +124,16 @@ function EditorBody({
 }
 
 async function EditorLive({
-  course,
-  lessons,
-  tracks,
+  slug,
   searchParams,
 }: {
-  course: CourseRow;
-  lessons: LessonRow[];
-  tracks: TrackRow[];
+  slug: string;
   searchParams: Promise<{ error?: string; added?: string }>;
 }) {
-  const [staff, query] = await Promise.all([requireStaff(), searchParams]);
+  const staff = await requireStaff();
+  const course = await courseBySlug(slug);
+  if (!course) notFound();
+  const [lessons, tracks, query] = await Promise.all([lessonsForCourse(course.id), tracksForCourse(course.id), searchParams]);
   return <EditorBody course={course} lessons={lessons} tracks={tracks} staffRole={staff.role} added={Boolean(query.added)} error={Boolean(query.error)} />;
 }
 
@@ -155,10 +152,5 @@ export default async function EditorPage({
   const { slug } = await params;
   const course = await courseBySlug(slug);
   if (!course) notFound();
-  const [lessons, tracks] = await Promise.all([lessonsForCourse(course.id), tracksForCourse(course.id)]);
-  return (
-    <Suspense fallback={<EditorBody course={course} lessons={lessons} tracks={tracks} staffRole={null} added={false} error={false} />}>
-      <EditorLive course={course} lessons={lessons} tracks={tracks} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await EditorLive({ slug, searchParams });
 }

@@ -5,6 +5,7 @@ import {
   discordCardAccess,
   earlierLessonsComplete,
   lessonAccess,
+  toEntitlementRecords,
   type EntitlementRecord,
   type LessonGate,
 } from "./entitlements";
@@ -362,6 +363,26 @@ describe("Headliner-only perks", () => {
     const cohortOnly = discordCardAccess({ role: "student", entitlements: [grant()], now });
     assert.equal(cohortOnly.allowed, false);
     assert.equal(cohortOnly.upsell, "headliner");
+  });
+});
+
+describe("toEntitlementRecords", () => {
+  it("maps old product names and treats an unknown product as a program", () => {
+    const endsAt = new Date("2026-12-01T00:00:00Z");
+    assert.deepEqual(
+      toEntitlementRecords([
+        { product: "course", courseId: "crs_dj", cohortId: null, status: "active", endsAt },
+        { product: "ash", courseId: "crs_fb", cohortId: null, status: "revoked", endsAt: null },
+        { product: "mystery", courseId: null, cohortId: null, status: "paused", endsAt: null },
+        { product: "cohort", courseId: "crs_dj", cohortId: "coh_dj6", status: "active", endsAt: null },
+      ]),
+      [
+        { product: "program", courseId: "crs_dj", cohortId: null, status: "active", endsAt },
+        { product: "program", courseId: "crs_fb", cohortId: null, status: "revoked", endsAt: null },
+        { product: "program", courseId: null, cohortId: null, status: "revoked", endsAt: null },
+        { product: "cohort", courseId: "crs_dj", cohortId: "coh_dj6", status: "active", endsAt: null },
+      ],
+    );
   });
 });
 

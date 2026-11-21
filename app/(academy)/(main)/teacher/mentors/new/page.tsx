@@ -1,15 +1,13 @@
-import { Suspense } from "react";
-import Link from "next/link";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { MentorForm } from "@/components/mentor-form";
 import { requireStaff } from "@/lib/auth";
-import { roleLabel } from "@/lib/roles";
 
-function NewMentorBody({ role, error }: { role: string | null; error: boolean }) {
+export const instant = false;
+
+function NewMentorBody({ role, error }: { role: string; error: boolean }) {
   return (
     <main className="shell">
-      <div className="crumbs">
-        <Link href="/teacher">{role ? roleLabel(role) : "Dashboard"}</Link> › <b>New mentor</b>
-      </div>
+      <StaffCrumb role={role} page="New mentor" />
       <h1 className="page-title" style={{ marginBottom: 12 }}>New mentor</h1>
       {error ? <div className="error">Name, role line, and bio are required. Photo URL, if you add one, starts with http.</div> : null}
       <MentorForm mentor={null} />
@@ -23,9 +21,5 @@ async function NewMentorLive({ searchParams }: { searchParams: Promise<{ error?:
 }
 
 export default async function NewMentorPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  return (
-    <Suspense fallback={<NewMentorBody role={null} error={false} />}>
-      <NewMentorLive searchParams={searchParams} />
-    </Suspense>
-  );
+  return await NewMentorLive({ searchParams });
 }

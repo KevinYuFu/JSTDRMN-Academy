@@ -20,22 +20,8 @@ const readyMadePages = new Set([
   "app/(academy)/(main)/private-sessions/page.tsx",
   "app/(academy)/(main)/skill-tree/[[...slug]]/page.tsx",
   "app/(academy)/(main)/bootcamps/[slug]/page.tsx",
-  "app/(academy)/(main)/bootcamps/[slug]/[cohort]/page.tsx",
-  "app/(academy)/(main)/courses/[slug]/page.tsx",
-  "app/(academy)/(main)/dashboard/page.tsx",
-  "app/(academy)/(main)/headliner/page.tsx",
   "app/(academy)/(main)/login/page.tsx",
   "app/(academy)/(main)/signup/page.tsx",
-  "app/(academy)/(main)/teacher/page.tsx",
-  "app/(academy)/(main)/teacher/access/page.tsx",
-  "app/(academy)/(main)/teacher/announcements/page.tsx",
-  "app/(academy)/(main)/teacher/courses/[slug]/page.tsx",
-  "app/(academy)/(main)/teacher/events/page.tsx",
-  "app/(academy)/(main)/teacher/events/[slug]/page.tsx",
-  "app/(academy)/(main)/teacher/events/new/page.tsx",
-  "app/(academy)/(main)/teacher/mentors/[slug]/page.tsx",
-  "app/(academy)/(main)/teacher/mentors/new/page.tsx",
-  "app/(academy)/(main)/teacher/skill-tree/page.tsx",
 ]);
 
 describe("cache components", () => {

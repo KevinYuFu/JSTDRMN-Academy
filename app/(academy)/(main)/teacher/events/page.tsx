@@ -1,6 +1,6 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { saveEventType } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { requireStaff } from "@/lib/auth";
 import { listEventTypes, listManagedEvents } from "@/lib/content";
 import { formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
-import { roleLabel } from "@/lib/roles";
+export const instant = false;
 
 type EventRow = Awaited<ReturnType<typeof listManagedEvents>>[number];
 type TypeRow = Awaited<ReturnType<typeof listEventTypes>>[number];
@@ -23,16 +23,14 @@ function EventsBody({
 }: {
   events: EventRow[];
   types: TypeRow[];
-  role: string | null;
-  now: Date | null;
+  role: string;
+  now: Date;
   saved: boolean;
   error: boolean;
 }) {
   return (
     <main className="shell">
-      <div className="crumbs">
-        <Link href="/teacher">{role ? roleLabel(role) : "Dashboard"}</Link> › <b>Events</b>
-      </div>
+      <StaffCrumb role={role} page="Events" />
       <h1 className="page-title" style={{ marginBottom: 8 }}>Events</h1>
       <p className="note" style={{ marginBottom: 16 }}>Move a time or a destination here. The Events page reads the same records. Types carry the default join action.</p>
       {saved ? <div className="banner">Saved.</div> : null}
@@ -49,7 +47,7 @@ function EventsBody({
                   <b>{event.title}</b>
                   <div className="note">
                     {event.type.name}
-                    {now ? (when ? ` · ${formatToronto(when.start)}` : " · past") : ""}
+                    {when ? ` · ${formatToronto(when.start)}` : " · past"}
                     {event.recurrence === "weekly" ? " · weekly" : ""}
                     {event.cancelled ? " · cancelled" : ""}
                     {` · ${join.label}`}
@@ -98,15 +96,12 @@ function EventsBody({
 }
 
 async function EventsLive({
-  events,
-  types,
   searchParams,
 }: {
-  events: EventRow[];
-  types: TypeRow[];
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const [staff, query] = await Promise.all([requireStaff(), searchParams]);
+  const staff = await requireStaff();
+  const [events, types, query] = await Promise.all([listManagedEvents(), listEventTypes(), searchParams]);
   return <EventsBody events={events} types={types} role={staff.role} now={new Date()} saved={Boolean(query.saved)} error={Boolean(query.error)} />;
 }
 
@@ -115,10 +110,5 @@ export default async function EventManagerPage({
 }: {
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const [events, types] = await Promise.all([listManagedEvents(), listEventTypes()]);
-  return (
-    <Suspense fallback={<EventsBody events={events} types={types} role={null} now={null} saved={false} error={false} />}>
-      <EventsLive events={events} types={types} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await EventsLive({ searchParams });
 }

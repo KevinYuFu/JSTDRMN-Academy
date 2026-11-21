@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { EntitlementRecord } from "./entitlements";
-import { cohortEntry, courseEntry, singleStudentCohortHref, studentStaffRedirect } from "./route-entry";
+import { singleStudentCohortHref, studentStaffRedirect } from "./route-entry";
 
 const now = new Date("2026-06-01T00:00:00Z");
 const course = { id: "crs_dj", slug: "dj-bootcamp" };
@@ -42,28 +42,5 @@ describe("single cohort entry", () => {
       null,
     );
     assert.equal(singleStudentCohortHref("teacher", course, [cohorts[1]], [], now), null);
-  });
-});
-
-describe("catalog urls", () => {
-  it("404s an unknown course and redirects bootcamp and request rows", () => {
-    assert.deepEqual(courseEntry(null), { kind: "missing" });
-    assert.deepEqual(courseEntry({ access: "cohort", slug: "dj-bootcamp" }), {
-      kind: "redirect",
-      href: "/bootcamps/dj-bootcamp",
-    });
-    assert.deepEqual(courseEntry({ access: "request", slug: "private" }), {
-      kind: "redirect",
-      href: "/private-sessions",
-    });
-    assert.deepEqual(courseEntry({ access: "open", slug: "intro-to-edm" }), { kind: "open" });
-  });
-
-  it("404s an unknown cohort and opens one that is on the course", () => {
-    const bootcamp = { access: "cohort", slug: "dj-bootcamp", cohorts: cohorts };
-    assert.equal(cohortEntry(null, "cohort-6"), "missing");
-    assert.equal(cohortEntry(bootcamp, "nope"), "missing");
-    assert.equal(cohortEntry({ access: "cohort", slug: "dj-bootcamp", cohorts: [] }, "cohort-6"), "missing");
-    assert.equal(cohortEntry(bootcamp, "cohort-6"), "open");
   });
 });

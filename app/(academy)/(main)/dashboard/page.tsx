@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { loadCourseCatalog } from "@/lib/content";
@@ -7,18 +6,12 @@ import { prisma } from "@/lib/db";
 import { asCourseAccess, containerAccess, isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
 
-function DashboardFrame() {
-  return (
-    <main className="shell">
-      <h1 className="page-title" style={{ marginBottom: 6 }}>My Courses</h1>
-      <p className="note" style={{ marginBottom: 18 }}>This shelf is only what your account can open.</p>
-    </main>
-  );
-}
+export const instant = false;
 
-async function DashboardLive({ courses }: { courses: Awaited<ReturnType<typeof loadCourseCatalog>> }) {
+export default async function DashboardPage() {
   const user = await requireUser();
-  const [records, progress] = await Promise.all([
+  const [courses, records, progress] = await Promise.all([
+    loadCourseCatalog(),
     entitlementRecords(user.id),
     prisma.progress.findMany({ where: { userId: user.id } }),
   ]);
@@ -143,14 +136,5 @@ async function DashboardLive({ courses }: { courses: Awaited<ReturnType<typeof l
         ))}
       </div>
     </main>
-  );
-}
-
-export default async function DashboardPage() {
-  const courses = await loadCourseCatalog();
-  return (
-    <Suspense fallback={<DashboardFrame />}>
-      <DashboardLive courses={courses} />
-    </Suspense>
   );
 }

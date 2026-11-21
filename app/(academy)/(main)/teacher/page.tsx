@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { setMentorActive } from "@/app/actions";
 import { DashboardShell, type DashboardTab } from "@/components/dashboard/dashboard-shell";
@@ -10,6 +9,8 @@ import { coursePageHref, dashboardRoleLabel } from "@/lib/dashboard-people";
 import { prisma } from "@/lib/db";
 import { isStaff } from "@/lib/entitlements";
 import { canonicalRole, isLeadActor, roleLabel } from "@/lib/promote";
+
+export const instant = false;
 
 function when(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -156,7 +157,7 @@ function TeacherFrame({
   courses: Catalog;
   cohorts: CohortRow[];
   mentors: MentorRow[];
-  staff: { id: string; name: string; role: string } | null;
+  staff: { id: string; name: string; role: string };
   initial: DashboardTab;
   banners: React.ReactNode;
   comments: React.ReactNode;
@@ -164,16 +165,14 @@ function TeacherFrame({
   requests: React.ReactNode;
   logs: React.ReactNode;
 }) {
-  const lead = staff ? isLeadActor(staff.role) : false;
+  const lead = isLeadActor(staff.role);
   return (
     <main className="shell">
-      <h1 className="page-title" style={{ marginBottom: 6 }}>{staff ? roleLabel(staff.role) : "Dashboard"}</h1>
+      <h1 className="page-title" style={{ marginBottom: 6 }}>{roleLabel(staff.role)}</h1>
       <p className="note" style={{ marginBottom: 12 }}>
-        {staff
-          ? lead
-            ? `${staff.name}, this dashboard lists the academy. Editing a program or the skill tree stays on those pages. You can rename someone and change roles. You cannot change your own role.`
-            : `${staff.name}, this dashboard lists the academy. Editing a program or the skill tree stays on those pages. Only a Lead can rename someone or change roles.`
-          : "This dashboard lists the academy. Editing a program or the skill tree stays on those pages."}
+        {lead
+          ? `${staff.name}, this dashboard lists the academy. Editing a program or the skill tree stays on those pages. You can rename someone and change roles. You cannot change your own role.`
+          : `${staff.name}, this dashboard lists the academy. Editing a program or the skill tree stays on those pages. Only a Lead can rename someone or change roles.`}
       </p>
       {banners}
       <DashboardShell
@@ -213,17 +212,13 @@ function TeacherFrame({
 }
 
 async function TeacherLive({
-  courses,
-  cohorts,
-  mentors,
   searchParams,
 }: {
-  courses: Catalog;
-  cohorts: CohortRow[];
-  mentors: MentorRow[];
   searchParams: Promise<{ saved?: string; roleError?: string; skillTree?: string; tab?: string; nameError?: string }>;
 }) {
   const staff = await requireStaff();
+  const [catalog, cohortRows, mentors] = await Promise.all([loadCourseCatalog(), loadCohortsWithCourses(), listMentors()]);
+  const courses = catalog.filter((course) => course.access !== "request");
   const query = await searchParams;
   const lead = isLeadActor(staff.role);
   const [comments, people, logs, requests] = await Promise.all([
@@ -253,7 +248,7 @@ async function TeacherLive({
   return (
     <TeacherFrame
       courses={courses}
-      cohorts={cohorts}
+      cohorts={cohortRows}
       mentors={mentors}
       staff={staff}
       initial={initial}
@@ -347,26 +342,5 @@ export default async function TeacherPage({
 }: {
   searchParams: Promise<{ saved?: string; roleError?: string; skillTree?: string; tab?: string; nameError?: string }>;
 }) {
-  const [catalog, cohorts, mentors] = await Promise.all([loadCourseCatalog(), loadCohortsWithCourses(), listMentors()]);
-  const courses = catalog.filter((course) => course.access !== "request");
-  return (
-    <Suspense
-      fallback={
-        <TeacherFrame
-          courses={courses}
-          cohorts={cohorts}
-          mentors={mentors}
-          staff={null}
-          initial="content"
-          banners={null}
-          comments={null}
-          people={null}
-          requests={null}
-          logs={null}
-        />
-      }
-    >
-      <TeacherLive courses={courses} cohorts={cohorts} mentors={mentors} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await TeacherLive({ searchParams });
 }

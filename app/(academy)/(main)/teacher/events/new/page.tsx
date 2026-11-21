@@ -1,8 +1,9 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { EventForm } from "@/components/event-form";
 import { requireStaff } from "@/lib/auth";
 import { listEventTypes, loadCohortsWithCourses } from "@/lib/content";
+
+export const instant = false;
 
 type TypeRow = Awaited<ReturnType<typeof listEventTypes>>[number];
 type CohortRow = Awaited<ReturnType<typeof loadCohortsWithCourses>>[number];
@@ -24,24 +25,12 @@ function NewEventBody({ types, cohorts, error }: { types: TypeRow[]; cohorts: Co
   );
 }
 
-async function NewEventLive({
-  types,
-  cohorts,
-  searchParams,
-}: {
-  types: TypeRow[];
-  cohorts: CohortRow[];
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const [, query] = await Promise.all([requireStaff(), searchParams]);
+async function NewEventLive({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  await requireStaff();
+  const [types, cohorts, query] = await Promise.all([listEventTypes(), loadCohortsWithCourses(), searchParams]);
   return <NewEventBody types={types} cohorts={cohorts} error={Boolean(query.error)} />;
 }
 
 export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const [types, cohorts] = await Promise.all([listEventTypes(), loadCohortsWithCourses()]);
-  return (
-    <Suspense fallback={<NewEventBody types={types} cohorts={cohorts} error={false} />}>
-      <NewEventLive types={types} cohorts={cohorts} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await NewEventLive({ searchParams });
 }

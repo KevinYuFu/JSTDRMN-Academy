@@ -1,9 +1,10 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventForm } from "@/components/event-form";
 import { requireStaff } from "@/lib/auth";
 import { eventBySlug, listEventTypes, listManagedEvents, loadCohortsWithCourses } from "@/lib/content";
+
+export const instant = false;
 
 type EventRow = NonNullable<Awaited<ReturnType<typeof eventBySlug>>>;
 type TypeRow = Awaited<ReturnType<typeof listEventTypes>>[number];
@@ -27,22 +28,20 @@ function EditEventBody({ event, types, cohorts, error }: { event: EventRow; type
 }
 
 async function EditEventLive({
-  event,
-  types,
-  cohorts,
+  slug,
   searchParams,
 }: {
-  event: EventRow;
-  types: TypeRow[];
-  cohorts: CohortRow[];
+  slug: string;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [, query] = await Promise.all([requireStaff(), searchParams]);
+  await requireStaff();
+  const [event, types, cohorts, query] = await Promise.all([eventBySlug(slug), listEventTypes(), loadCohortsWithCourses(), searchParams]);
+  if (!event) notFound();
   return <EditEventBody event={event} types={types} cohorts={cohorts} error={Boolean(query.error)} />;
 }
 
 export async function generateStaticParams() {
-  const events = await listManagedEvents();
+  const events = (await listManagedEvents()).filter((event) => event.active && !event.cancelled);
   return events.length > 0 ? events.map((event) => ({ slug: event.slug })) : [{ slug: "_" }];
 }
 
@@ -56,10 +55,5 @@ export default async function EditEventPage({
   const { slug } = await params;
   const event = await eventBySlug(slug);
   if (!event) notFound();
-  const [types, cohorts] = await Promise.all([listEventTypes(), loadCohortsWithCourses()]);
-  return (
-    <Suspense fallback={<EditEventBody event={event} types={types} cohorts={cohorts} error={false} />}>
-      <EditEventLive event={event} types={types} cohorts={cohorts} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await EditEventLive({ slug, searchParams });
 }

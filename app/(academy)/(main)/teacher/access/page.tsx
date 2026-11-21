@@ -1,6 +1,5 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import { grantAccess, revokeAccess } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { requireStaff } from "@/lib/auth";
 import { listCourses, loadCohortsWithCourses } from "@/lib/content";
 import { prisma } from "@/lib/db";
-import { roleLabel } from "@/lib/roles";
+
+export const instant = false;
 
 type CourseRow = Awaited<ReturnType<typeof listCourses>>[number];
 type CohortRow = Awaited<ReturnType<typeof loadCohortsWithCourses>>[number];
@@ -36,7 +36,7 @@ function AccessBody({
 }: {
   courses: CourseRow[];
   cohorts: CohortRow[];
-  role: string | null;
+  role: string;
   banner: string | null;
   error: boolean;
   students: { id: string; name: string; email: string }[] | null;
@@ -53,9 +53,7 @@ function AccessBody({
   const targets = targetsFor(courses, cohorts);
   return (
     <main className="shell">
-      <div className="crumbs">
-        <Link href="/teacher">{role ? roleLabel(role) : "Dashboard"}</Link> › <b>Access</b>
-      </div>
+      <StaffCrumb role={role} page="Access" />
       <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
       <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>
         Bootcamp students arrive from HubSpot. Put their email here when they’re accepted, or let the webhook do it once a token is set.
@@ -124,15 +122,12 @@ function AccessBody({
 }
 
 async function AccessLive({
-  courses,
-  cohorts,
   searchParams,
 }: {
-  courses: CourseRow[];
-  cohorts: CohortRow[];
   searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }>;
 }) {
-  const [staff, query] = await Promise.all([requireStaff(), searchParams]);
+  const staff = await requireStaff();
+  const [courses, cohorts, query] = await Promise.all([listCourses(), loadCohortsWithCourses(), searchParams]);
   const [entitlements, pending, students] = await Promise.all([
     prisma.entitlement.findMany({
       where: { status: "active" },
@@ -162,12 +157,5 @@ export default async function AccessPage({
 }: {
   searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }>;
 }) {
-  const [courses, cohorts] = await Promise.all([listCourses(), loadCohortsWithCourses()]);
-  return (
-    <Suspense
-      fallback={<AccessBody courses={courses} cohorts={cohorts} role={null} banner={null} error={false} students={null} entitlements={null} pending={null} />}
-    >
-      <AccessLive courses={courses} cohorts={cohorts} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await AccessLive({ searchParams });
 }

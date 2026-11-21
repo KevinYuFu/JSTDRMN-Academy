@@ -1,6 +1,5 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import { saveAnnouncement } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,7 @@ import { requireStaff } from "@/lib/auth";
 import { listManagedEvents } from "@/lib/content";
 import { prisma } from "@/lib/db";
 import { formatToronto } from "@/lib/events";
-import { roleLabel } from "@/lib/roles";
+export const instant = false;
 
 type EventChoice = { id: string; title: string };
 
@@ -22,7 +21,7 @@ function AnnouncementsBody({
   announcements,
 }: {
   events: EventChoice[];
-  role: string | null;
+  role: string;
   saved: boolean;
   error: boolean;
   announcements: {
@@ -39,9 +38,7 @@ function AnnouncementsBody({
 }) {
   return (
     <main className="shell">
-      <div className="crumbs">
-        <Link href="/teacher">{role ? roleLabel(role) : "Dashboard"}</Link> › <b>Announcements</b>
-      </div>
+      <StaffCrumb role={role} page="Announcements" />
       <h1 className="page-title" style={{ marginBottom: 8 }}>Announcements</h1>
       <p className="note" style={{ marginBottom: 16 }}>
         Queue a Discord message for a channel. Without a bot token, the cron logs it instead of posting. On Vercel Hobby, <span className="note">/api/cron/announcements</span> runs once a day at about 3pm Toronto and sends every announcement that is already due. Set the send time before then.
@@ -106,17 +103,17 @@ function AnnouncementsBody({
 }
 
 async function AnnouncementsLive({
-  events,
   searchParams,
 }: {
-  events: EventChoice[];
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const [staff, query, announcements] = await Promise.all([
-    requireStaff(),
+  const staff = await requireStaff();
+  const [query, announcements, managed] = await Promise.all([
     searchParams,
     prisma.announcement.findMany({ include: { event: true }, orderBy: { sendAt: "asc" } }),
+    listManagedEvents(),
   ]);
+  const events = managed.filter((event) => !event.cancelled).map((event) => ({ id: event.id, title: event.title }));
   return (
     <AnnouncementsBody
       events={events}
@@ -133,10 +130,5 @@ export default async function AnnouncementsPage({
 }: {
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const events = (await listManagedEvents()).filter((event) => !event.cancelled).map((event) => ({ id: event.id, title: event.title }));
-  return (
-    <Suspense fallback={<AnnouncementsBody events={events} role={null} saved={false} error={false} announcements={null} />}>
-      <AnnouncementsLive events={events} searchParams={searchParams} />
-    </Suspense>
-  );
+  return await AnnouncementsLive({ searchParams });
 }
