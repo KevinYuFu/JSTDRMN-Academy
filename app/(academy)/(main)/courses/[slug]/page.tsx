@@ -9,9 +9,10 @@ import { courseEntry } from "@/lib/route-entry";
 
 export async function generateStaticParams() {
   const courses = await listCourses();
-  return courses
+  const params = courses
     .filter((course) => course.access !== "cohort" && course.access !== "request")
     .map((course) => ({ slug: course.slug }));
+  return params.length > 0 ? params : [{ slug: "_" }];
 }
 
 async function CourseLive({

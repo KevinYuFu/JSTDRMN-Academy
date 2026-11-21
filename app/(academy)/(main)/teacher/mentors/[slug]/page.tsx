@@ -28,7 +28,7 @@ async function EditMentorLive({ mentor, searchParams }: { mentor: MentorRow; sea
 
 export async function generateStaticParams() {
   const mentors = await listMentors();
-  return mentors.map((mentor) => ({ slug: mentor.slug }));
+  return mentors.length > 0 ? mentors.map((mentor) => ({ slug: mentor.slug })) : [{ slug: "_" }];
 }
 
 export default async function EditMentorPage({

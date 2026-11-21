@@ -43,7 +43,7 @@ async function EditEventLive({
 
 export async function generateStaticParams() {
   const events = await listManagedEvents();
-  return events.map((event) => ({ slug: event.slug }));
+  return events.length > 0 ? events.map((event) => ({ slug: event.slug })) : [{ slug: "_" }];
 }
 
 export default async function EditEventPage({

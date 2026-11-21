@@ -15,7 +15,9 @@ export async function generateStaticParams() {
     const full = await courseBySlug(course.slug);
     for (const cohort of full?.cohorts ?? []) params.push({ slug: course.slug, cohort: cohort.slug });
   }
-  return params;
+  // Cache Components requires one sample so the shell can be checked at build time.
+  // A database with no cohort rows yet uses a path this page turns into a 404.
+  return params.length > 0 ? params : [{ slug: "_", cohort: "_" }];
 }
 
 async function CohortLive({

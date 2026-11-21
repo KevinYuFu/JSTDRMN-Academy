@@ -142,7 +142,7 @@ async function EditorLive({
 
 export async function generateStaticParams() {
   const courses = await listCourses();
-  return courses.map((course) => ({ slug: course.slug }));
+  return courses.length > 0 ? courses.map((course) => ({ slug: course.slug })) : [{ slug: "_" }];
 }
 
 export default async function EditorPage({
