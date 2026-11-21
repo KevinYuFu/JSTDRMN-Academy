@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { programPageHref } from "@/lib/catalog";
 import { loadCourseCatalog } from "@/lib/content";
 import { programPriceLabel } from "@/lib/config";
 import { prisma } from "@/lib/db";
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
       const relevant = course.lessons.filter((lesson) => course.access !== "headliner" || lesson.headliner || isStaff(user.role));
       const completed = relevant.filter((lesson) => done.has(lesson.id)).length;
       const price = programPriceLabel(course);
-      const programPage = course.slug === "intro-courses" ? "/" : `/programs/${course.slug}`;
+      const programPage = programPageHref(course.slug);
       const player = course.access === "headliner" ? "/headliner" : relevant.length > 0 ? `/courses/${course.slug}` : programPage;
       cards.push({
         key: course.id,

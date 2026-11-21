@@ -16,6 +16,11 @@ export type Offer = {
 
 export type OfferCourse = Pick<Course, "id" | "slug" | "title" | "presenter" | "priceCents" | "access" | "billing">;
 
+/** Intro courses has no program page. A thank-you page changes this return. */
+export function programPageHref(slug: string) {
+  return slug === "intro-courses" ? "/" : `/programs/${slug}`;
+}
+
 /** The price and label for a course row checkout already loaded. */
 export function offerFor(asked: "headliner" | "program", course: OfferCourse): Offer | null {
   if (asked === "headliner") {
@@ -40,7 +45,7 @@ export function offerFor(asked: "headliner" | "program", course: OfferCourse): O
     amountCents: course.priceCents,
     cadence: course.billing === "monthly" ? "month" : "once",
     access: course.access,
-    href: course.slug === "intro-courses" ? "/" : `/programs/${course.slug}`,
+    href: programPageHref(course.slug),
   };
 }
 
