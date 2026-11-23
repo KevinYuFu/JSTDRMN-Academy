@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { offerFor, type OfferCourse } from "./catalog";
+import { offerFor, programPageHref, type OfferCourse } from "./catalog";
 import { prices } from "./config";
 
 function course(priceCents: number, extra: Partial<OfferCourse> = {}): OfferCourse {
@@ -24,7 +24,10 @@ describe("offerFor", () => {
     const offer = offerFor("program", row);
     assert.equal(offer?.amountCents, 4500);
     assert.equal(offer?.cadence, "month");
-    assert.equal(offer?.href, "/programs/intro-courses");
+    assert.equal(offer?.href, programPageHref("intro-courses"));
+    assert.equal(programPageHref("intro-courses"), "/");
+    assert.equal(offerFor("program", course(2000, { slug: "dj-bootcamp" }))?.href, "/programs/dj-bootcamp");
+    assert.equal(programPageHref("dj-bootcamp"), "/programs/dj-bootcamp");
   });
 
   it("prices a one-time purchase from the row and ignores a row that is not for sale", () => {
