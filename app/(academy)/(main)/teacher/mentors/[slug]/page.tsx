@@ -6,7 +6,7 @@ import { listActiveMentors, mentorBySlug } from "@/lib/content";
 
 export const instant = false;
 
-// Prerendering the known slugs is what lets a missing one return 404.
+// Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const mentors = await listActiveMentors();
   return mentors.length > 0 ? mentors.map((mentor) => ({ slug: mentor.slug })) : [{ slug: "_" }];

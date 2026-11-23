@@ -48,7 +48,9 @@ async function staffRecordExists(pathname: string) {
   return Boolean(row);
 }
 
-async function entryDestination(token: string, teacher: boolean, slug: string | null, pathname: string) {
+type Entry = { kind: "redirect"; href: string } | { kind: "notFound" };
+
+async function entryDestination(token: string, teacher: boolean, slug: string | null, pathname: string): Promise<Entry | null> {
   const session = await prisma.session.findUnique({
     where: { token },
     select: { expiresAt: true, user: { select: { id: true, role: true } } },
@@ -56,8 +58,8 @@ async function entryDestination(token: string, teacher: boolean, slug: string | 
   if (!session || session.expiresAt.getTime() < Date.now()) return null;
   if (teacher) {
     const href = studentStaffRedirect(session.user.role);
-    if (href) return href;
-    if (!(await staffRecordExists(pathname))) return "404";
+    if (href) return { kind: "redirect", href };
+    if (!(await staffRecordExists(pathname))) return { kind: "notFound" };
     return null;
   }
   if (!slug || !isStudent(session.user.role)) return null;
@@ -78,7 +80,8 @@ async function entryDestination(token: string, teacher: boolean, slug: string | 
     where: { userId: session.user.id, product: "cohort" },
     select: { product: true, courseId: true, cohortId: true, status: true, endsAt: true },
   });
-  return singleStudentCohortHref(session.user.role, course, course.cohorts, toEntitlementRecords(rows));
+  const href = singleStudentCohortHref(session.user.role, course, course.cohorts, toEntitlementRecords(rows));
+  return href ? { kind: "redirect", href } : null;
 }
 
 export async function proxy(request: NextRequest) {
@@ -92,9 +95,12 @@ export async function proxy(request: NextRequest) {
   const slug = bootcampSlug(pathname);
   if (!token || (!teacher && !slug)) return NextResponse.next();
   const destination = await entryDestination(token, teacher, slug, pathname);
-  if (destination === "404") return new NextResponse("Not found", { status: 404 });
+  if (destination?.kind === "notFound") {
+    // A plain 404 has no header. Rewrite into the page that already renders the site's not-found.
+    return NextResponse.rewrite(new URL("/courses/_", request.url), { status: 404 });
+  }
   if (!destination) return NextResponse.next();
-  return NextResponse.redirect(new URL(destination, request.url));
+  return NextResponse.redirect(new URL(destination.href, request.url));
 }
 
 export const config = {

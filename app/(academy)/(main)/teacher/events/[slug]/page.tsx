@@ -6,7 +6,7 @@ import { eventBySlug, listEventTypes, listManagedEvents, loadCohortsWithCourses 
 
 export const instant = false;
 
-// Prerendering the known slugs is what lets a missing one return 404.
+// Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const events = (await listManagedEvents()).filter((event) => event.active && !event.cancelled);
   return events.length > 0 ? events.map((event) => ({ slug: event.slug })) : [{ slug: "_" }];

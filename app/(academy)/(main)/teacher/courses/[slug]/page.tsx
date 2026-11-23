@@ -12,7 +12,7 @@ import { defaultVideoProvider, videoProviders } from "@/lib/video";
 
 export const instant = false;
 
-// Prerendering the known slugs is what lets a missing one return 404.
+// Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const courses = await listCourses();
   return courses.length > 0 ? courses.map((course) => ({ slug: course.slug })) : [{ slug: "_" }];
@@ -44,23 +44,27 @@ export default async function EditorPage({
           <section className="card" style={{ padding: "8px 16px" }}>
             <h2 className="section-label">Lessons</h2>
             {lessons.length === 0 ? <p className="note">No lessons yet.</p> : null}
-            {lessons.map((lesson) => (
-              <div key={lesson.id} className="list-row">
-                <div>
-                  <b>
-                    {lesson.position}. {lesson.title}
-                  </b>
-                  <div className="note">
-                    {lesson.cohortId && cohortName.get(lesson.cohortId) ? `${cohortName.get(lesson.cohortId)} · ` : ""}
-                    {lesson.trackId && trackName.get(lesson.trackId) ? `${trackName.get(lesson.trackId)} · ` : ""}
-                    {lesson.videoProvider} · {lesson.runtimeLabel}
-                    {lesson.headliner ? " · Headliner" : ""}
-                    {lesson.drip ? " · dripped" : ""}
-                    {lesson.slidesTitle ? " · slides" : ""}
+            {lessons.map((lesson) => {
+              const cohort = lesson.cohortId ? cohortName.get(lesson.cohortId) : undefined;
+              const track = lesson.trackId ? trackName.get(lesson.trackId) : undefined;
+              return (
+                <div key={lesson.id} className="list-row">
+                  <div>
+                    <b>
+                      {lesson.position}. {lesson.title}
+                    </b>
+                    <div className="note">
+                      {cohort ? `${cohort} · ` : ""}
+                      {track ? `${track} · ` : ""}
+                      {lesson.videoProvider} · {lesson.runtimeLabel}
+                      {lesson.headliner ? " · Headliner" : ""}
+                      {lesson.drip ? " · dripped" : ""}
+                      {lesson.slidesTitle ? " · slides" : ""}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
           <Form action={addLesson} className="card stack" style={{ padding: 18 }}>
             <h2 className="section-label">Add a lesson</h2>
