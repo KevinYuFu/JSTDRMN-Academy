@@ -6,16 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { requireStaff } from "@/lib/auth";
-import { courseBySlug, lessonsForCourse, listCourses, tracksForCourse } from "@/lib/content";
+import { listCourses } from "@/lib/content";
+import { courseEditorData } from "@/lib/staff-data";
+import { withSample } from "@/lib/static-params";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
-
-export const instant = false;
 
 // Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const courses = await listCourses();
-  return courses.length > 0 ? courses.map((course) => ({ slug: course.slug })) : [{ slug: "_" }];
+  return withSample(courses.map((course) => ({ slug: course.slug })), { slug: "_" });
 }
 
 export default async function EditorPage({
@@ -25,18 +24,15 @@ export default async function EditorPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string; added?: string }>;
 }) {
-  const staff = await requireStaff();
   const { slug } = await params;
-  const query = await searchParams;
-  const course = await courseBySlug(slug);
+  const { course, lessons, tracks } = await courseEditorData(slug);
   if (!course) notFound();
-  const [lessons, tracks] = await Promise.all([lessonsForCourse(course.id), tracksForCourse(course.id)]);
+  const query = await searchParams;
   const cohortName = new Map(course.cohorts.map((cohort) => [cohort.id, cohort.name]));
   const trackName = new Map(tracks.map((track) => [track.id, track.title]));
   return (
     <>
-      <main className="shell">
-        <StaffCrumb role={staff.role} page={course.title} />
+        <StaffCrumb page={course.title} />
         <h1 className="page-title" style={{ marginBottom: 12 }}>{course.title}</h1>
         {query.added ? <div className="banner">Lesson added. Students see it the next time they open the course.</div> : null}
         {query.error ? <div className="error">A lesson needs a title, a video URL, a duration, and a cohort if this is a bootcamp.</div> : null}
@@ -124,7 +120,6 @@ export default async function EditorPage({
             <Button type="submit" className="self-start">Add lesson</Button>
           </Form>
         </div>
-      </main>
     </>
   );
 }

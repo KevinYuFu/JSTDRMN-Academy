@@ -5,26 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requireStaff } from "@/lib/auth";
-import { listCourses, loadCohortsWithCourses } from "@/lib/content";
-import { prisma } from "@/lib/db";
-
-export const instant = false;
+import { accessPageData } from "@/lib/staff-data";
 
 export default async function AccessPage({ searchParams }: { searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }> }) {
-  const staff = await requireStaff();
+  const { courses, cohorts, entitlements, pending, students } = await accessPageData();
   const query = await searchParams;
-  const [courses, cohorts, entitlements, pending, students] = await Promise.all([
-    listCourses(),
-    loadCohortsWithCourses(),
-    prisma.entitlement.findMany({
-      where: { status: "active" },
-      include: { user: true, course: true, cohort: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.pendingGrant.findMany({ where: { consumedAt: null }, orderBy: { createdAt: "desc" } }),
-    prisma.user.findMany({ where: { role: "student" }, orderBy: { name: "asc" } }),
-  ]);
   const targets = [
     ...courses.filter((course) => course.access === "headliner").map((course) => ({ value: "headliner", label: `${course.title} membership` })),
     ...courses
@@ -36,8 +21,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <main className="shell">
-        <StaffCrumb role={staff.role} page="Access" />
+        <StaffCrumb page="Access" />
         <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
         <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>
           Bootcamp students arrive from HubSpot. Put their email here when they’re accepted, or let the webhook do it once a token is set.
@@ -99,7 +83,6 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
             </div>
           ))}
         </section>
-      </main>
     </>
   );
 }

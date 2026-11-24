@@ -3,14 +3,10 @@ import { setMentorActive } from "@/app/actions";
 import { DashboardShell, type DashboardTab } from "@/components/dashboard/dashboard-shell";
 import { PeopleTable } from "@/components/dashboard/people-table";
 import styles from "@/components/dashboard/dashboard.module.css";
-import { requireStaff } from "@/lib/auth";
-import { listMentors, loadCohortsWithCourses, loadCourseCatalog } from "@/lib/content";
 import { coursePageHref, dashboardRoleLabel } from "@/lib/dashboard-people";
-import { prisma } from "@/lib/db";
 import { isStaff } from "@/lib/entitlements";
 import { canonicalRole, isLeadActor, roleLabel } from "@/lib/promote";
-
-export const instant = false;
+import { staffDashboard } from "@/lib/staff-data";
 
 function when(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -41,30 +37,9 @@ export default async function TeacherPage({
 }: {
   searchParams: Promise<{ saved?: string; roleError?: string; skillTree?: string; tab?: string; nameError?: string }>;
 }) {
-  const staff = await requireStaff();
+  const { staff, catalog, comments, people, logs, cohorts, requests, mentors } = await staffDashboard();
   const query = await searchParams;
   const lead = isLeadActor(staff.role);
-  const [catalog, comments, people, logs, cohorts, requests, mentors] = await Promise.all([
-    loadCourseCatalog(),
-    prisma.comment.findMany({
-      where: { parentId: null },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-      include: { user: true, lesson: { include: { course: true, cohort: true } }, replies: { include: { user: true } } },
-    }),
-    prisma.user.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true, role: true, discordId: true, discordUsername: true },
-    }),
-    prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
-    loadCohortsWithCourses(),
-    prisma.sessionRequest.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: { course: true, mentor: true },
-    }),
-    listMentors(),
-  ]);
   const courses = catalog.filter((course) => course.access !== "request");
   const roleError = query.roleError ? roleErrors[query.roleError] ?? "That role change did not save." : null;
   const nameError = query.nameError ? nameErrors[query.nameError] ?? "That name did not save." : null;
@@ -74,7 +49,6 @@ export default async function TeacherPage({
 
   return (
     <>
-      <main className="shell">
         <h1 className="page-title" style={{ marginBottom: 6 }}>{roleLabel(staff.role)}</h1>
         <p className="note" style={{ marginBottom: 12 }}>
           {lead
@@ -260,7 +234,6 @@ export default async function TeacherPage({
             </>
           }
         />
-      </main>
     </>
   );
 }

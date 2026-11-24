@@ -3,6 +3,7 @@ import { CourseView } from "@/components/course-view";
 import { getUser } from "@/lib/auth";
 import { courseBySlug, lessonsForCourse, listCourses } from "@/lib/content";
 import { openCourse } from "@/lib/learn";
+import { withSample } from "@/lib/static-params";
 
 export const instant = false;
 
@@ -12,7 +13,7 @@ export async function generateStaticParams() {
   const params = courses
     .filter((course) => course.access !== "cohort" && course.access !== "request")
     .map((course) => ({ slug: course.slug }));
-  return params.length > 0 ? params : [{ slug: "_" }];
+  return withSample(params, { slug: "_" });
 }
 
 export default async function CoursePage({

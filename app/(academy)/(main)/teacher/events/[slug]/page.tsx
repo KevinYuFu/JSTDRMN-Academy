@@ -1,15 +1,15 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventForm } from "@/components/event-form";
-import { requireStaff } from "@/lib/auth";
-import { eventBySlug, listEventTypes, listManagedEvents, loadCohortsWithCourses } from "@/lib/content";
-
-export const instant = false;
+import { StaffCrumb } from "@/components/staff-crumb";
+import { listManagedEvents } from "@/lib/content";
+import { eventFormError } from "@/lib/staff-copy";
+import { eventFormData } from "@/lib/staff-data";
+import { withSample } from "@/lib/static-params";
 
 // Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const events = (await listManagedEvents()).filter((event) => event.active && !event.cancelled);
-  return events.length > 0 ? events.map((event) => ({ slug: event.slug })) : [{ slug: "_" }];
+  return withSample(events.map((event) => ({ slug: event.slug })), { slug: "_" });
 }
 
 export default async function EditEventPage({
@@ -19,25 +19,20 @@ export default async function EditEventPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireStaff();
   const { slug } = await params;
-  const query = await searchParams;
-  const [event, types, cohortRows] = await Promise.all([eventBySlug(slug), listEventTypes(), loadCohortsWithCourses()]);
+  const { event, types, cohorts } = await eventFormData(slug);
   if (!event) notFound();
+  const query = await searchParams;
   return (
     <>
-      <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher/events">Events</Link> › <b>{event.title}</b>
-        </div>
-        <h1 className="page-title" style={{ marginBottom: 12 }}>{event.title}</h1>
-        {query.error ? <div className="error">Title, description, type, and a Toronto start and end are required. A cohort audience needs a cohort.</div> : null}
-        <EventForm
-          event={event}
-          types={types}
-          cohorts={cohortRows.map((cohort) => ({ id: cohort.id, name: cohort.name, course: cohort.course.title }))}
-        />
-      </main>
+      <StaffCrumb page={event.title} parent={{ href: "/teacher/events", label: "Events" }} />
+      <h1 className="page-title" style={{ marginBottom: 12 }}>{event.title}</h1>
+      {query.error ? <div className="error">{eventFormError}</div> : null}
+      <EventForm
+        event={event}
+        types={types}
+        cohorts={cohorts}
+      />
     </>
   );
 }

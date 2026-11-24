@@ -5,26 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { requireStaff } from "@/lib/auth";
-import { listManagedEvents } from "@/lib/content";
-import { prisma } from "@/lib/db";
 import { formatToronto } from "@/lib/events";
-
-export const instant = false;
+import { announcementsData } from "@/lib/staff-data";
 
 export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
-  const staff = await requireStaff();
+  const { announcements, events } = await announcementsData();
   const query = await searchParams;
-  const [announcements, managed] = await Promise.all([
-    prisma.announcement.findMany({ include: { event: true }, orderBy: { sendAt: "asc" } }),
-    listManagedEvents(),
-  ]);
-  const events = managed.filter((event) => !event.cancelled);
 
   return (
     <>
-      <main className="shell">
-        <StaffCrumb role={staff.role} page="Announcements" />
+        <StaffCrumb page="Announcements" />
         <h1 className="page-title" style={{ marginBottom: 8 }}>Announcements</h1>
         <p className="note" style={{ marginBottom: 16 }}>
           Queue a Discord message for a channel. Without a bot token, the cron logs it instead of posting. On Vercel Hobby, <span className="note">/api/cron/announcements</span> runs once a day at about 3pm Toronto and sends every announcement that is already due. Set the send time before then.
@@ -84,7 +74,6 @@ export default async function AnnouncementsPage({ searchParams }: { searchParams
             <Button type="submit">Schedule</Button>
           </Form>
         </div>
-      </main>
     </>
   );
 }

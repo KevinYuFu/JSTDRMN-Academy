@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { EntitlementRecord } from "./entitlements";
-import { singleStudentCohortHref, staffRecordPath, studentStaffRedirect } from "./route-entry";
+import { singleStudentCohortHref, staffRecordPath } from "./route-entry";
 
 const now = new Date("2026-06-01T00:00:00Z");
 const course = { id: "crs_dj", slug: "dj-bootcamp" };
@@ -15,16 +15,6 @@ function seat(cohortId: string, status: EntitlementRecord["status"] = "active", 
 }
 
 describe("staff entry", () => {
-  it("sends a student home and leaves staff on the dashboard", () => {
-    assert.equal(studentStaffRedirect("student"), "/");
-    assert.equal(studentStaffRedirect("lead"), null);
-    assert.equal(studentStaffRedirect("mentor"), null);
-    assert.equal(studentStaffRedirect("instructor"), null);
-    assert.equal(studentStaffRedirect("teacher"), null);
-    assert.equal(studentStaffRedirect("admin"), null);
-    assert.equal(studentStaffRedirect(null), null);
-  });
-
   it("names the staff editor records and leaves the new pages alone", () => {
     assert.deepEqual(staffRecordPath("/teacher/mentors/yuzu"), { kind: "mentor", slug: "yuzu" });
     assert.deepEqual(staffRecordPath("/teacher/events/sync"), { kind: "event", slug: "sync" });

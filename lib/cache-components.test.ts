@@ -13,6 +13,21 @@ function walk(dir: string, out: string[] = []) {
   return out;
 }
 
+function isTeacherPage(file: string) {
+  return file.startsWith("app/(academy)/(main)/teacher/") && file.endsWith("/page.tsx");
+}
+
+const staffDataFns = [
+  "staffDashboard(",
+  "accessPageData(",
+  "announcementsData(",
+  "eventManagerData(",
+  "eventFormData(",
+  "mentorForEdit(",
+  "courseEditorData(",
+  "skillTreeForEditor(",
+];
+
 const readyMadePages = new Set([
   "app/(academy)/(main)/page.tsx",
   "app/(academy)/(main)/programs/page.tsx",
@@ -38,9 +53,35 @@ describe("cache components", () => {
       assert.equal(text.includes("export const runtime"), false, file);
       assert.equal(text.includes("use cache"), false, file);
       if (file.endsWith("/page.tsx") && file !== "app/mentor-drafts/page.tsx") {
-        if (readyMadePages.has(file)) assert.equal(text.includes("export const instant = false"), false, file);
-        else assert.match(text, /export const instant = false/, file);
+        if (readyMadePages.has(file) || isTeacherPage(file)) {
+          assert.equal(text.includes("export const instant = false"), false, file);
+        } else assert.match(text, /export const instant = false/, file);
       }
+    }
+  });
+
+  it("puts the staff frame on the teacher layout and leaves each page to its own content", () => {
+    const layout = readFileSync("app/(academy)/(main)/teacher/layout.tsx", "utf8");
+    assert.match(layout, /export const instant = false/);
+    assert.match(layout, /return <main className="shell">\{children\}<\/main>/);
+    assert.equal(layout.includes("requireStaff"), false);
+    assert.equal(layout.includes("getUser"), false);
+    assert.equal(layout.includes("cookies("), false);
+    assert.equal(layout.includes("prisma"), false);
+    assert.equal(layout.includes("use cache"), false);
+
+    const pages = walk("app/(academy)/(main)/teacher").filter((file) => file.endsWith("/page.tsx"));
+    assert.equal(pages.length, 10);
+    for (const file of pages) {
+      const text = readFileSync(file, "utf8");
+      assert.equal(text.includes("requireStaff"), false, file);
+      assert.equal(text.includes("requireLead"), false, file);
+      assert.equal(text.includes('<main className="shell">'), false, file);
+      assert.equal(text.includes("export const instant = false"), false, file);
+      assert.equal(text.includes("from \"@/lib/db\""), false, file);
+      assert.equal(text.includes("prisma."), false, file);
+      const guarded = text.includes("<StaffCrumb") || staffDataFns.some((name) => text.includes(name));
+      assert.equal(guarded, true, file);
     }
   });
 

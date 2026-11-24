@@ -5,22 +5,17 @@ import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { requireStaff } from "@/lib/auth";
-import { listEventTypes, listManagedEvents } from "@/lib/content";
 import { formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
-
-export const instant = false;
+import { eventManagerData } from "@/lib/staff-data";
 
 export default async function EventManagerPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
-  const staff = await requireStaff();
   const query = await searchParams;
   const now = new Date();
-  const [events, types] = await Promise.all([listManagedEvents(), listEventTypes()]);
+  const { events, types } = await eventManagerData();
 
   return (
     <>
-      <main className="shell">
-        <StaffCrumb role={staff.role} page="Events" />
+        <StaffCrumb page="Events" />
         <h1 className="page-title" style={{ marginBottom: 8 }}>Events</h1>
         <p className="note" style={{ marginBottom: 16 }}>Move a time or a destination here. The Events page reads the same records. Types carry the default join action.</p>
         {query.saved ? <div className="banner">Saved.</div> : null}
@@ -81,7 +76,6 @@ export default async function EventManagerPage({ searchParams }: { searchParams:
             </Form>
           </section>
         </div>
-      </main>
     </>
   );
 }

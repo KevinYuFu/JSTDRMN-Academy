@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { requireStaff } from "@/lib/auth";
 import { roleLabel } from "@/lib/roles";
 
-/** The staff breadcrumb. The role is already known, so the label does not change after load. */
-export function StaffCrumb({ role, page }: { role: string; page: string }) {
+/**
+ * Staff breadcrumb. The role comes from this request, so the label does not change after load.
+ * `parent` is the middle step on the event form (Events › New, Events › title).
+ */
+export async function StaffCrumb({ page, parent }: { page: string; parent?: { href: string; label: string } }) {
+  const staff = await requireStaff();
+  const link = parent ? { href: parent.href, label: parent.label } : { href: "/teacher", label: roleLabel(staff.role) };
   return (
     <div className="crumbs">
-      <Link href="/teacher">{roleLabel(role)}</Link> › <b>{page}</b>
+      <Link href={link.href}>{link.label}</Link> › <b>{page}</b>
     </div>
   );
 }
