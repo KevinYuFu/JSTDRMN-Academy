@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { accessPageData } from "@/lib/staff-data";
 
+export const instant = false;
+
 export default async function AccessPage({ searchParams }: { searchParams: Promise<{ granted?: string; revoked?: string; pending?: string; error?: string }> }) {
   const { courses, cohorts, entitlements, pending, students } = await accessPageData();
   const query = await searchParams;

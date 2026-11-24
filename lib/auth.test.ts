@@ -45,6 +45,9 @@ describe("getUser request dedupe", () => {
     const source = readFileSync(new URL("./auth.ts", import.meta.url), "utf8");
     assert.match(source, /import \{ cache \} from "react"/);
     assert.match(source, /export const getUser = cache\(async function getUser\(\)/);
+    assert.match(source, /await connection\(\)/);
+    assert.match(source, /await connection\(\)[\s\S]*await cookies\(\)/);
+    assert.match(source, /await cookies\(\)[\s\S]*findLiveSession\(/);
     assert.match(source, /const token = jar\.get\(SESSION_COOKIE\)\?\.value/);
     assert.match(source, /if \(!token\) return null/);
     const rules = readFileSync(new URL("./access-rules.ts", import.meta.url), "utf8");

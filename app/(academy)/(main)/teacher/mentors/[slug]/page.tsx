@@ -6,6 +6,8 @@ import { mentorFormError } from "@/lib/staff-copy";
 import { mentorForEdit } from "@/lib/staff-data";
 import { withSample } from "@/lib/static-params";
 
+export const instant = false;
+
 // Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const mentors = await listActiveMentors();

@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { formatToronto, nextOccurrence, resolveJoin } from "@/lib/events";
 import { eventManagerData } from "@/lib/staff-data";
 
+export const instant = false;
+
 export default async function EventManagerPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const query = await searchParams;
   const now = new Date();

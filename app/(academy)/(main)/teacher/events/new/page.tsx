@@ -3,6 +3,8 @@ import { StaffCrumb } from "@/components/staff-crumb";
 import { eventFormError } from "@/lib/staff-copy";
 import { eventFormData } from "@/lib/staff-data";
 
+export const instant = false;
+
 export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { types, cohorts } = await eventFormData();
   const query = await searchParams;

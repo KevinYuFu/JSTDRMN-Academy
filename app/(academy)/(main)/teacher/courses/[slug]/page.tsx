@@ -11,6 +11,8 @@ import { courseEditorData } from "@/lib/staff-data";
 import { withSample } from "@/lib/static-params";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
 
+export const instant = false;
+
 // Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
 export async function generateStaticParams() {
   const courses = await listCourses();

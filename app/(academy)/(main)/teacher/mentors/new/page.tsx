@@ -2,6 +2,8 @@ import { MentorForm } from "@/components/mentor-form";
 import { StaffCrumb } from "@/components/staff-crumb";
 import { mentorFormError } from "@/lib/staff-copy";
 
+export const instant = false;
+
 export default async function NewMentorPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const query = await searchParams;
   return (

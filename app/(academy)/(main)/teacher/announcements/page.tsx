@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatToronto } from "@/lib/events";
 import { announcementsData } from "@/lib/staff-data";
 
+export const instant = false;
+
 export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const { announcements, events } = await announcementsData();
   const query = await searchParams;

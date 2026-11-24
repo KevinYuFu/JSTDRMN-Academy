@@ -11,6 +11,7 @@ type LiveSessionOptions<T extends { expiresAt: Date }> = {
 function clock(now?: Date | number) {
   if (typeof now === "number") return now;
   if (now instanceof Date) return now.getTime();
+  // Callers that render a page read cookies or connection() before this.
   return Date.now();
 }
 

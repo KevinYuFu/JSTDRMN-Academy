@@ -5,6 +5,8 @@ import { skillTreeForEditor } from "@/lib/staff-data";
 import { skillTreeErrorCopy, skillTreeSavedCopy } from "@/lib/skill-tree-edit";
 import { findNode } from "@/lib/skill-tree";
 
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Skill tree · JSTDRMN Academy",
 };

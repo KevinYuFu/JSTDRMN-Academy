@@ -13,10 +13,6 @@ function walk(dir: string, out: string[] = []) {
   return out;
 }
 
-function isTeacherPage(file: string) {
-  return file.startsWith("app/(academy)/(main)/teacher/") && file.endsWith("/page.tsx");
-}
-
 const staffDataFns = [
   "staffDashboard(",
   "accessPageData(",
@@ -53,9 +49,8 @@ describe("cache components", () => {
       assert.equal(text.includes("export const runtime"), false, file);
       assert.equal(text.includes("use cache"), false, file);
       if (file.endsWith("/page.tsx") && file !== "app/mentor-drafts/page.tsx") {
-        if (readyMadePages.has(file) || isTeacherPage(file)) {
-          assert.equal(text.includes("export const instant = false"), false, file);
-        } else assert.match(text, /export const instant = false/, file);
+        if (readyMadePages.has(file)) assert.equal(text.includes("export const instant = false"), false, file);
+        else assert.match(text, /export const instant = false/, file);
       }
     }
   });
@@ -77,7 +72,7 @@ describe("cache components", () => {
       assert.equal(text.includes("requireStaff"), false, file);
       assert.equal(text.includes("requireLead"), false, file);
       assert.equal(text.includes('<main className="shell">'), false, file);
-      assert.equal(text.includes("export const instant = false"), false, file);
+      assert.match(text, /export const instant = false/, file);
       assert.equal(text.includes("from \"@/lib/db\""), false, file);
       assert.equal(text.includes("prisma."), false, file);
       const guarded = text.includes("<StaffCrumb") || staffDataFns.some((name) => text.includes(name));
