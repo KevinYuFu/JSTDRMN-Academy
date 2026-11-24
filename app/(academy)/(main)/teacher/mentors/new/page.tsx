@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { MentorForm } from "@/components/mentor-form";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { requireStaff } from "@/lib/auth";
-import { roleLabel } from "@/lib/roles";
 
 export const instant = false;
 
@@ -11,9 +10,7 @@ export default async function NewMentorPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>New mentor</b>
-        </div>
+        <StaffCrumb role={staff.role} page="New mentor" />
         <h1 className="page-title" style={{ marginBottom: 12 }}>New mentor</h1>
         {query.error ? <div className="error">Name, role line, and bio are required. Photo URL, if you add one, starts with http.</div> : null}
         <MentorForm mentor={null} />

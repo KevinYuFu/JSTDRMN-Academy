@@ -1,13 +1,13 @@
-import Link from "next/link";
 import { grantAccess, revokeAccess } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireStaff } from "@/lib/auth";
+import { listCourses, loadCohortsWithCourses } from "@/lib/content";
 import { prisma } from "@/lib/db";
-import { roleLabel } from "@/lib/roles";
 
 export const instant = false;
 
@@ -15,8 +15,8 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   const staff = await requireStaff();
   const query = await searchParams;
   const [courses, cohorts, entitlements, pending, students] = await Promise.all([
-    prisma.course.findMany({ orderBy: { sort: "asc" } }),
-    prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
+    listCourses(),
+    loadCohortsWithCourses(),
     prisma.entitlement.findMany({
       where: { status: "active" },
       include: { user: true, course: true, cohort: true },
@@ -37,9 +37,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Access</b>
-        </div>
+        <StaffCrumb role={staff.role} page="Access" />
         <h1 className="page-title" style={{ marginBottom: 8 }}>Grant or revoke</h1>
         <p className="note" style={{ marginBottom: 16, maxWidth: 640 }}>
           Bootcamp students arrive from HubSpot. Put their email here when they’re accepted, or let the webhook do it once a token is set.

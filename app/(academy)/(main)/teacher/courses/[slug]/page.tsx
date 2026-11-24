@@ -1,17 +1,22 @@
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import { addLesson } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireStaff } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { roleLabel } from "@/lib/roles";
+import { courseBySlug, lessonsForCourse, listCourses, tracksForCourse } from "@/lib/content";
 import { defaultVideoProvider, videoProviders } from "@/lib/video";
-import { notFound } from "next/navigation";
 
 export const instant = false;
+
+// Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
+export async function generateStaticParams() {
+  const courses = await listCourses();
+  return courses.length > 0 ? courses.map((course) => ({ slug: course.slug })) : [{ slug: "_" }];
+}
 
 export default async function EditorPage({
   params,
@@ -23,45 +28,43 @@ export default async function EditorPage({
   const staff = await requireStaff();
   const { slug } = await params;
   const query = await searchParams;
-  const course = await prisma.course.findUnique({
-    where: { slug },
-    include: {
-      cohorts: { orderBy: { sort: "asc" } },
-      tracks: { orderBy: { position: "asc" } },
-      lessons: { orderBy: { position: "asc" }, include: { cohort: true, track: true } },
-    },
-  });
+  const course = await courseBySlug(slug);
   if (!course) notFound();
+  const [lessons, tracks] = await Promise.all([lessonsForCourse(course.id), tracksForCourse(course.id)]);
+  const cohortName = new Map(course.cohorts.map((cohort) => [cohort.id, cohort.name]));
+  const trackName = new Map(tracks.map((track) => [track.id, track.title]));
   return (
     <>
       <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>{course.title}</b>
-        </div>
+        <StaffCrumb role={staff.role} page={course.title} />
         <h1 className="page-title" style={{ marginBottom: 12 }}>{course.title}</h1>
         {query.added ? <div className="banner">Lesson added. Students see it the next time they open the course.</div> : null}
         {query.error ? <div className="error">A lesson needs a title, a video URL, a duration, and a cohort if this is a bootcamp.</div> : null}
         <div className="split">
           <section className="card" style={{ padding: "8px 16px" }}>
             <h2 className="section-label">Lessons</h2>
-            {course.lessons.length === 0 ? <p className="note">No lessons yet.</p> : null}
-            {course.lessons.map((lesson) => (
-              <div key={lesson.id} className="list-row">
-                <div>
-                  <b>
-                    {lesson.position}. {lesson.title}
-                  </b>
-                  <div className="note">
-                    {lesson.cohort ? `${lesson.cohort.name} · ` : ""}
-                    {lesson.track ? `${lesson.track.title} · ` : ""}
-                    {lesson.videoProvider} · {lesson.runtimeLabel}
-                    {lesson.headliner ? " · Headliner" : ""}
-                    {lesson.drip ? " · dripped" : ""}
-                    {lesson.slidesTitle ? " · slides" : ""}
+            {lessons.length === 0 ? <p className="note">No lessons yet.</p> : null}
+            {lessons.map((lesson) => {
+              const cohort = lesson.cohortId ? cohortName.get(lesson.cohortId) : undefined;
+              const track = lesson.trackId ? trackName.get(lesson.trackId) : undefined;
+              return (
+                <div key={lesson.id} className="list-row">
+                  <div>
+                    <b>
+                      {lesson.position}. {lesson.title}
+                    </b>
+                    <div className="note">
+                      {cohort ? `${cohort} · ` : ""}
+                      {track ? `${track} · ` : ""}
+                      {lesson.videoProvider} · {lesson.runtimeLabel}
+                      {lesson.headliner ? " · Headliner" : ""}
+                      {lesson.drip ? " · dripped" : ""}
+                      {lesson.slidesTitle ? " · slides" : ""}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
           <Form action={addLesson} className="card stack" style={{ padding: 18 }}>
             <h2 className="section-label">Add a lesson</h2>
@@ -79,12 +82,12 @@ export default async function EditorPage({
                 </select>
               </>
             ) : null}
-            {course.tracks.length > 0 ? (
+            {tracks.length > 0 ? (
               <>
                 <Label htmlFor="trackId">Track</Label>
                 <select id="trackId" name="trackId" className="h-11 rounded-[25px] border border-white/15 bg-[#121212] px-4" defaultValue="">
                   <option value="">No track</option>
-                  {course.tracks.map((track) => (
+                  {tracks.map((track) => (
                     <option key={track.id} value={track.id}>{track.title}</option>
                   ))}
                 </select>

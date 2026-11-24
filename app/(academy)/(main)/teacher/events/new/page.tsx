@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { EventForm } from "@/components/event-form";
 import { requireStaff } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { listEventTypes, loadCohortsWithCourses } from "@/lib/content";
 
 export const instant = false;
 
 export default async function NewEventPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   await requireStaff();
   const query = await searchParams;
-  const [types, cohorts] = await Promise.all([
-    prisma.eventType.findMany({ orderBy: { sort: "asc" } }),
-    prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
-  ]);
+  const [types, cohortRows] = await Promise.all([listEventTypes(), loadCohortsWithCourses()]);
+  const cohorts = cohortRows.map((cohort) => ({ id: cohort.id, name: cohort.name, course: cohort.course.title }));
   return (
     <>
       <main className="shell">
@@ -23,7 +21,7 @@ export default async function NewEventPage({ searchParams }: { searchParams: Pro
         <EventForm
           event={null}
           types={types}
-          cohorts={cohorts.map((cohort) => ({ id: cohort.id, name: cohort.name, course: cohort.course.title }))}
+          cohorts={cohorts}
         />
       </main>
     </>

@@ -10,7 +10,7 @@ import {
   earlierLessonsComplete,
   isStaff,
   lessonAccess,
-  normalizeProduct,
+  toEntitlementRecords,
   type AccessDecision,
   type EntitlementRecord,
 } from "./entitlements";
@@ -33,13 +33,7 @@ export type LessonView = {
 
 export async function entitlementRecords(userId: string): Promise<EntitlementRecord[]> {
   const rows = await prisma.entitlement.findMany({ where: { userId } });
-  return rows.map((row) => ({
-    product: normalizeProduct(row.product) ?? "program",
-    courseId: row.courseId,
-    cohortId: row.cohortId,
-    status: row.status === "active" ? "active" : "revoked",
-    endsAt: row.endsAt,
-  }));
+  return toEntitlementRecords(rows);
 }
 
 export async function openCourse(input: {

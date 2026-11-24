@@ -52,6 +52,25 @@ export function normalizeProduct(value: string): Product | null {
   return null;
 }
 
+type StoredEntitlement = {
+  product: string;
+  courseId: string | null;
+  cohortId: string | null;
+  status: string;
+  endsAt: Date | null;
+};
+
+/** The one mapping from a stored entitlement row onto the access check. An unknown product counts as program. */
+export function toEntitlementRecords(rows: readonly StoredEntitlement[]): EntitlementRecord[] {
+  return rows.map((row) => ({
+    product: normalizeProduct(row.product) ?? "program",
+    courseId: row.courseId,
+    cohortId: row.cohortId,
+    status: row.status === "active" ? "active" : "revoked",
+    endsAt: row.endsAt,
+  }));
+}
+
 export function asCourseAccess(value: string): CourseAccess {
   if (value === "ash_subscription") return "subscription";
   if (value === "headliner" || value === "purchase" || value === "subscription" || value === "cohort" || value === "open") {

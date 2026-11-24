@@ -2,9 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EventForm } from "@/components/event-form";
 import { requireStaff } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { eventBySlug, listEventTypes, listManagedEvents, loadCohortsWithCourses } from "@/lib/content";
 
 export const instant = false;
+
+// Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
+export async function generateStaticParams() {
+  const events = (await listManagedEvents()).filter((event) => event.active && !event.cancelled);
+  return events.length > 0 ? events.map((event) => ({ slug: event.slug })) : [{ slug: "_" }];
+}
 
 export default async function EditEventPage({
   params,
@@ -16,11 +22,7 @@ export default async function EditEventPage({
   await requireStaff();
   const { slug } = await params;
   const query = await searchParams;
-  const [event, types, cohorts] = await Promise.all([
-    prisma.event.findUnique({ where: { slug } }),
-    prisma.eventType.findMany({ orderBy: { sort: "asc" } }),
-    prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
-  ]);
+  const [event, types, cohortRows] = await Promise.all([eventBySlug(slug), listEventTypes(), loadCohortsWithCourses()]);
   if (!event) notFound();
   return (
     <>
@@ -33,7 +35,7 @@ export default async function EditEventPage({
         <EventForm
           event={event}
           types={types}
-          cohorts={cohorts.map((cohort) => ({ id: cohort.id, name: cohort.name, course: cohort.course.title }))}
+          cohorts={cohortRows.map((cohort) => ({ id: cohort.id, name: cohort.name, course: cohort.course.title }))}
         />
       </main>
     </>

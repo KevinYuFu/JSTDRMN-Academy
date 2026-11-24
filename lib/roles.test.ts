@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { homeForRole, isLead, isStaff, normalizeRole, roleLabel } from "./roles";
+import { homeForRole, isLead, isStaff, isStudent, normalizeRole, roleLabel } from "./roles";
 
 describe("role names", () => {
   it("keeps the four roles and maps old staff words to Lead", () => {
@@ -31,6 +31,9 @@ describe("who is staff", () => {
       assert.equal(isStaff(role), true, role);
     }
     assert.equal(isStaff("student"), false);
+    assert.equal(isStudent("student"), true);
+    assert.equal(isStudent("owner"), true);
+    assert.equal(isStudent("teacher"), false);
     assert.equal(isStaff("owner"), false);
     assert.equal(isLead("lead"), true);
     assert.equal(isLead("teacher"), true);

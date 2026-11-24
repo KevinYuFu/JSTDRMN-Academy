@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SkillTreeEditor } from "@/components/skill-tree/editor";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { requireLead } from "@/lib/auth";
+import { loadSkillTree } from "@/lib/content";
 import { skillTreeErrorCopy, skillTreeSavedCopy } from "@/lib/skill-tree-edit";
 import { findNode } from "@/lib/skill-tree";
-import { loadSkillTree } from "@/lib/content";
-import { roleLabel } from "@/lib/roles";
 
 export const instant = false;
 
@@ -34,9 +33,7 @@ export default async function TeacherSkillTreePage({
   return (
     <>
       <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(lead.role)}</Link> › <b>Skill tree</b>
-        </div>
+        <StaffCrumb role={lead.role} page="Skill tree" />
         <h1 className="page-title" style={{ marginBottom: 6 }}>Skill tree</h1>
         <p className="note" style={{ marginBottom: 12 }}>
           This is the public map. Save a change, then open the public page to see it. Only a Lead can edit.

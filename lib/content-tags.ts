@@ -11,6 +11,8 @@ export const contentTags = {
   skillTree: "skill-tree",
   course: (slug: string) => `course:${slug}`,
   lessons: (courseId: string) => `lessons:${courseId}`,
+  /** No action edits tracks today, so nothing calls updateTag for this. The read expires with the shared cache life. */
+  tracks: (courseId: string) => `tracks:${courseId}`,
   pageCopy: (page: "events" | "sessions") => `page-copy:${page}`,
 } as const;
 

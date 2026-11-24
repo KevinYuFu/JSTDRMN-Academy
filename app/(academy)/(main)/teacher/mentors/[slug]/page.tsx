@@ -1,11 +1,16 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MentorForm } from "@/components/mentor-form";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { requireStaff } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { roleLabel } from "@/lib/roles";
+import { listActiveMentors, mentorBySlug } from "@/lib/content";
 
 export const instant = false;
+
+// Known slugs are prerendered here. A missing one is a 404 from the proxy, which a prefetch skips.
+export async function generateStaticParams() {
+  const mentors = await listActiveMentors();
+  return mentors.length > 0 ? mentors.map((mentor) => ({ slug: mentor.slug })) : [{ slug: "_" }];
+}
 
 export default async function EditMentorPage({
   params,
@@ -17,14 +22,12 @@ export default async function EditMentorPage({
   const staff = await requireStaff();
   const { slug } = await params;
   const query = await searchParams;
-  const mentor = await prisma.mentor.findUnique({ where: { slug } });
+  const mentor = await mentorBySlug(slug);
   if (!mentor) notFound();
   return (
     <>
       <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>{mentor.name}</b>
-        </div>
+        <StaffCrumb role={staff.role} page={mentor.name} />
         <h1 className="page-title" style={{ marginBottom: 12 }}>{mentor.name}</h1>
         {query.error ? <div className="error">Name, role line, and bio are required. Photo URL, if you add one, starts with http.</div> : null}
         <MentorForm mentor={mentor} />

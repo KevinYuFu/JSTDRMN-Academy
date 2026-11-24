@@ -4,6 +4,7 @@ import { DashboardShell, type DashboardTab } from "@/components/dashboard/dashbo
 import { PeopleTable } from "@/components/dashboard/people-table";
 import styles from "@/components/dashboard/dashboard.module.css";
 import { requireStaff } from "@/lib/auth";
+import { listMentors, loadCohortsWithCourses, loadCourseCatalog } from "@/lib/content";
 import { coursePageHref, dashboardRoleLabel } from "@/lib/dashboard-people";
 import { prisma } from "@/lib/db";
 import { isStaff } from "@/lib/entitlements";
@@ -43,12 +44,8 @@ export default async function TeacherPage({
   const staff = await requireStaff();
   const query = await searchParams;
   const lead = isLeadActor(staff.role);
-  const [courses, comments, people, logs, cohorts, requests, mentors] = await Promise.all([
-    prisma.course.findMany({
-      where: { access: { not: "request" } },
-      orderBy: { sort: "asc" },
-      include: { lessons: true, cohorts: { orderBy: { sort: "asc" } } },
-    }),
+  const [catalog, comments, people, logs, cohorts, requests, mentors] = await Promise.all([
+    loadCourseCatalog(),
     prisma.comment.findMany({
       where: { parentId: null },
       orderBy: { createdAt: "desc" },
@@ -60,14 +57,15 @@ export default async function TeacherPage({
       select: { id: true, name: true, email: true, role: true, discordId: true, discordUsername: true },
     }),
     prisma.hubspotLog.findMany({ orderBy: { createdAt: "desc" }, take: 4 }),
-    prisma.cohort.findMany({ include: { course: true }, orderBy: { sort: "asc" } }),
+    loadCohortsWithCourses(),
     prisma.sessionRequest.findMany({
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { course: true, mentor: true },
     }),
-    prisma.mentor.findMany({ orderBy: { sort: "asc" } }),
+    listMentors(),
   ]);
+  const courses = catalog.filter((course) => course.access !== "request");
   const roleError = query.roleError ? roleErrors[query.roleError] ?? "That role change did not save." : null;
   const nameError = query.nameError ? nameErrors[query.nameError] ?? "That name did not save." : null;
   const initial = query.saved === "role" || query.roleError || query.saved === "name" || query.nameError || query.tab === "people"

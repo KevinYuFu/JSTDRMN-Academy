@@ -21,6 +21,10 @@ export function normalizeRole(role: string | null | undefined): Role {
   return "student";
 }
 
+export function isStudent(role: string | null | undefined) {
+  return normalizeRole(role) === "student";
+}
+
 export function isLead(role: string | null | undefined) {
   return normalizeRole(role) === "lead";
 }

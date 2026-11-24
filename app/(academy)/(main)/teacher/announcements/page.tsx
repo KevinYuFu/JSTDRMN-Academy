@@ -1,13 +1,13 @@
-import Link from "next/link";
 import { saveAnnouncement } from "@/app/actions";
+import { StaffCrumb } from "@/components/staff-crumb";
 import { Form } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { requireStaff } from "@/lib/auth";
+import { listManagedEvents } from "@/lib/content";
 import { prisma } from "@/lib/db";
-import { roleLabel } from "@/lib/roles";
 import { formatToronto } from "@/lib/events";
 
 export const instant = false;
@@ -15,17 +15,16 @@ export const instant = false;
 export default async function AnnouncementsPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const staff = await requireStaff();
   const query = await searchParams;
-  const [announcements, events] = await Promise.all([
+  const [announcements, managed] = await Promise.all([
     prisma.announcement.findMany({ include: { event: true }, orderBy: { sendAt: "asc" } }),
-    prisma.event.findMany({ where: { cancelled: false }, orderBy: { startsAt: "asc" } }),
+    listManagedEvents(),
   ]);
+  const events = managed.filter((event) => !event.cancelled);
 
   return (
     <>
       <main className="shell">
-        <div className="crumbs">
-          <Link href="/teacher">{roleLabel(staff.role)}</Link> › <b>Announcements</b>
-        </div>
+        <StaffCrumb role={staff.role} page="Announcements" />
         <h1 className="page-title" style={{ marginBottom: 8 }}>Announcements</h1>
         <p className="note" style={{ marginBottom: 16 }}>
           Queue a Discord message for a channel. Without a bot token, the cron logs it instead of posting. On Vercel Hobby, <span className="note">/api/cron/announcements</span> runs once a day at about 3pm Toronto and sends every announcement that is already due. Set the send time before then.

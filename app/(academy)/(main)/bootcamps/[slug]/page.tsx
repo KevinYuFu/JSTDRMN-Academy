@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { courseBySlug, listCourses } from "@/lib/content";
 import { getUser } from "@/lib/auth";
 import { hubspotApplyUrl } from "@/lib/config";
-import { containerAccess, isStaff, type EntitlementRecord } from "@/lib/entitlements";
+import { isStaff } from "@/lib/entitlements";
 import { entitlementRecords } from "@/lib/learn";
+import { accessibleCohorts } from "@/lib/route-entry";
 
 type Bootcamp = Course & { cohorts: Cohort[] };
 
@@ -66,18 +67,6 @@ function CohortCard({
   );
 }
 
-function openCohorts(course: Bootcamp, role: string, records: EntitlementRecord[]) {
-  return course.cohorts.filter((cohort) =>
-    containerAccess({
-      role,
-      access: "cohort",
-      courseId: course.id,
-      cohortId: cohort.id,
-      entitlements: records,
-    }).allowed,
-  );
-}
-
 async function BootcampLive({
   course,
   searchParams,
@@ -88,10 +77,7 @@ async function BootcampLive({
   const [user, query] = await Promise.all([getUser(), searchParams]);
   const records = user ? await entitlementRecords(user.id) : [];
   const role = user?.role ?? "student";
-  const open = openCohorts(course, role, records);
-  if (open.length === 1 && user && role === "student") {
-    redirect(`/bootcamps/${course.slug}/${open[0].slug}`);
-  }
+  const open = accessibleCohorts(role, course.id, course.cohorts, records);
   const applyHref = hubspotApplyUrl(course.hubspotUrl);
   return (
     <>
