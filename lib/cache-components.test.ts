@@ -19,6 +19,7 @@ const staffDataFns = [
   "announcementsData(",
   "eventManagerData(",
   "eventFormData(",
+  "newMentorForm(",
   "mentorForEdit(",
   "courseEditorData(",
   "skillTreeForEditor(",
@@ -75,7 +76,7 @@ describe("cache components", () => {
       assert.match(text, /export const instant = false/, file);
       assert.equal(text.includes("from \"@/lib/db\""), false, file);
       assert.equal(text.includes("prisma."), false, file);
-      const guarded = text.includes("<StaffCrumb") || staffDataFns.some((name) => text.includes(name));
+      const guarded = staffDataFns.some((name) => text.includes(`await ${name}`));
       assert.equal(guarded, true, file);
     }
   });

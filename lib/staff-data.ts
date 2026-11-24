@@ -147,6 +147,10 @@ export function makeStaffData({
       return { types, cohorts: eventCohortOptions(cohortRows), event };
     },
 
+    async newMentorForm() {
+      await allowStaff();
+    },
+
     async mentorForEdit(slug: string) {
       await allowStaff();
       return content.mentorBySlug(slug);
@@ -196,6 +200,7 @@ export const {
   announcementsData,
   eventManagerData,
   eventFormData,
+  newMentorForm,
   mentorForEdit,
   courseEditorData,
   skillTreeForEditor,

@@ -89,14 +89,15 @@ describe("staff data", () => {
       }),
     });
 
-    await assert.rejects(() => data.staffDashboard(), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.accessPageData(), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.announcementsData(), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.eventManagerData(), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.eventFormData("sync"), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.mentorForEdit("yuzu"), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.courseEditorData("dj-bootcamp"), /NEXT_REDIRECT \//);
-    await assert.rejects(() => data.skillTreeForEditor(), /NEXT_REDIRECT \//);
+    await assert.rejects(() => data.staffDashboard(), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.accessPageData(), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.announcementsData(), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.eventManagerData(), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.eventFormData("sync"), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.newMentorForm(), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.mentorForEdit("yuzu"), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.courseEditorData("dj-bootcamp"), /NEXT_REDIRECT \/$/);
+    await assert.rejects(() => data.skillTreeForEditor(), /NEXT_REDIRECT \/$/);
     assert.equal(store.reads(), 0);
     assert.equal(contentReads, 0);
   });
