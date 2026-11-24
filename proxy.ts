@@ -52,7 +52,7 @@ async function staffRecordExists(pathname: string) {
 type Entry = { kind: "redirect"; href: string } | { kind: "notFound" };
 
 async function entryDestination(token: string, teacher: boolean, slug: string | null, pathname: string): Promise<Entry | null> {
-  // Select only the expiry and the role. findLiveSession treats expiresAt < now as signed out.
+  // Select only the expiry and the user id and role. findLiveSession treats expiresAt < now as signed out.
   // This lookup does not delete the row.
   const session = await findLiveSession(token, {
     findSession: (sessionToken) =>

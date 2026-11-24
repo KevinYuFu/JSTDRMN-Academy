@@ -30,14 +30,14 @@ export default async function TeacherSkillTreePage({
 
   return (
     <>
-        <StaffCrumb page="Skill tree" />
-        <h1 className="page-title" style={{ marginBottom: 6 }}>Skill tree</h1>
-        <p className="note" style={{ marginBottom: 12 }}>
-          This is the public map. Save a change, then open the public page to see it. Only a Lead can edit.
-        </p>
-        {saved ? <div className="banner">{saved}</div> : null}
-        {error ? <div className="error">{error}</div> : null}
-        <SkillTreeEditor tree={tree} selectedId={selected.id} />
+      <StaffCrumb page="Skill tree" />
+      <h1 className="page-title" style={{ marginBottom: 6 }}>Skill tree</h1>
+      <p className="note" style={{ marginBottom: 12 }}>
+        This is the public map. Save a change, then open the public page to see it. Only a Lead can edit.
+      </p>
+      {saved ? <div className="banner">{saved}</div> : null}
+      {error ? <div className="error">{error}</div> : null}
+      <SkillTreeEditor tree={tree} selectedId={selected.id} />
     </>
   );
 }

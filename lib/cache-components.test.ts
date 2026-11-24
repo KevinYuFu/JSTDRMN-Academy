@@ -57,7 +57,7 @@ describe("cache components", () => {
 
   it("puts the staff frame on the teacher layout and leaves each page to its own content", () => {
     const layout = readFileSync("app/(academy)/(main)/teacher/layout.tsx", "utf8");
-    assert.match(layout, /export const instant = false/);
+    assert.equal(layout.includes("export const instant = false"), false);
     assert.match(layout, /return <main className="shell">\{children\}<\/main>/);
     assert.equal(layout.includes("requireStaff"), false);
     assert.equal(layout.includes("getUser"), false);

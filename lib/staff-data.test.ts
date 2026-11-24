@@ -36,7 +36,7 @@ function quietDb() {
     reads += 1;
     return [];
   };
-  const db: Deps["db"] = {
+  const db = {
     comment: { findMany },
     user: { findMany },
     hubspotLog: { findMany },
@@ -44,7 +44,7 @@ function quietDb() {
     entitlement: { findMany },
     pendingGrant: { findMany },
     announcement: { findMany },
-  };
+  } as unknown as Deps["db"];
   return { db, reads: () => reads };
 }
 
@@ -127,12 +127,12 @@ describe("staff data", () => {
       db: {
         ...quietDb().db,
         comment: {
-          findMany: async (args) => {
+          findMany: async (args: object | undefined) => {
             commentArgs = args;
             return comments;
           },
         },
-      },
+      } as unknown as Deps["db"],
       content: quietContent({
         loadCourseCatalog: async () => [],
         loadCohortsWithCourses: async () => [],

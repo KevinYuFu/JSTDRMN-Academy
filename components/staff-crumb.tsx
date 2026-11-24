@@ -8,7 +8,7 @@ import { roleLabel } from "@/lib/roles";
  */
 export async function StaffCrumb({ page, parent }: { page: string; parent?: { href: string; label: string } }) {
   const staff = await requireStaff();
-  const link = parent ? { href: parent.href, label: parent.label } : { href: "/teacher", label: roleLabel(staff.role) };
+  const link = parent ?? { href: "/teacher", label: roleLabel(staff.role) };
   return (
     <div className="crumbs">
       <Link href={link.href}>{link.label}</Link> › <b>{page}</b>

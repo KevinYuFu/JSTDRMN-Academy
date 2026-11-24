@@ -17,8 +17,9 @@ describe("staffGate", () => {
     assert.equal(staffGate("lead"), null);
     assert.equal(staffGate("teacher"), null);
     assert.equal(staffGate("admin"), null);
-    assert.equal(staffGate(null), null);
-    assert.equal(staffGate(undefined), null);
+    assert.deepEqual(staffGate(""), { redirect: "/" });
+    assert.deepEqual(staffGate(null), { redirect: "/" });
+    assert.deepEqual(staffGate(undefined), { redirect: "/" });
   });
 });
 

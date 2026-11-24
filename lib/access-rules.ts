@@ -33,9 +33,9 @@ export async function findLiveSession<T extends { expiresAt: Date }>(
   return session;
 }
 
-/** Staff stay on the page. Anyone else goes to their home. A missing role stays put. */
+/** Staff stay. Everyone else goes home, including a blank or missing role. */
 export function staffGate(role: string | null | undefined): { redirect: string } | null {
-  if (!role || isStaff(role)) return null;
+  if (isStaff(role)) return null;
   return { redirect: homeForRole(role) };
 }
 

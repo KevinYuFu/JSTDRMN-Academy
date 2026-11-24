@@ -1,5 +1,5 @@
 import "server-only";
-import type { HubspotLog, PendingGrant, Prisma, User } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { requireLead, requireStaff } from "./auth";
 import {
   courseBySlug,
@@ -20,17 +20,10 @@ import { eventCohortOptions } from "./staff-copy";
 
 type StaffUser = { id: string; name: string; role: string };
 
-type Read = (args?: object) => Promise<unknown[]>;
-
-type StaffDb = {
-  comment: { findMany: Read };
-  user: { findMany: Read };
-  hubspotLog: { findMany: Read };
-  sessionRequest: { findMany: Read };
-  entitlement: { findMany: Read };
-  pendingGrant: { findMany: Read };
-  announcement: { findMany: Read };
-};
+type StaffDb = Pick<
+  typeof prisma,
+  "comment" | "user" | "hubspotLog" | "sessionRequest" | "entitlement" | "pendingGrant" | "announcement"
+>;
 
 type Content = Pick<
   typeof import("./content"),
@@ -86,15 +79,6 @@ const announcementQuery = {
   orderBy: { sendAt: "asc" },
 } satisfies Prisma.AnnouncementFindManyArgs;
 
-type DashboardComment = Prisma.CommentGetPayload<typeof commentQuery>;
-type DashboardPerson = Prisma.UserGetPayload<typeof peopleQuery>;
-type HubspotRow = HubspotLog;
-type RequestRow = Prisma.SessionRequestGetPayload<typeof requestQuery>;
-type EntitlementRow = Prisma.EntitlementGetPayload<typeof entitlementQuery>;
-type PendingRow = PendingGrant;
-type StudentRow = User;
-type AnnouncementRow = Prisma.AnnouncementGetPayload<typeof announcementQuery>;
-
 /**
  * Staff reads. Pass a fake user and database from tests.
  * Each function starts with the staff check. getUser is request-cached, so the check is free
@@ -116,11 +100,11 @@ export function makeStaffData({
       const staff = await allowStaff();
       const [catalog, comments, people, logs, cohorts, requests, mentors] = await Promise.all([
         content.loadCourseCatalog(),
-        db.comment.findMany(commentQuery) as Promise<DashboardComment[]>,
-        db.user.findMany(peopleQuery) as Promise<DashboardPerson[]>,
-        db.hubspotLog.findMany(logQuery) as Promise<HubspotRow[]>,
+        db.comment.findMany(commentQuery),
+        db.user.findMany(peopleQuery),
+        db.hubspotLog.findMany(logQuery),
         content.loadCohortsWithCourses(),
-        db.sessionRequest.findMany(requestQuery) as Promise<RequestRow[]>,
+        db.sessionRequest.findMany(requestQuery),
         content.listMentors(),
       ]);
       return { staff, catalog, comments, people, logs, cohorts, requests, mentors };
@@ -131,9 +115,9 @@ export function makeStaffData({
       const [courses, cohorts, entitlements, pending, students] = await Promise.all([
         content.listCourses(),
         content.loadCohortsWithCourses(),
-        db.entitlement.findMany(entitlementQuery) as Promise<EntitlementRow[]>,
-        db.pendingGrant.findMany(pendingQuery) as Promise<PendingRow[]>,
-        db.user.findMany(studentQuery) as Promise<StudentRow[]>,
+        db.entitlement.findMany(entitlementQuery),
+        db.pendingGrant.findMany(pendingQuery),
+        db.user.findMany(studentQuery),
       ]);
       return { courses, cohorts, entitlements, pending, students };
     },
@@ -141,7 +125,7 @@ export function makeStaffData({
     async announcementsData() {
       await allowStaff();
       const [announcements, managed] = await Promise.all([
-        db.announcement.findMany(announcementQuery) as Promise<AnnouncementRow[]>,
+        db.announcement.findMany(announcementQuery),
         content.listManagedEvents(),
       ]);
       return { announcements, events: managed.filter((event) => !event.cancelled) };
@@ -189,7 +173,7 @@ export function makeStaffData({
 const staffData = makeStaffData({
   requireStaff,
   requireLead,
-  db: prisma as unknown as StaffDb,
+  db: prisma,
   content: {
     loadCourseCatalog,
     loadCohortsWithCourses,
