@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { findLiveSession, staffGate } from "@/lib/access-rules";
 import { prisma } from "@/lib/db";
 import { toEntitlementRecords } from "@/lib/entitlements";
-import { singleStudentCohortHref, staffRecordPath, studentStaffRedirect } from "@/lib/route-entry";
+import { singleStudentCohortHref, staffRecordPath } from "@/lib/route-entry";
 import { isStudent } from "@/lib/roles";
 import { requestNeedsLogin, SESSION_COOKIE } from "@/lib/session-cookie";
 
@@ -51,14 +52,19 @@ async function staffRecordExists(pathname: string) {
 type Entry = { kind: "redirect"; href: string } | { kind: "notFound" };
 
 async function entryDestination(token: string, teacher: boolean, slug: string | null, pathname: string): Promise<Entry | null> {
-  const session = await prisma.session.findUnique({
-    where: { token },
-    select: { expiresAt: true, user: { select: { id: true, role: true } } },
+  // Select only the expiry and the user id and role. findLiveSession treats expiresAt < now as signed out.
+  // This lookup does not delete the row.
+  const session = await findLiveSession(token, {
+    findSession: (sessionToken) =>
+      prisma.session.findUnique({
+        where: { token: sessionToken },
+        select: { expiresAt: true, user: { select: { id: true, role: true } } },
+      }),
   });
-  if (!session || session.expiresAt.getTime() < Date.now()) return null;
+  if (!session) return null;
   if (teacher) {
-    const href = studentStaffRedirect(session.user.role);
-    if (href) return { kind: "redirect", href };
+    const gate = staffGate(session.user.role);
+    if (gate) return { kind: "redirect", href: gate.redirect };
     if (!(await staffRecordExists(pathname))) return { kind: "notFound" };
     return null;
   }

@@ -13,6 +13,18 @@ function walk(dir: string, out: string[] = []) {
   return out;
 }
 
+const staffDataFns = [
+  "staffDashboard(",
+  "accessPageData(",
+  "announcementsData(",
+  "eventManagerData(",
+  "eventFormData(",
+  "newMentorForm(",
+  "mentorForEdit(",
+  "courseEditorData(",
+  "skillTreeForEditor(",
+];
+
 const readyMadePages = new Set([
   "app/(academy)/(main)/page.tsx",
   "app/(academy)/(main)/programs/page.tsx",
@@ -41,6 +53,31 @@ describe("cache components", () => {
         if (readyMadePages.has(file)) assert.equal(text.includes("export const instant = false"), false, file);
         else assert.match(text, /export const instant = false/, file);
       }
+    }
+  });
+
+  it("puts the staff frame on the teacher layout and leaves each page to its own content", () => {
+    const layout = readFileSync("app/(academy)/(main)/teacher/layout.tsx", "utf8");
+    assert.equal(layout.includes("export const instant = false"), false);
+    assert.match(layout, /return <main className="shell">\{children\}<\/main>/);
+    assert.equal(layout.includes("requireStaff"), false);
+    assert.equal(layout.includes("getUser"), false);
+    assert.equal(layout.includes("cookies("), false);
+    assert.equal(layout.includes("prisma"), false);
+    assert.equal(layout.includes("use cache"), false);
+
+    const pages = walk("app/(academy)/(main)/teacher").filter((file) => file.endsWith("/page.tsx"));
+    assert.equal(pages.length, 10);
+    for (const file of pages) {
+      const text = readFileSync(file, "utf8");
+      assert.equal(text.includes("requireStaff"), false, file);
+      assert.equal(text.includes("requireLead"), false, file);
+      assert.equal(text.includes('<main className="shell">'), false, file);
+      assert.match(text, /export const instant = false/, file);
+      assert.equal(text.includes("from \"@/lib/db\""), false, file);
+      assert.equal(text.includes("prisma."), false, file);
+      const guarded = staffDataFns.some((name) => text.includes(`await ${name}`));
+      assert.equal(guarded, true, file);
     }
   });
 

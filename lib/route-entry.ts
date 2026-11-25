@@ -1,10 +1,5 @@
 import { containerAccess, type EntitlementRecord } from "./entitlements";
-import { homeForRole, isStaff, isStudent } from "./roles";
-
-export function studentStaffRedirect(role: string | null | undefined) {
-  if (!role || isStaff(role)) return null;
-  return homeForRole(role);
-}
+import { isStudent } from "./roles";
 
 /** A staff editor URL whose slug is the record. `new` is its own page. */
 export function staffRecordPath(pathname: string): { kind: "mentor" | "event" | "course"; slug: string } | null {

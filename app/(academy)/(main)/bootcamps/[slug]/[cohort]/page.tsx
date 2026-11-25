@@ -3,6 +3,7 @@ import { CourseView } from "@/components/course-view";
 import { getUser } from "@/lib/auth";
 import { courseBySlug, loadCohortsWithCourses } from "@/lib/content";
 import { openCourse } from "@/lib/learn";
+import { withSample } from "@/lib/static-params";
 
 export const instant = false;
 
@@ -11,9 +12,7 @@ export async function generateStaticParams() {
   const params = rows
     .filter((row) => row.course.access === "cohort")
     .map((row) => ({ slug: row.course.slug, cohort: row.slug }));
-  // Cache Components requires one sample so the shell can be checked at build time.
-  // A database with no cohort rows yet uses a path this page turns into a 404.
-  return params.length > 0 ? params : [{ slug: "_", cohort: "_" }];
+  return withSample(params, { slug: "_", cohort: "_" });
 }
 
 export default async function CohortPage({

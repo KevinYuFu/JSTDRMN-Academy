@@ -45,16 +45,24 @@ describe("getUser request dedupe", () => {
     const source = readFileSync(new URL("./auth.ts", import.meta.url), "utf8");
     assert.match(source, /import \{ cache \} from "react"/);
     assert.match(source, /export const getUser = cache\(async function getUser\(\)/);
+    assert.match(source, /await connection\(\)/);
+    assert.match(source, /await connection\(\)[\s\S]*await cookies\(\)/);
+    assert.match(source, /await cookies\(\)[\s\S]*findLiveSession\(/);
     assert.match(source, /const token = jar\.get\(SESSION_COOKIE\)\?\.value/);
     assert.match(source, /if \(!token\) return null/);
-    assert.match(source, /findUnique\(\{ where: \{ token \}, include: \{ user: true \} \}\)/);
-    assert.match(source, /if \(!session\) return null/);
-    assert.match(source, /session\.expiresAt\.getTime\(\) < Date\.now\(\)/);
+    const rules = readFileSync(new URL("./access-rules.ts", import.meta.url), "utf8");
+    assert.match(source, /findLiveSession\(token,/);
+    assert.match(source, /findUnique\(\{ where: \{ token: sessionToken \}, include: \{ user: true \} \}\)/);
     assert.match(source, /prisma\.session\.delete\(\{ where: \{ id: session\.id \} \}\)/);
+    assert.match(source, /if \(!session\) return null/);
     assert.match(source, /return session\.user/);
+    assert.equal(/session\.expiresAt\.getTime\(\)/.test(source), false);
     assert.match(source, /const user = await getUser\(\)/);
     assert.match(source, /if \(!user\) redirect\("\/login"\)/);
-    assert.match(source, /redirect\("\/teacher\?skillTree=forbidden"\)/);
+    assert.match(source, /staffGate\(user\.role\)/);
+    assert.match(source, /leadGate\(user\.role\)/);
+    assert.match(rules, /session\.expiresAt\.getTime\(\) < /);
+    assert.match(rules, /"\/teacher\?skillTree=forbidden"/);
     assert.equal(source.includes("loading.tsx"), false);
   });
 
