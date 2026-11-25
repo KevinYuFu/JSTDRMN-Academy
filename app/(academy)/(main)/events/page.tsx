@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { saveEventsCopy } from "@/app/lead-copy-actions";
 import { EventsBoard, type EventCard } from "@/components/events-editor";
 import { getUser } from "@/lib/auth";
 import { courseBySlug, listEvents, loadPageCopy } from "@/lib/content";
@@ -55,5 +56,5 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
     }));
   const discord = query.discord === "connected" || query.discord === "unconfigured" ? query.discord : null;
 
-  return <EventsBoard lead={canEditPrograms(user?.role)} copy={copy} events={cards} sentDiscord={discord} />;
+  return <EventsBoard lead={canEditPrograms(user?.role)} copy={copy} events={cards} sentDiscord={discord} save={saveEventsCopy} />;
 }
