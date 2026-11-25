@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { before, beforeEach, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it } from "node:test";
 
 type Row = Record<string, unknown>;
 type Where = Record<string, unknown> | undefined;
@@ -90,6 +90,9 @@ Module._resolveFilename = function (request, parent, isMain, options) {
   if (resolvesTo(request, parent, "db")) return fakeFile.db;
   return previousResolve.call(Module, request, parent, isMain, options);
 };
+after(() => {
+  Module._resolveFilename = previousResolve;
+});
 
 function matches(row: Row, where: Where) {
   if (!where) return true;
@@ -190,9 +193,7 @@ function redirectTarget(error: unknown) {
   if (typeof error === "object" && error !== null && "digest" in error && typeof error.digest === "string") {
     if (error.digest.startsWith("NEXT_REDIRECT;")) return error.digest.split(";").slice(2, -2).join(";");
   }
-  const message = error instanceof Error ? error.message : "";
-  const match = /^NEXT_REDIRECT (.*)$/.exec(message);
-  return match?.[1] ?? null;
+  return null;
 }
 
 async function landing(run: () => Promise<unknown>) {
