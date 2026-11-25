@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkPassword, createSession, destroySession, hashPassword, requireStaff, requireUser } from "@/lib/auth";
-import { fulfillCheckout, grantEntitlement, revokeEntitlement } from "@/lib/billing";
-import { programPageHref, resolveOffer } from "@/lib/catalog";
+import { AFTER_PAYMENT_PATH, fulfillCheckout, grantEntitlement, revokeEntitlement } from "@/lib/billing";
+import { resolveOffer } from "@/lib/catalog";
 import { refreshContent } from "@/lib/content";
 import { cohortSaveTags, eventSaveTags, lessonSaveTags, mentorSaveTags } from "@/lib/content-tags";
 import { appUrl, stripeLive } from "@/lib/config";
@@ -336,13 +336,7 @@ export async function confirmMockPayment(formData: FormData) {
     name: user.name,
     extra: { academy_last_purchase: checkout.product },
   });
-  const course = checkout.courseId ? await prisma.course.findUnique({ where: { id: checkout.courseId } }) : null;
-  if (!course) redirect("/dashboard");
-  if (course.access === "headliner") redirect("/headliner?unlocked=1");
-  const programPage = programPageHref(course.slug);
-  if (programPage !== `/programs/${course.slug}`) redirect(programPage);
-  const lessons = await prisma.lesson.count({ where: { courseId: course.id } });
-  redirect(lessons > 0 ? `/courses/${course.slug}?unlocked=1` : `/programs/${course.slug}?unlocked=1`);
+  redirect(AFTER_PAYMENT_PATH);
 }
 
 export async function requestSession(formData: FormData) {

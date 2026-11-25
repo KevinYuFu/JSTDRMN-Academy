@@ -89,6 +89,9 @@ export async function revokeByExternalId(externalId: string) {
   return result;
 }
 
+/** Paid checkout sends the student here for now. A payment-success page will replace this path. */
+export const AFTER_PAYMENT_PATH = "/";
+
 /** Shared by mock checkout and the Stripe webhook so both paths grant the same way. */
 export async function fulfillCheckout(checkoutId: string, externalId?: string | null) {
   const checkout = await prisma.checkout.findUnique({ where: { id: checkoutId } });
