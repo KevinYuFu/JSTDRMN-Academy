@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { fulfillCheckout } from "@/lib/billing";
-import { prisma } from "@/lib/db";
+import { AFTER_PAYMENT_PATH, fulfillCheckout } from "@/lib/billing";
 import { syncContact } from "@/lib/hubspot";
 import { stripeClient } from "@/lib/stripe";
 
@@ -25,8 +24,7 @@ export default async function CheckoutReturnPage({
     const checkout = await fulfillCheckout(query.checkout, external);
     if (checkout) {
       await syncContact({ email: user.email, name: user.name, extra: { academy_last_purchase: checkout.product } });
-      const course = checkout.courseId ? await prisma.course.findUnique({ where: { id: checkout.courseId } }) : null;
-      if (course) redirect(`/courses/${course.slug}?unlocked=1`);
+      redirect(AFTER_PAYMENT_PATH);
     }
   }
   redirect("/dashboard");
