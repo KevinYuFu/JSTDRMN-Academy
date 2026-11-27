@@ -103,6 +103,10 @@ export function EventsBoard({
     }));
   }
 
+  function setCopy(patch: Partial<Copy>) {
+    edit.change((current) => ({ ...current, copy: { ...current.copy, ...patch } }));
+  }
+
   function article(event: EventCard, draft: EventCard | undefined, featuredCard: boolean) {
     const Title = featuredCard ? "h2" : "h3";
     return (
@@ -142,7 +146,7 @@ export function EventsBoard({
                 className={styles.heroTitle}
                 label="Title"
                 value={draftCopy.title}
-                onChange={(title) => edit.change((current) => ({ ...current, copy: { ...current.copy, title } }))}
+                onChange={(title) => setCopy({ title })}
               />
             </h1>
             <p>
@@ -150,7 +154,7 @@ export function EventsBoard({
                 className={`${styles.heroTitle} ${styles.heroLine}`}
                 label="Short line"
                 value={draftCopy.lede}
-                onChange={(lede) => edit.change((current) => ({ ...current, copy: { ...current.copy, lede } }))}
+                onChange={(lede) => setCopy({ lede })}
               />
             </p>
           </>

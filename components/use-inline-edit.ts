@@ -3,8 +3,7 @@
 import { useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useResetWhenHidden } from "./form";
-import { createInlineEditState, reduceInlineEdit, type SaveResult } from "@/lib/inline-edit";
-import { programEditCopy } from "@/lib/program-edit";
+import { createInlineEditState, inlineEditCopy, reduceInlineEdit, type SaveResult } from "@/lib/inline-edit";
 
 /**
  * Edit, cancel, and save for one inline editor.
@@ -30,7 +29,6 @@ export function useInlineEdit<T, I>({
   const router = useRouter();
   const [state, dispatch] = useReducer(reduceInlineEdit<T>, initial, createInlineEditState);
   useResetWhenHidden(() => dispatch({ type: "hide" }));
-  const request = useRef(0);
   const saveLock = useRef(false);
 
   function change(update: (draft: T) => T) {
@@ -39,14 +37,11 @@ export function useInlineEdit<T, I>({
 
   async function onSave() {
     if (saveLock.current || state.saving || !isDirty(state.draft, state.saved)) return;
-    const id = request.current + 1;
-    request.current = id;
     saveLock.current = true;
     const draft = state.draft;
     dispatch({ type: "saving" });
     try {
       const result = await save(toInput(draft));
-      if (request.current !== id) return;
       if (!result.ok) {
         dispatch({ type: "failed", message: result.message, fieldErrors: result.fieldErrors });
         return;
@@ -54,10 +49,9 @@ export function useInlineEdit<T, I>({
       dispatch({ type: "saved", value: afterSave ? afterSave(draft) : draft });
       if (refreshAfterSave) router.refresh();
     } catch {
-      if (request.current !== id) return;
-      dispatch({ type: "failed", message: programEditCopy.failed });
+      dispatch({ type: "failed", message: inlineEditCopy.failed });
     } finally {
-      if (request.current === id) saveLock.current = false;
+      saveLock.current = false;
     }
   }
 

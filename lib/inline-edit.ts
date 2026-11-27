@@ -5,6 +5,8 @@
  * Typing does not clear an error. The current editors work that way.
  */
 
+export const inlineEditCopy = { failed: "Could not save. Try again." } as const;
+
 export type SaveResult = { ok: true } | { ok: false; message: string; fieldErrors?: Record<string, string> };
 
 export type InlineEditState<T> = {

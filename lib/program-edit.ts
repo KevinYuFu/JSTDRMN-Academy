@@ -11,6 +11,7 @@
  * another plan. The public page stays read-only until Edit.
  */
 
+import { inlineEditCopy } from "./inline-edit";
 import { isLead } from "./roles";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
@@ -30,7 +31,7 @@ export const programEditCopy = {
   forbidden: "Only a Lead can save this.",
   invalid: "Check the fields and try again.",
   missing: "That program is not on this page.",
-  failed: "Could not save. Try again.",
+  failed: inlineEditCopy.failed,
   title: "Add a title.",
   tagline: "Add a short line.",
   presenter: "Use a shorter name.",
