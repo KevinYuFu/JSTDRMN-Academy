@@ -113,7 +113,14 @@ describe("inline edit", () => {
   });
 
   it("hide always resets, including while saving", () => {
-    const saving = apply(editing(), { type: "failed", message: "Could not save. Try again.", fieldErrors: { title: "Add a title." } }, { type: "saving" });
+    const saving = apply(
+      editing(),
+      { type: "saving" },
+      { type: "failed", message: "Could not save. Try again.", fieldErrors: { title: "Add a title." } },
+      { type: "saving" },
+    );
+    assert.equal(saving.message, "Could not save. Try again.");
+    assert.equal(saving.fieldErrors.title, "Add a title.");
     const hidden = apply(saving, { type: "hide" });
     assert.equal(hidden.editing, false);
     assert.equal(hidden.saving, false);
