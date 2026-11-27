@@ -1,3 +1,4 @@
+import type { PageCopy } from "./page-copy";
 import { canEditPrograms } from "./program-edit";
 
 export type EventCopyRow = {
@@ -9,6 +10,12 @@ export type EventCopyRow = {
 export type EventCopyWrite = {
   title: string;
   description: string;
+};
+
+/** Payload the events page editor sends to its save action. */
+export type EventsCopyInput = {
+  copy: PageCopy;
+  events: { events: { id: string; title: string; description: string }[] };
 };
 
 const LIMITS = { title: 140, description: 2000 } as const;

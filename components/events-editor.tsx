@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useResetWhenHidden } from "./form";
-import { saveEventsCopy } from "@/app/lead-copy-actions";
-import { LeadEditFrame } from "./lead-edit";
+import type { EventsCopyInput } from "@/lib/event-copy";
+import type { SaveResult } from "@/lib/inline-edit";
 import { EventJoin } from "./event-join";
+import { LeadEditFrame } from "./lead-edit";
 import styles from "./program-editor.module.css";
+import { useInlineEdit } from "./use-inline-edit";
 
 export type EventCard = {
   id: string;
@@ -23,6 +22,27 @@ export type EventCard = {
 };
 
 type Copy = { title: string; lede: string };
+type EventsDraft = { copy: Copy; events: EventCard[] };
+
+function eventsDirty(draft: EventsDraft, saved: EventsDraft) {
+  return (
+    draft.copy.title !== saved.copy.title ||
+    draft.copy.lede !== saved.copy.lede ||
+    draft.events.some((item) => {
+      const previous = saved.events.find((event) => event.id === item.id);
+      return !previous || item.title !== previous.title || item.description !== previous.description;
+    })
+  );
+}
+
+function eventsInput(draft: EventsDraft): EventsCopyInput {
+  return {
+    copy: draft.copy,
+    events: {
+      events: draft.events.map((event) => ({ id: event.id, title: event.title, description: event.description })),
+    },
+  };
+}
 
 function Field({
   value,
@@ -53,71 +73,38 @@ export function EventsBoard({
   copy,
   events,
   sentDiscord,
+  save,
 }: {
   lead: boolean;
   copy: Copy;
   events: EventCard[];
   sentDiscord: "connected" | "unconfigured" | null;
+  save: (input: EventsCopyInput) => Promise<SaveResult>;
 }) {
-  const router = useRouter();
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [draftCopy, setDraftCopy] = useState(copy);
-  const [drafts, setDrafts] = useState(events);
-  const [savedCopy, setSavedCopy] = useState(copy);
-  const [savedEvents, setSavedEvents] = useState(events);
-  useResetWhenHidden(() => {
-    setDraftCopy(savedCopy);
-    setDrafts(savedEvents);
-    setMessage(null);
-    setEditing(false);
+  const edit = useInlineEdit<EventsDraft, EventsCopyInput>({
+    initial: { copy, events },
+    save,
+    toInput: eventsInput,
+    isDirty: eventsDirty,
   });
+  const { editing } = edit;
+  const draftCopy = edit.draft.copy;
+  const drafts = edit.draft.events;
+  const savedCopy = edit.saved.copy;
+  const savedEvents = edit.saved.events;
   const featured = savedEvents.find((event) => event.featured) ?? savedEvents[0];
   const editFeatured = drafts.find((event) => event.id === featured?.id);
   const editRest = drafts.filter((event) => event.id !== featured?.id);
 
-  const dirty =
-    draftCopy.title !== savedCopy.title ||
-    draftCopy.lede !== savedCopy.lede ||
-    drafts.some((draft) => {
-      const saved = savedEvents.find((event) => event.id === draft.id);
-      return !saved || draft.title !== saved.title || draft.description !== saved.description;
-    });
-
-  function reset() {
-    setDraftCopy(savedCopy);
-    setDrafts(savedEvents);
-    setMessage(null);
-  }
-
-  async function onSave() {
-    if (!dirty || saving) return;
-    setSaving(true);
-    try {
-      const result = await saveEventsCopy({
-        copy: draftCopy,
-        events: { events: drafts.map((event) => ({ id: event.id, title: event.title, description: event.description })) },
-      });
-      if (!result.ok) {
-        setMessage(result.message);
-        setSaving(false);
-        return;
-      }
-      setSavedCopy(draftCopy);
-      setSavedEvents(drafts);
-      setEditing(false);
-      setMessage(null);
-      setSaving(false);
-      router.refresh();
-    } catch {
-      setMessage("Could not save. Try again.");
-      setSaving(false);
-    }
-  }
-
   function update(id: string, patch: Partial<EventCard>) {
-    setDrafts((current) => current.map((event) => (event.id === id ? { ...event, ...patch } : event)));
+    edit.change((current) => ({
+      ...current,
+      events: current.events.map((event) => (event.id === id ? { ...event, ...patch } : event)),
+    }));
+  }
+
+  function setCopy(patch: Partial<Copy>) {
+    edit.change((current) => ({ ...current, copy: { ...current.copy, ...patch } }));
   }
 
   function article(event: EventCard, draft: EventCard | undefined, featuredCard: boolean) {
@@ -155,10 +142,20 @@ export function EventsBoard({
         {editing ? (
           <>
             <h1>
-              <Field className={styles.heroTitle} label="Title" value={draftCopy.title} onChange={(title) => setDraftCopy({ ...draftCopy, title })} />
+              <Field
+                className={styles.heroTitle}
+                label="Title"
+                value={draftCopy.title}
+                onChange={(title) => setCopy({ title })}
+              />
             </h1>
             <p>
-              <Field className={`${styles.heroTitle} ${styles.heroLine}`} label="Short line" value={draftCopy.lede} onChange={(lede) => setDraftCopy({ ...draftCopy, lede })} />
+              <Field
+                className={`${styles.heroTitle} ${styles.heroLine}`}
+                label="Short line"
+                value={draftCopy.lede}
+                onChange={(lede) => setCopy({ lede })}
+              />
             </p>
           </>
         ) : (
@@ -183,23 +180,5 @@ export function EventsBoard({
 
   const page = <main className="sessions-page">{body}</main>;
   if (!lead) return page;
-  return (
-    <LeadEditFrame
-      editing={editing}
-      saving={saving}
-      dirty={dirty}
-      message={message}
-      onEdit={() => {
-        reset();
-        setEditing(true);
-      }}
-      onCancel={() => {
-        reset();
-        setEditing(false);
-      }}
-      onSave={() => void onSave()}
-    >
-      {page}
-    </LeadEditFrame>
-  );
+  return <LeadEditFrame {...edit.frame}>{page}</LeadEditFrame>;
 }
