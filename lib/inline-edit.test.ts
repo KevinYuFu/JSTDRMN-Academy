@@ -54,7 +54,7 @@ describe("inline edit", () => {
   });
 
   it("keeps the error message while typing", () => {
-    const failed = apply(editing(), {
+    const failed = apply(editing(), { type: "saving" }, {
       type: "failed",
       message: "Check the fields and try again.",
       fieldErrors: { title: "Add a title." },
@@ -80,8 +80,7 @@ describe("inline edit", () => {
   });
 
   it("failed stays in edit and keeps the draft", () => {
-    const draft = editing();
-    const failed = apply(draft, {
+    const failed = apply(editing(), { type: "saving" }, {
       type: "failed",
       message: "Check the fields and try again.",
       fieldErrors: { title: "Add a title." },
@@ -95,13 +94,13 @@ describe("inline edit", () => {
   });
 
   it("clears field errors on edit, cancel, and saved", () => {
-    const failed = apply(editing(), { type: "failed", message: "Check the fields and try again.", fieldErrors: { title: "Add a title." } });
+    const failed = apply(editing(), { type: "saving" }, { type: "failed", message: "Check the fields and try again.", fieldErrors: { title: "Add a title." } });
     assert.deepEqual(apply(failed, { type: "edit" }).fieldErrors, {});
     assert.equal(apply(failed, { type: "edit" }).message, null);
     assert.deepEqual(apply(failed, { type: "cancel" }).fieldErrors, {});
     const saving = apply(editing(), { type: "saving" });
     assert.deepEqual(apply(saving, { type: "saved", value: "Draft title" }).fieldErrors, {});
-    const bare = apply(editing(), { type: "failed", message: "Could not save. Try again." });
+    const bare = apply(editing(), { type: "saving" }, { type: "failed", message: "Could not save. Try again." });
     assert.deepEqual(bare.fieldErrors, {});
   });
 
@@ -122,5 +121,18 @@ describe("inline edit", () => {
     assert.equal(hidden.saved, "Saved title");
     assert.equal(hidden.message, null);
     assert.deepEqual(hidden.fieldErrors, {});
+  });
+
+  it("a late failure after hide stays closed, and a late save still sticks", () => {
+    const hidden = apply(editing(), { type: "saving" }, { type: "hide" });
+    const late = apply(hidden, { type: "failed", message: "Could not save. Try again." });
+    assert.equal(late, hidden);
+    assert.equal(late.editing, false);
+    assert.equal(late.draft, "Saved title");
+    assert.equal(late.saved, "Saved title");
+    const kept = apply(hidden, { type: "saved", value: "From the database" });
+    assert.equal(kept.saved, "From the database");
+    assert.equal(kept.draft, "From the database");
+    assert.equal(kept.editing, false);
   });
 });

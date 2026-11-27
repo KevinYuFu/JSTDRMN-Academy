@@ -71,6 +71,7 @@ export function reduceInlineEdit<T>(state: InlineEditState<T>, event: InlineEdit
         saved: event.value,
       };
     case "failed":
+      if (!state.saving) return state;
       return {
         ...state,
         editing: true,
